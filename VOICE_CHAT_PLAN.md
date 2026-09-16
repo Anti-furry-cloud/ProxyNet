@@ -246,6 +246,55 @@ numarası ve bayt dizisi, çıktı çerçeve sırası. Ses cihazı her 20 ms'de 
 - Gönderen yeniden başlarsa (sıra numarası her iki yönde de anlamsız uzaklıkta)
   akış sıfırlanır.
 
+### Bulunan zayıflık: gecikme birikmesi (2026-09-16, düzeltildi)
+
+Tamponun ilk hâli, bir gecikme sıçramasından sonra biriken çerçeveleri olduğu
+gibi çalıyordu. Sıçrama sırasında tampon boşalıp yeniden dolduğunda en eski
+çerçeveden başlıyor ve hedefin üstündeki fazlayı eritecek bir mekanizma
+olmadığı için **her sıçrama gecikmeye kalıcı olarak ekleniyordu.** O günkü 54
+birim testin hiçbiri bunu yakalamadı: testler tek tek davranışları
+doğruluyordu, uzun bir akıştaki birikimi değil.
+
+**Nasıl bulundu:** `tools/ses_simulasyonu.py` bir konuşma kaydını, gerçek bir
+ölçümün istatistiklerine uydurulmuş sentetik bir ağ izinden (~%1,3 kayıp, arada
+100–280 ms'lik takılmalar) ve bu tampondan geçirip `.wav` olarak yazıyor.
+Gecikme saniye saniye izlendiğinde 80 ms'den başlayıp her takılmada yükseldiği
+ve 300 ms'de kaldığı görüldü.
+
+**Düzeltme — yetişme:** tampon hedefin 40 ms üstüne çıkınca fazlayı azar azar
+eritir, hedefe inince durur.
+
+- Sıradaki yuva zaten boşsa (kayıp paket) orada sessizlik çalınmaz, atlanır.
+- Gerçek bir çerçeve en fazla 5 çerçevede bir ve ancak tampondaki boş yuvalar
+  fazlayı karşılamıyorsa atılır. 200 ms'lik birikme ~1 saniyede erir; kayıp tek
+  bir uzun boşluk yerine 20 ms'lik parçalara dağılır.
+- WebRTC'nin NetEq'i aynı işi çözülmüş sesi perdeyi bozmadan sıkıştırarak
+  yapıyor. Bu tampon şifreli ya da kodlanmış baytlarla çalıştığı için o yol bu
+  katmanda kapalı.
+
+**Bedeli, dürüst hâliyle.** Aynı ağ izinde, üç farklı rastgele tohumun
+ortalaması, 43 saniyelik konuşma:
+
+| | Yetişme yok (ilk hâl) | Yetişme (pay 40 ms, her 5 çerçeve) |
+| --- | --- | --- |
+| Gecikme ortancası (ağ + tampon) | 280 ms | 80 ms |
+| 150 ms'yi aşan süre | 35,9 sn | 3,2 sn |
+| Konuşma içindeki boşluk | 0,89 sn | 1,95 sn |
+| Yetişmek için atılan konuşma | 0 | 1,25 sn |
+
+İlk hâl gecikmeyi biriktirdiği için farkında olmadan 300 ms'lik büyük bir
+tampona dönüşüyor ve sonraki takılmaları boşluksuz yutuyordu. Yeni tampon
+hedefe döndüğü için her takılmada boşalıyor. Payı büyütmek boşlukları biraz
+azaltıyor ama gecikmeyi geri getiriyor (pay 100 ms, her 10 çerçeve: ortanca
+127 ms, boşluk 1,56 sn). Hiçbir ayar ikisini birden kazandırmıyor; hat
+gerçekten takılıyorsa bu katmanda ya beklenir ya atlanır. Konuşmada gecikme
+kesintiden daha yıkıcı olduğu için varsayılan düşük gecikme tarafında.
+
+Kalan boşlukları azaltacak olanlar bu katmanın dışında: sık takılan hatta
+hedefi geçici olarak büyütüp hat sakinleşince küçülten **uyarlanabilir hedef**,
+çözülmüş seste **zaman sıkıştırma** (konuşma atmak yerine fark edilmeyecek
+hızlandırma) ve tek tük kayıp paketleri geri kuran **Opus FEC**.
+
 ---
 
 ## 6. Arayüz
@@ -274,14 +323,15 @@ donanımını arayüzün arkasına almak**:
 - `AudioDevice` protokolü: `read_frame()` / `write_frame()`. Gerçek uygulaması
   Qt, testlerde sahte uygulama (sentetik dalga). **Henüz yazılmadı.**
 - ✅ Jitter buffer birim testleri: sırasız, tekrar eden ve kayıp paketler ver,
-  çıkan çerçeve sırasını doğrula.
+  çıkan çerçeve sırasını doğrula. Bir gecikme sıçramasından sonra
+  gecikmenin hedefe geri indiği ve yetişme hızının sınırlı kaldığı da.
 - ✅ Kripto testleri: AES-GCM gidiş-dönüş, yanlış parola çözemez, tekrar eden
   paket reddedilir, başlık kurcalanırsa çözülemez, aynı kimlikle iki oturum
   aynı anahtar akışını üretmez (§3'teki hatanın regresyon testi).
 - ✅ Uçtan uca test: sentetik ses → şifrele → bozuk bir ağ (kayıp, sıra
   bozulması, kopya paket) → çöz → tampon → doğru çerçeve sırası.
 
-Hepsi `tests/test_voice.py` içinde, 68 test. Ses donanımı, soket ya da Qt
+Hepsi `tests/test_voice.py` içinde, 76 test. Ses donanımı, soket ya da Qt
 kullanmıyorlar; CI'da çalışırlar. Ses donanımı gerektiren hiçbir test CI'da
 çalışmamalı.
 

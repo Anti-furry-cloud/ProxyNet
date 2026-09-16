@@ -254,6 +254,58 @@ frame when it returns `None`.
 - If the sender restarts (a sequence number absurdly far away in either
   direction), the stream is reset.
 
+### Weakness found: accumulating delay (2026-09-16, fixed)
+
+The first version of the buffer played the frames that piled up after a
+latency spike exactly as they came. When the buffer emptied during a spike and
+refilled, it started from the oldest frame, and because nothing melted the
+excess above the target, **every spike was added to the delay permanently.**
+None of the 54 unit tests at the time caught it: they verified individual
+behaviours, not accumulation over a long stream.
+
+**How it was found:** `tools/ses_simulasyonu.py` runs a speech recording
+through a synthetic network trace fitted to the statistics of a real
+measurement (~1.3% loss, with 100–280 ms stalls in between) and through this
+buffer, and writes the result as a `.wav`. Tracking the delay second by second
+showed it starting at 80 ms, rising at every stall and staying at 300 ms.
+
+**Fix — catching up:** when the buffer rises 40 ms above its target, it melts
+the excess bit by bit and stops once it is back at the target.
+
+- If the next slot is already empty (a lost packet), it is skipped instead of
+  playing silence there.
+- A real frame is dropped at most once every 5 frames, and only if the empty
+  slots in the buffer do not already cover the excess. 200 ms of build-up melts
+  in about a second, and the loss is spread into 20 ms pieces instead of one
+  long gap.
+- WebRTC's NetEq does the same job by compressing decoded audio in time
+  without changing pitch. This buffer works with encrypted or encoded bytes, so
+  that route is closed at this layer.
+
+**The cost, honestly.** Same network trace, averaged over three random seeds,
+43 seconds of speech:
+
+| | No catching up (first version) | Catching up (40 ms slack, every 5 frames) |
+| --- | --- | --- |
+| Median delay (network + buffer) | 280 ms | 80 ms |
+| Time above 150 ms | 35.9 s | 3.2 s |
+| Gaps within speech | 0.89 s | 1.95 s |
+| Speech dropped to catch up | 0 | 1.25 s |
+
+Because the first version accumulated delay, it had unintentionally turned into
+a large 300 ms buffer that swallowed later stalls without gaps. The new buffer
+returns to its target, so it empties at every stall. A larger slack reduces the
+gaps somewhat but brings the delay back (100 ms slack, every 10 frames: median
+127 ms, gaps 1.56 s). No setting wins on both; if the line really stalls, this
+layer can only wait or skip. Delay is more damaging than interruption in a
+conversation, so the default sits on the low-delay side.
+
+What would reduce the remaining gaps lives outside this layer: an **adaptive
+target** that grows temporarily on a line that stalls often and shrinks again
+once it calms down, **time compression** of decoded audio (an unnoticeable
+speed-up instead of dropping speech), and **Opus FEC** to rebuild the odd lost
+packet.
+
 ---
 
 ## 6. Interface
@@ -285,7 +337,8 @@ achieve that is to **put the audio hardware behind an interface**:
   implementation uses Qt; tests use a fake one (a synthetic wave). **Not
   written yet.**
 - ✅ Jitter buffer unit tests: feed out-of-order, duplicated and missing
-  packets, assert the resulting frame order.
+  packets, assert the resulting frame order. Also that delay returns to the target after
+  a latency spike and that catching up stays rate-limited.
 - ✅ Crypto tests: AES-GCM round trip, wrong password cannot decrypt, a repeated
   packet is rejected, a tampered header cannot be decrypted, two sessions with
   the same id do not produce the same keystream (the regression test for the
@@ -293,7 +346,7 @@ achieve that is to **put the audio hardware behind an interface**:
 - ✅ End-to-end test: synthetic audio → encrypt → a broken network (loss,
   reordering, duplicates) → decrypt → buffer → the correct frame order.
 
-All of it is in `tests/test_voice.py`, 68 tests. They use no audio hardware, no
+All of it is in `tests/test_voice.py`, 76 tests. They use no audio hardware, no
 sockets and no Qt, so they run in CI. No test that requires audio hardware
 should run in CI.
 
