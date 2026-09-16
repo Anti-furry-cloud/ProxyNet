@@ -1,0 +1,328 @@
+[Türkçe](VOICE_CHAT_PLAN.md) · **English**
+
+# Voice chat — design plan
+
+> **Publication note (2026-09-16):** The source code is not open yet; the file
+> paths in the text (such as `core/voice_crypto.py`) are not visible and were
+> deliberately kept so that, once the code opens, every claim here can be
+> checked at its source. **This plan is not a finished design.** In particular,
+> the encryption scheme in section 3 has had no independent review. That is
+> exactly why it is published early: so its mistakes are found before more code
+> is written on top of it.
+
+Status: **Phase 1 started, the core is written.** The audio packet format,
+encryption and jitter buffer live under `core/` and are tested; audio hardware,
+networking and UI do not exist yet. Phase 0's decision gate is **still open** —
+the core that was written does not depend on the network measurement, so it did
+not wait.
+
+Goal: letting a group of 2–5 friends talk over a virtual LAN (VPN) or a local
+network. Not replacing Discord.
+
+---
+
+## 1. Why the existing protocol cannot be used directly
+
+Today's transport is newline-delimited JSON over **TCP**. It has two problems
+for audio:
+
+- **Head-of-line blocking.** TCP holds everything behind a lost packet until it
+  is retransmitted. Correct for text, disastrous for audio: delay accumulates
+  and speech becomes choppy.
+- **A late audio packet is garbage.** Audio is real-time; there is no value in
+  correctly delivering a packet that is 300 ms late — it should be dropped. TCP
+  cannot do that, UDP can.
+
+Decision: **UDP for audio, the existing TCP channel for signalling.** The two
+work together; the TCP channel already holds the answer to "who is where".
+
+There is an advantage in this scenario: because a virtual LAN is already set
+up, NAT traversal (STUN/TURN, ICE) is not needed. That is the most expensive
+part of voice chat in the real world, and here it comes for free. The price is
+depending on that virtual network.
+
+---
+
+## 2. Architecture
+
+### 2.1 Topology
+
+| Option | Pro | Con |
+| --- | --- | --- |
+| **Mesh** (everyone to everyone) | Zero server CPU, end-to-end encryption is natural | N-1 times the upstream; painful beyond 5 people |
+| **Server-side mixing** | Client sends a single stream | The server must **decrypt** the audio → end-to-end encryption dies |
+| **Relay (SFU, no mixing)** | Client sends one stream, server forwards without seeing the plaintext | Bandwidth on the server, slightly more complex |
+
+**Decision (2026-09-16): relay through the host.** In a mesh, the `voice_peers`
+packet would hand every participant's IP address to everyone in the room — a
+new leak against [THREAT_MODEL.en.md](THREAT_MODEL.en.md) principle 3
+("metadata is data too"). With a relay the host keeps seeing the IPs it already
+sees, and participants do not see each other's.
+
+The cost of relaying is affordable:
+
+| | Mesh | Relay through the host |
+| --- | --- | --- |
+| One-way latency | direct | one extra hop, roughly double — the "good" threshold is 150 ms |
+| Host upstream (4 people, Opus) | 0 | ~0.4 Mbit/s — far below an ordinary home connection |
+| IP leak | everyone sees everyone | only the host (same as in text chat) |
+| Firewall permission | on every participant | only on the host |
+
+Mixing is still **never**: a server that can hear the audio throws away this
+project's encryption promise. A relay never touches the encrypted bytes.
+
+This is a prototype decision. If the participant count grows or the host's
+upstream becomes the bottleneck, mesh gets reconsidered; the packet format
+supports both.
+
+### 2.2 Signalling (over the existing TCP channel)
+
+New packet types:
+
+| Packet | Direction | Content |
+| --- | --- | --- |
+| `voice_join` | client → server | UDP port |
+| `voice_leave` | client → server | — |
+| `voice_peers` | server → client | voice participants in the room: `user`, `sender_id` — **no IP** |
+| `voice_state` | both ways | `muted`, `speaking` |
+
+The server never touches audio data; it only knows who is speaking and where to
+forward the packets.
+
+### 2.3 Audio packet format (UDP)
+
+Binary, not JSON. 20 ms frames. Written: `core/voice_packet.py`.
+
+```
+[ 1 byte  ] version
+[ 1 byte  ] type
+[ 4 bytes ] sender id              ] cleartext, and at the same time
+[ 8 bytes ] sequence number        ] additional authenticated data (AAD)
+[ 4 bytes ] timestamp (ms)         ]
+[ N bytes ] encrypted audio + 16-byte GCM tag
+```
+
+The header is 18 bytes. Two differences from the first draft:
+
+- **The nonce is not transmitted.** Both sides derive it from the header (§3
+  below), saving 12 bytes per packet.
+- **The sequence number is 8 bytes.** At 4 bytes, wrapping would have required
+  rotating the session key; 8 bytes never wrap in practice at 50 packets per
+  second, so that mechanism is not needed.
+
+The header being cleartext follows from the relay decision: the host must be
+able to read who sent a packet in order to forward it. Because the header is
+also the AAD, the host **cannot change it** — if it does, the receiver's
+decryption fails. Total encryption overhead is 16 bytes per frame (just the GCM
+tag).
+
+---
+
+## 3. Encryption — use the existing room password, but not with Fernet
+
+Audio must also be encrypted with a key derived from the room password;
+otherwise text would be encrypted while audio is in the clear, and the promise
+becomes inconsistent.
+
+However, the **Fernet used on the text side is the wrong tool for audio**:
+
+- ~57 bytes of fixed overhead per token **plus** base64 (33% inflation). With a
+  20 ms frame at 640 bytes, that is unacceptable.
+- Fernet carries a timestamp and leaves replay protection to the caller.
+
+Decision: **derive a separate audio key from the same password with HKDF, and
+use AES-GCM.** Written: `core/voice_crypto.py`.
+
+- The PBKDF2 output stays as the master key. For this, key derivation was split
+  in two: one returns the raw 32 bytes, the other its base64 form used on the
+  text side. **The text key is bit-for-bit unchanged**, so compatibility is
+  intact; a test verifies it.
+- From it, a 32-byte audio key is produced with
+  `HKDF(info=b"proxynet-voice-v1")`. The text key and the audio key **must not
+  be the same**.
+- Nonce = 4 bytes of sender id + 8 bytes of sequence number. It is **not sent
+  on the wire**; both sides derive it from the header. A nonce must never be
+  reused; what guarantees that is the sender id being unique within a session
+  and the sequence number never repeating. **This is the most fragile point of
+  the scheme** — see section 9.
+- Replay protection: a 64-packet sliding window (the RFC 3711 approach), **kept
+  per sender**; packets that are too old or duplicated are dropped silently.
+  When someone leaves and rejoins, their window is cleared — otherwise the
+  first packets of a session that counts from zero again would be treated as
+  old.
+- In passwordless rooms audio is not encrypted either — the same choice as on
+  the text side, with no change to the wire format.
+
+**Warning:** this scheme was designed by one person and has not been reviewed
+from outside. Nonce reuse in AES-GCM is catastrophic; if you see a mistake, I
+want to hear it.
+
+---
+
+## 4. Audio capture and playback
+
+Qt's audio interfaces (`QAudioSource` / `QAudioSink`) will be used. They ship
+with the existing UI library, so no new dependency is needed.
+
+**Careful — this affects packaging:** Qt's multimedia modules are currently
+excluded from the application bundle **on purpose** (part of a choice that cut
+the executable's size substantially). If voice chat happens, that must be
+reversed and the resulting growth **measured**, not guessed.
+
+### Codec
+
+| Stage | Codec | Bandwidth (mono) | Why |
+| --- | --- | --- | --- |
+| Prototype | Raw PCM 16 kHz 16-bit | ~256 kbit/s | No new binary dependency, proves the path |
+| Release | Opus | ~24–32 kbit/s | 8–10× less bandwidth, better quality for speech |
+
+When moving to Opus, `libopus` must be added to the bundle and a Python binding
+chosen. Prototyping with PCM keeps codec problems from getting mixed up with
+network problems.
+
+---
+
+## 5. Jitter buffer — not optional
+
+UDP packets arrive out of order, at irregular intervals, and some never arrive
+at all. Writing them straight to the speaker produces harsh audio.
+
+Written: `core/voice_jitter.py`. It contains no clock, no socket and no Qt;
+input is a sequence number and a byte string, output is an ordered run of
+frames. The audio device calls `pop()` every 20 ms and plays silence for that
+frame when it returns `None`.
+
+- Target buffer **60 ms**. The adaptive version does not exist yet.
+- Reordering by sequence number.
+- Packets that fall behind the buffer are dropped.
+- Missing frames are replaced with silence. The faded repeat does not exist yet.
+- **If the buffer empties completely, it goes back to filling.** Continuing to
+  consume an empty buffer would run the sequence counter ahead, and every frame
+  would be counted as "late" once the other side started speaking again.
+- If the sender restarts (a sequence number absurdly far away in either
+  direction), the stream is reset.
+
+---
+
+## 6. Interface
+
+- A "Voice chat" section in the left sidebar, with a join/leave button.
+- A list of participants; the speaker's name is highlighted (simple RMS
+  threshold).
+- Mute (microphone) and deafen (speaker) buttons.
+- A **push-to-talk** option — on by default.
+
+### The echo problem, honestly
+
+Qt has no acoustic echo cancellation (AEC). Sound from the speaker re-enters
+the microphone and the other side hears themselves. A real solution is
+WebRTC-level work and far outside this project's scale.
+
+The realistic approach: **headphones are recommended** and push-to-talk is on
+by default. Every small project solves it this way; it must be stated openly in
+the documentation.
+
+---
+
+## 7. Testability
+
+The existing test suite must not rot when audio is added. The only way to
+achieve that is to **put the audio hardware behind an interface**:
+
+- An `AudioDevice` protocol: `read_frame()` / `write_frame()`. The real
+  implementation uses Qt; tests use a fake one (a synthetic wave). **Not
+  written yet.**
+- ✅ Jitter buffer unit tests: feed out-of-order, duplicated and missing
+  packets, assert the resulting frame order.
+- ✅ Crypto tests: AES-GCM round trip, wrong password cannot decrypt, a repeated
+  packet is rejected, a tampered header cannot be decrypted.
+- ✅ End-to-end test: synthetic audio → encrypt → a broken network (loss,
+  reordering, duplicates) → decrypt → buffer → the correct frame order.
+
+All of it is in `tests/test_voice.py`, 54 tests. They use no audio hardware, no
+sockets and no Qt, so they run in CI. No test that requires audio hardware
+should run in CI.
+
+---
+
+## 8. Phases
+
+| Phase | Work | Output |
+| --- | --- | --- |
+| **0. Measurement** | A small tool measuring UDP latency, jitter and loss | **Decision gate**: if the numbers are bad, the plan stops here — the tool is ready, the measurement is pending |
+| **1a. Core** ✅ | Packet format, AES-GCM + HKDF, jitter buffer, tests | A tested core that works without audio hardware |
+| **1b. Skeleton** | Signalling packets, UDP socket, relaying on the host, PCM 16 kHz, one direction | One person speaks, the other hears |
+| **2. Two-way** | Audio device interface, Qt integration, both directions | Two people talk to each other |
+| **3. Usability** | Opus, push-to-talk, speaking indicator, mute | Four people can use it |
+| **4. Packaging** | Put Qt's audio modules back in the bundle, measure the size, UDP firewall rule, documentation | A distributable release |
+
+Phase 1a did not wait for Phase 0 because none of the three modules written
+depend on the network measurement. What a bad result would stop is 1b onwards.
+
+**Phase 0 must be taken seriously.** On some connections virtual-LAN software
+cannot establish a direct peer-to-peer tunnel and routes traffic through its
+own relay servers; in that case latency may not be good enough for voice.
+Starting Phase 1b without measuring this means, in the worst case, weeks of
+work turning out to be unusable.
+
+### Phase 0 measurement tool
+
+`tools/ses_olcum.py` — standard library only, runs standalone.
+
+- One side picks **Wait**, the other picks **Measure** and types the other
+  side's address. The measuring side needs no firewall permission; the waiting
+  side is asked to allow a UDP port.
+- Two measurements at 20 ms intervals (one audio frame), 30 seconds each:
+  Opus-like ~120-byte packets and raw-PCM-sized ~700-byte packets.
+- Measured: round-trip latency (median, 95th percentile, maximum), loss **in
+  each direction separately**, out-of-order packets, RFC 3550 jitter, and the
+  share of packets that miss a 60 ms buffer. The two computers' clocks differ,
+  so one-way figures are computed in a way that the clock offset cancels out.
+- The result is printed and saved to a text file. The file contains no IP
+  address.
+
+Verdict thresholds (one-way latency estimate = round-trip median / 2;
+effective loss = loss + packets missing the buffer, worse direction):
+
+| Verdict | One-way latency | Effective loss |
+| --- | --- | --- |
+| **Good** | ≤ 150 ms | ≤ 1% |
+| **Acceptable** | ≤ 300 ms | ≤ 3% |
+| **Bad** — the plan stops here | more | more |
+
+Latency thresholds follow ITU-T G.114. **The verdict follows the Opus
+measurement**; the PCM measurement only shows whether the prototype stage will
+work.
+
+Known limits: a fixed 60 ms buffer is stricter than the planned adaptive buffer
+(results may be pessimistic); the fastest packet's transit time is used as the
+baseline; a measurement is a snapshot and should be repeated at different times
+of day.
+
+---
+
+## 9. Open security questions
+
+These are known, well-defined problems that must be solved before 1b. They are
+written down here to prevent anyone treating them as solved.
+
+- **How will `sender_id` be assigned?** Nonce uniqueness depends entirely on
+  it: if two participants in the same room get the same id and use the same
+  sequence number, AES-GCM collapses, and that means losing the encryption
+  entirely. The host should assign it (only the host can see a collision) and
+  an id must not be reused within a session. **This is the plan's most critical
+  open item.**
+- **There is no authentication for the relaying host.** The host decides where
+  to forward an audio packet from its `sender_id`. If someone who is not in the
+  room sends the host a UDP packet, the host cannot decrypt it but could still
+  forward it. This will need rate limiting and some form of authentication.
+
+Closed questions:
+
+- ~~Mesh or relay?~~ → **Relay through the host** (2026-09-16, §2.1).
+- ~~Switch to relay automatically beyond 4 participants?~~ → Relay from the start.
+
+---
+
+*The Turkish [VOICE_CHAT_PLAN.md](VOICE_CHAT_PLAN.md) is the source of truth.
+If the two disagree, the Turkish one is correct.*
