@@ -8,6 +8,9 @@
 > **Bu plan tamamlanmış bir tasarım değil.** Özellikle 3. bölümdeki şifreleme
 > şeması hiçbir bağımsız incelemeden geçmedi. Erken yayınlanmasının sebebi
 > tam olarak bu: üzerine daha fazla kod yazılmadan önce hatası görülsün.
+> **Güncelleme (2026-09-16):** yayından sonra 3. bölümdeki şemada ciddi bir
+> hata bulundu ve düzeltildi. Ne olduğu, nasıl bulunduğu ve düzeltmesi 3.
+> bölümde açıkça yazılı.
 
 Durum: **Faz 1 başladı, çekirdek yazıldı.** Ses paketi biçimi, şifreleme ve
 jitter tamponu `core/` altında duruyor ve test ediliyor; ses donanımı, ağ ve
@@ -78,9 +81,9 @@ Yeni paket tipleri:
 
 | Paket | Yön | İçerik |
 | --- | --- | --- |
-| `voice_join` | istemci → sunucu | UDP portu |
+| `voice_join` | istemci → sunucu | UDP portu, oturum tuzu (16 bayt) |
 | `voice_leave` | istemci → sunucu | — |
-| `voice_peers` | sunucu → istemci | odadaki ses katılımcıları: `user`, `sender_id` — **IP yok** |
+| `voice_peers` | sunucu → istemci | odadaki ses katılımcıları: `user`, `sender_id`, oturum tuzu — **IP yok** |
 | `voice_state` | çift yönlü | `muted`, `speaking` |
 
 Sunucu ses verisine hiç dokunmaz; yalnızca kimin konuştuğunu ve paketleri
@@ -125,29 +128,79 @@ Ancak metin tarafında kullanılan **Fernet ses için yanlış araç**:
   çerçeve 640 baytken bu kabul edilemez.
 - Fernet zaman damgası taşır ve yeniden oynatma korumasını çağırana bırakır.
 
-Karar: **aynı paroladan HKDF ile ayrı bir ses anahtarı türet, AES-GCM kullan.**
-Yazıldı: `core/voice_crypto.py`.
+Karar: **AES-GCM, ve her gönderenin her ses oturumu için ayrı bir anahtar.**
+Yazıldı: `core/voice_crypto.py`, şema etiketi `aesgcm-hkdf-v2`.
 
-- PBKDF2 çıktısı ana anahtar olarak kalır. Bunun için anahtar türetmesi ikiye
-  ayrıldı: biri ham 32 baytı verir, diğeri onun metin tarafındaki base64
-  hâlini. **Metin anahtarı bit bit aynı kaldı**, uyumluluk bozulmadı; bir test
-  bunu doğruluyor.
-- Ondan `HKDF(info=b"proxynet-voice-v1")` ile 32 baytlık ses anahtarı üretilir.
-  Metin anahtarıyla ses anahtarı **aynı olmamalı**.
-- Nonce = 4 bayt gönderen kimliği + 8 bayt sıra numarası. **Telde taşınmıyor**,
-  iki taraf da başlıktan üretiyor. Aynı nonce asla tekrar kullanılmamalı; bunu
-  sağlayan şey gönderen kimliğinin oturum içinde benzersiz ve sıra numarasının
-  tekrar etmemesi. **Bu şemanın en kırılgan noktası budur** — 9. bölüme
-  bakınız.
-- Yeniden oynatma koruması: 64 paketlik kayan pencere (RFC 3711 yaklaşımı),
-  **gönderen başına ayrı**; çok eski veya tekrar eden paket sessizce atılır.
-  Biri odadan çıkıp girdiğinde penceresi temizlenir, yoksa sıfırdan sayan yeni
-  oturumun ilk paketleri "eski" sayılırdı.
-- Parolasız odalarda ses de şifrelenmez — metin tarafındaki tercihin aynısı,
-  tel biçimi değişmez.
+```
+oda parolası ──PBKDF2──▶ ana anahtar ──HKDF──▶ ses anahtarı
+ses anahtarı + oturum tuzu + gönderen kimliği ──HKDF──▶ oturum anahtarı
+```
+
+- **Ana anahtar** metin tarafıyla ortak. Metin anahtarı bit bit aynı kaldı,
+  uyumluluk bozulmadı; bir test bunu doğruluyor.
+- **Ses anahtarı** `HKDF(info=b"proxynet-voice-v1")` ile türer. Metin
+  anahtarıyla aynı değildir ve onunla doğrudan hiçbir şey şifrelenmez.
+- **Oturum tuzu:** her gönderen sesli sohbete her katılışında 16 baytlık
+  rastgele bir tuz üretir ve `voice_join` ile bildirir. Tuz gizli değildir;
+  Host da görür, ama parola olmadan anahtarı vermez.
+- **Oturum anahtarı:** `HKDF(salt=oturum tuzu, info=b"proxynet-voice-session-v1"
+  + gönderen kimliği)`. Paketler bununla şifrelenir.
+- **Nonce** = 4 bayt gönderen kimliği + 8 bayt sıra numarası. Telde
+  taşınmıyor, iki taraf da başlıktan üretiyor.
+- Gönderen tarafta sıra numarası **kesin artan** olmak zorunda. Aynı ya da daha
+  küçük bir numarayla mühürleme denemesi sessizce geçilmez, hata verir.
+- **Yeniden oynatma koruması:** 64 paketlik kayan pencere (RFC 3711 yaklaşımı),
+  gönderen başına ayrı. Aynı tuzla tekrar gelen bir kayıt pencereyi
+  sıfırlamaz; sıfırlasaydı tekrarlanan bir `voice_peers` paketi eski
+  paketlerin yeniden kabul edilmesine kapı açardı.
+- Kendi kimliğimiz **başka bir tuzla** kaydedilmeye çalışılırsa hata verilir.
+  Bu, Host'un aynı kimliği iki kişiye verdiği anlamına gelir.
+- Parolasız odalarda ses de şifrelenmez; metin tarafındaki tercihin aynısı.
+  Tel biçimi ve oturum kuralları değişmez.
+
+### Bulunan hata: oturumlar arası nonce tekrarı (2026-09-16, düzeltildi)
+
+İlk sürümde (`aesgcm-hkdf-v1`) oturum anahtarı yoktu; her paket doğrudan ses
+anahtarıyla şifreleniyordu. Ses anahtarı oda adı ve paroladan türediği için
+**hiç değişmiyor.** Sonuç:
+
+1. Bugün Ayşe `sender_id = 1` alır, sıra numarası 0'dan sayar.
+2. Yarın Host yeniden başlar; aynı oda, aynı parola. Ayşe yine `sender_id = 1`
+   alır, sıra yine 0'dan başlar.
+3. **Aynı anahtar, aynı nonce.** AES-GCM'de bu, iki çerçevenin şifresiz
+   hâllerinin XOR'unu ele verir. Çerçevelerden biri tahmin edilebilirse
+   (konuşmada sık görülen sessizlik gibi) diğeri doğrudan okunur. Ayrıca
+   kimlik doğrulama anahtarı sızar ve sahte paket üretilebilir.
+
+Aynı şey tek bir oturum içinde de oluyordu: odadan çıkıp giren birinin sıra
+numarası sıfırdan başlıyordu ve bu belgenin ilk hâli bunu normal akış olarak
+anlatıyordu. "Gönderen kimliği oturum içinde benzersiz olmalı" şartı, oturumlar
+arasını korumuyordu.
+
+- **Nasıl bulundu:** Discord'un uçtan uca ses şifrelemesi DAVE incelenirken.
+  DAVE her gönderene ayrı anahtar türetiyor ve üyelik değiştikçe anahtarları
+  yeniliyor; bizim tasarımda bunun karşılığı yoktu.
+- **Doğrulama:** düzeltmeden önce senaryo bir betikle denendi. Önceki oturumun
+  bir çerçevesindeki metin, sonraki oturumun sessizlik çerçevesi yardımıyla
+  geri çıkarıldı. Düzeltmeden sonra aynı betik anlamsız bayt çıkarıyor.
+- **Etkisi:** ses kodu henüz hiçbir yerde ağa bağlı çalışmıyor; gerçek bir
+  trafik etkilenmedi. Ama tasarım bu belgede yayınlanmıştı.
+- **Düzeltme:** yukarıdaki oturum tuzu. Nonce tekrarı için artık iki oturumun
+  aynı 128 bitlik tuzu çekmesi gerekir. Gizlilik gönderen kimliğinin
+  benzersizliğine bağlı değil ve önceki bir oturumdan kaydedilmiş paket yeni
+  oturumun anahtarıyla çözülemez.
+- **Testler:** `tests/test_voice.py` içinde `OturumAyrimiTests`, saldırı
+  senaryosunun kendisi dahil.
+
+**Bu tasarımın çözmediği:** aynı oda parolasını bilen herkes herhangi bir
+gönderenin oturum anahtarını türetebilir, yani oda üyeleri birbirinin adına
+paket üretebilir. Metin tarafında da durum aynı. DAVE bunu MLS ile kimlik
+doğrulamalı grup anahtar değişimi yaparak çözüyor; bu, projenin şu anki
+kapsamının dışında.
 
 **Uyarı:** bu şema tek kişi tarafından tasarlandı ve dışarıdan incelenmedi.
-AES-GCM'de nonce tekrarı katastrofiktir; bir hata görürseniz duymak isterim.
+İlk sürümündeki hata bunun neden önemli olduğunu gösteriyor. Bir hata daha
+görürseniz duymak isterim.
 
 ---
 
@@ -223,11 +276,12 @@ donanımını arayüzün arkasına almak**:
 - ✅ Jitter buffer birim testleri: sırasız, tekrar eden ve kayıp paketler ver,
   çıkan çerçeve sırasını doğrula.
 - ✅ Kripto testleri: AES-GCM gidiş-dönüş, yanlış parola çözemez, tekrar eden
-  paket reddedilir, başlık kurcalanırsa çözülemez.
+  paket reddedilir, başlık kurcalanırsa çözülemez, aynı kimlikle iki oturum
+  aynı anahtar akışını üretmez (§3'teki hatanın regresyon testi).
 - ✅ Uçtan uca test: sentetik ses → şifrele → bozuk bir ağ (kayıp, sıra
   bozulması, kopya paket) → çöz → tampon → doğru çerçeve sırası.
 
-Hepsi `tests/test_voice.py` içinde, 54 test. Ses donanımı, soket ya da Qt
+Hepsi `tests/test_voice.py` içinde, 68 test. Ses donanımı, soket ya da Qt
 kullanmıyorlar; CI'da çalışırlar. Ses donanımı gerektiren hiçbir test CI'da
 çalışmamalı.
 
@@ -294,11 +348,12 @@ alınır; ölçüm tek bir anın fotoğrafıdır, farklı saatlerde tekrarlanmal
 Bunlar 1b'ye başlamadan çözülmesi gereken, bilinen ve tanımlı problemler.
 Buraya yazılmalarının sebebi, çözülmüş gibi davranılmasını engellemek.
 
-- **`sender_id` nasıl atanacak?** Nonce'un benzersizliği tamamen buna bağlı:
-  aynı odada iki katılımcı aynı kimliği alır ve aynı sıra numarasını
-  kullanırsa AES-GCM çöker ve bu, şifrelemenin tamamen kaybedilmesi demektir.
-  Host atamalı (çakışmayı yalnızca o görebilir) ve aynı oturumda bir kimlik
-  yeniden kullanılmamalı. **Bu planın en kritik açık maddesi.**
+- **`sender_id` nasıl atanacak?** Host atamalı ve bir oturum içinde aynı
+  kimliği iki kişiye vermemeli: kimlik, paketin kime yönlendirileceğini ve
+  hangi tekrar penceresine düşeceğini belirliyor. **Gizlilik artık buna
+  bağlı değil** (§3'teki oturum tuzu), ama bir çakışma sesleri karıştırır.
+  İstemci kendi kimliğinin başka bir tuzla kaydedildiğini fark edip hata
+  veriyor; Host tarafındaki atama kuralı 1b'de yazılacak.
 - **Aktarma yapan Host'a kimlik doğrulaması yok.** Host, gelen ses paketini
   kime ileteceğine `sender_id` ile karar veriyor. Odaya bağlı olmayan biri
   Host'a UDP paketi yollarsa Host onu çözemez ama yönlendirebilir. Hız sınırı
@@ -307,4 +362,6 @@ Buraya yazılmalarının sebebi, çözülmüş gibi davranılmasını engellemek
 Kapanan sorular:
 
 - ~~Mesh mi, aktarma mı?~~ → **Host üzerinden aktarma** (2026-09-16, §2.1).
+- ~~Oturumlar arasında nonce tekrarı~~ → **oturum tuzu** (2026-09-16, §3).
+  Bu bir soru olarak değil, yayınlanmış tasarımda hata olarak bulundu.
 - ~~Katılımcı 4'ü aşarsa aktarmaya otomatik geçilsin mi?~~ → Baştan aktarma.

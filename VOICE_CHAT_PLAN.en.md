@@ -8,7 +8,9 @@
 > checked at its source. **This plan is not a finished design.** In particular,
 > the encryption scheme in section 3 has had no independent review. That is
 > exactly why it is published early: so its mistakes are found before more code
-> is written on top of it.
+> is written on top of it. **Update (2026-09-16):** after publication a serious
+> bug was found in the scheme in section 3 and fixed. What it was, how it was
+> found and the fix are written out plainly in section 3.
 
 Status: **Phase 1 started, the core is written.** The audio packet format,
 encryption and jitter buffer live under `core/` and are tested; audio hardware,
@@ -81,9 +83,9 @@ New packet types:
 
 | Packet | Direction | Content |
 | --- | --- | --- |
-| `voice_join` | client → server | UDP port |
+| `voice_join` | client → server | UDP port, session salt (16 bytes) |
 | `voice_leave` | client → server | — |
-| `voice_peers` | server → client | voice participants in the room: `user`, `sender_id` — **no IP** |
+| `voice_peers` | server → client | voice participants in the room: `user`, `sender_id`, session salt — **no IP** |
 | `voice_state` | both ways | `muted`, `speaking` |
 
 The server never touches audio data; it only knows who is speaking and where to
@@ -130,32 +132,82 @@ However, the **Fernet used on the text side is the wrong tool for audio**:
   20 ms frame at 640 bytes, that is unacceptable.
 - Fernet carries a timestamp and leaves replay protection to the caller.
 
-Decision: **derive a separate audio key from the same password with HKDF, and
-use AES-GCM.** Written: `core/voice_crypto.py`.
+Decision: **AES-GCM, with a separate key for every sender in every voice
+session.** Written: `core/voice_crypto.py`, scheme label `aesgcm-hkdf-v2`.
 
-- The PBKDF2 output stays as the master key. For this, key derivation was split
-  in two: one returns the raw 32 bytes, the other its base64 form used on the
-  text side. **The text key is bit-for-bit unchanged**, so compatibility is
-  intact; a test verifies it.
-- From it, a 32-byte audio key is produced with
-  `HKDF(info=b"proxynet-voice-v1")`. The text key and the audio key **must not
-  be the same**.
-- Nonce = 4 bytes of sender id + 8 bytes of sequence number. It is **not sent
-  on the wire**; both sides derive it from the header. A nonce must never be
-  reused; what guarantees that is the sender id being unique within a session
-  and the sequence number never repeating. **This is the most fragile point of
-  the scheme** — see section 9.
-- Replay protection: a 64-packet sliding window (the RFC 3711 approach), **kept
-  per sender**; packets that are too old or duplicated are dropped silently.
-  When someone leaves and rejoins, their window is cleared — otherwise the
-  first packets of a session that counts from zero again would be treated as
-  old.
+```
+room password ──PBKDF2──▶ master key ──HKDF──▶ voice key
+voice key + session salt + sender id ──HKDF──▶ session key
+```
+
+- The **master key** is shared with the text side. The text key is
+  bit-for-bit unchanged, so compatibility is intact; a test verifies it.
+- The **voice key** is derived with `HKDF(info=b"proxynet-voice-v1")`. It is
+  not the same as the text key, and nothing is encrypted with it directly.
+- **Session salt:** every time a sender joins voice chat, it generates a
+  random 16-byte salt and announces it with `voice_join`. The salt is not
+  secret; the host sees it too, but without the password it does not yield the
+  key.
+- **Session key:** `HKDF(salt=session salt, info=b"proxynet-voice-session-v1"
+  + sender id)`. Packets are encrypted with it.
+- **Nonce** = 4 bytes of sender id + 8 bytes of sequence number. It is not sent
+  on the wire; both sides derive it from the header.
+- On the sending side the sequence number must be **strictly increasing**. An
+  attempt to seal with the same or a smaller number is not passed over
+  silently; it raises an error.
+- **Replay protection:** a 64-packet sliding window (the RFC 3711 approach),
+  kept per sender. Registering the same salt again does not reset the window;
+  if it did, a repeated `voice_peers` packet would let old packets be accepted
+  again.
+- If our own id is registered **with a different salt**, an error is raised.
+  That means the host gave the same id to two people.
 - In passwordless rooms audio is not encrypted either — the same choice as on
-  the text side, with no change to the wire format.
+  the text side. The wire format and session rules do not change.
+
+### Bug found: nonce reuse across sessions (2026-09-16, fixed)
+
+The first version (`aesgcm-hkdf-v1`) had no session key; every packet was
+encrypted directly with the voice key. Because the voice key is derived from
+the room name and password, **it never changes.** The consequence:
+
+1. Today Ayşe gets `sender_id = 1` and her sequence number counts from 0.
+2. Tomorrow the host restarts; same room, same password. Ayşe gets
+   `sender_id = 1` again and her sequence starts from 0 again.
+3. **Same key, same nonce.** In AES-GCM this reveals the XOR of the two frames'
+   plaintexts. If one of the frames is predictable (such as silence, which is
+   common in speech), the other can be read directly. The authentication key
+   also leaks, which allows forged packets.
+
+The same happened within a single session: the sequence number of someone who
+left and rejoined started from zero, and the first version of this document
+described that as the normal flow. The requirement that "the sender id must be
+unique within a session" did not protect across sessions.
+
+- **How it was found:** while reviewing DAVE, Discord's end-to-end encryption
+  for voice. DAVE derives a separate key for each sender and renews keys when
+  membership changes; our design had no equivalent.
+- **Verification:** before the fix the scenario was tried with a script. Text
+  from a frame of the earlier session was recovered with the help of a silent
+  frame from the later session. After the fix the same script produces
+  meaningless bytes.
+- **Impact:** the voice code does not yet run connected to a network anywhere;
+  no real traffic was affected. But the design had been published in this
+  document.
+- **Fix:** the session salt above. Nonce reuse now requires two sessions to draw
+  the same 128-bit salt. Confidentiality no longer depends on the sender id
+  being unique, and a packet recorded from an earlier session cannot be
+  decrypted with a new session's key.
+- **Tests:** `OturumAyrimiTests` in `tests/test_voice.py`, including the attack
+  scenario itself.
+
+**What this design does not solve:** anyone who knows the room password can
+derive any sender's session key, so room members can forge packets in each
+other's name. The text side is the same. DAVE solves this with authenticated
+group key exchange through MLS; that is outside the project's current scope.
 
 **Warning:** this scheme was designed by one person and has not been reviewed
-from outside. Nonce reuse in AES-GCM is catastrophic; if you see a mistake, I
-want to hear it.
+from outside. The bug in its first version shows why that matters. If you see
+another mistake, I want to hear it.
 
 ---
 
@@ -235,11 +287,13 @@ achieve that is to **put the audio hardware behind an interface**:
 - ✅ Jitter buffer unit tests: feed out-of-order, duplicated and missing
   packets, assert the resulting frame order.
 - ✅ Crypto tests: AES-GCM round trip, wrong password cannot decrypt, a repeated
-  packet is rejected, a tampered header cannot be decrypted.
+  packet is rejected, a tampered header cannot be decrypted, two sessions with
+  the same id do not produce the same keystream (the regression test for the
+  bug in §3).
 - ✅ End-to-end test: synthetic audio → encrypt → a broken network (loss,
   reordering, duplicates) → decrypt → buffer → the correct frame order.
 
-All of it is in `tests/test_voice.py`, 54 tests. They use no audio hardware, no
+All of it is in `tests/test_voice.py`, 68 tests. They use no audio hardware, no
 sockets and no Qt, so they run in CI. No test that requires audio hardware
 should run in CI.
 
@@ -306,12 +360,13 @@ of day.
 These are known, well-defined problems that must be solved before 1b. They are
 written down here to prevent anyone treating them as solved.
 
-- **How will `sender_id` be assigned?** Nonce uniqueness depends entirely on
-  it: if two participants in the same room get the same id and use the same
-  sequence number, AES-GCM collapses, and that means losing the encryption
-  entirely. The host should assign it (only the host can see a collision) and
-  an id must not be reused within a session. **This is the plan's most critical
-  open item.**
+- **How will `sender_id` be assigned?** The host should assign it and must
+  not give the same id to two people within a session: the id decides where a
+  packet is forwarded and which replay window it falls into.
+  **Confidentiality no longer depends on it** (the session salt in §3), but a
+  collision would mix up voices. A client notices when its own id is
+  registered with a different salt and raises an error; the host-side
+  assignment rule will be written in 1b.
 - **There is no authentication for the relaying host.** The host decides where
   to forward an audio packet from its `sender_id`. If someone who is not in the
   room sends the host a UDP packet, the host cannot decrypt it but could still
@@ -320,6 +375,8 @@ written down here to prevent anyone treating them as solved.
 Closed questions:
 
 - ~~Mesh or relay?~~ → **Relay through the host** (2026-09-16, §2.1).
+- ~~Nonce reuse across sessions~~ → **session salt** (2026-09-16, §3). This
+  was not found as a question but as a bug in the published design.
 - ~~Switch to relay automatically beyond 4 participants?~~ → Relay from the start.
 
 ---
