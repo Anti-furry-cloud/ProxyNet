@@ -357,7 +357,7 @@ should run in CI.
 
 | Phase | Work | Output |
 | --- | --- | --- |
-| **0. Measurement** | A small tool measuring UDP latency, jitter and loss | **Decision gate**: if the numbers are bad, the plan stops here — the tool is ready, the measurement is pending |
+| **0. Measurement** | A small tool measuring UDP latency, jitter and loss | **Decision gate**: if the numbers are bad, the plan stops here — v1: BAD; v2 rules written before measuring, measurement pending |
 | **1a. Core** ✅ | Packet format, AES-GCM + HKDF, jitter buffer, tests | A tested core that works without audio hardware |
 | **1b. Skeleton** | Signalling packets, UDP socket, relaying on the host, PCM 16 kHz, one direction | One person speaks, the other hears |
 | **2. Two-way** | Audio device interface, Qt integration, both directions | Two people talk to each other |
@@ -373,7 +373,10 @@ own relay servers; in that case latency may not be good enough for voice.
 Starting Phase 1b without measuring this means, in the worst case, weeks of
 work turning out to be unusable.
 
-### Phase 0 measurement tool
+### Phase 0 measurement tool (v1)
+
+> This subsection describes v1. The measurements under the v1 rules came out
+> BAD; the rules in force are below, under **Phase 0 v2**.
 
 `tools/ses_olcum.py` — standard library only, runs standalone.
 
@@ -406,6 +409,114 @@ Known limits: a fixed 60 ms buffer is stricter than the planned adaptive buffer
 (results may be pessimistic); the fastest packet's transit time is used as the
 baseline; a measurement is a snapshot and should be repeated at different times
 of day.
+
+### Phase 0 v2 — rules written before measuring (2026-09-17)
+
+**This section was written and committed before the v2 measurements; the commit
+date is the evidence.** The rules below will not be changed after the results
+are seen.
+
+#### The v1 result
+
+Three measurements were made under the v1 rules between two separate internet
+connections, and all three came out **BAD**. Latency was not the problem; loss
+and momentary stalls were. That result stays on record and is not
+reinterpreted. It does not feed into the v2 decision either; it could not,
+because v1 kept no per-packet record.
+
+#### Why v2, and the weakness of that
+
+v1 asked: can this line carry voice with a fixed 60 ms buffer and no loss
+concealment? The plan had called for a catching-up buffer and loss concealment
+from the start, and the possibility that v1 would be pessimistic was written
+down before measuring (above, "Known limits"). **But the wish to write v2 arose
+after seeing the bad result.** I am not hiding that; the rules below exist to
+keep that weakness from bending the decision.
+
+#### Method
+
+1. The measurement tool (`tools/ses_olcum.py`, record version 2) records the
+   send and arrival time of **every packet** in both directions. The protocol
+   version changed so it cannot mix with the v1 tool; the two versions ignore
+   each other's packets.
+2. The decision is not made in the tool. `tools/ses_degerlendir.py` runs the
+   record through **the real jitter buffer code** (`core/voice_jitter.py`),
+   simulating an audio device that asks for a frame every 20 ms.
+3. That playback loop is **the same function** the simulation tool uses to
+   produce audio. When the simulation was moved onto this function, all of the
+   previously produced audio files came out byte-for-byte identical.
+4. Because the two computers' clocks differ, the fastest packet's one-way time
+   is taken as half of the shortest round trip. The sender's timing deviation is
+   left out; in a real voice application the sound card's clock produces frames
+   at a steady rate.
+5. **No credit is given for FEC:** the listening the threshold rests on had no
+   FEC.
+
+#### Metrics and thresholds
+
+- **Interruption rate:** the share of frames that could not be played during
+  speech: gaps, frames dropped to catch up, and empty slots skipped.
+- **Mouth-to-ear delay, 95th percentile:** network + buffer + a 40 ms audio
+  device allowance. v1 used the median; the 95th percentile is stricter and does
+  not hide a buffer accumulating delay.
+- For each measurement **the worse of the two directions** counts. As in v1, the
+  decision is made on the Opus-like small-packet phase.
+
+| Verdict | Interruption rate | Mouth-to-ear 95th pct. |
+| --- | --- | --- |
+| **Good** | ≤ 1% | ≤ 150 ms |
+| **Acceptable** | ≤ 5.8% | ≤ 300 ms |
+| **Bad** | more | more |
+
+The Good thresholds are the same as in v1. The latency thresholds follow
+ITU-T G.114.
+
+**The Acceptable interruption threshold (5.8%) rests on a listening.** The
+product owner listened to a speech recording produced from a synthetic network
+trace fitted to the statistics of a measurement on 16 September, with the
+catching-up buffer and faded repeat, and found the interruptions on the same
+level as the occasional interruptions on Discord. The threshold is that
+recording's interruption rate as measured by this evaluation: 75 gaps, 46
+dropped frames and 3 skipped empty slots in 2137 frames. The reference
+recording's SHA-256 is `060f1138…0e39`; a test recomputes the threshold
+(`tests/test_ses_degerlendir.py`).
+
+The weaknesses of this threshold:
+
+- a single listener;
+- a robotic text-to-speech voice;
+- delay cannot be heard in a recording played on its own, so the latency
+  threshold stays a number;
+- the judgement was made **after** the v1 results were seen.
+
+#### How many measurements, and which count
+
+- Measurements are counted in date order. **At most 3** count from one calendar
+  day, and the **first 5** counted measurements decide. Later ones are ignored:
+  continuing to measure until a good result shows up achieves nothing.
+- **The worst measurement is left out;** the worst of the remaining four is the
+  gate decision.
+- Before each measurement the tool asks a short checklist (downloads,
+  connection type, screen sharing). The answers go into the record before the
+  result is seen, but they are notes only.
+- **No measurement is removed afterwards.** Even if a disturbing condition is
+  discovered later, the measurement counts. The tolerance for a single outlier
+  is the "worst one left out" rule.
+- A measurement whose per-packet record from the other side could not be
+  retrieved counts as **BAD**, so that it cannot become an excuse to measure
+  again.
+- Wireless connections are allowed; the target audience is mostly on wireless
+  networks.
+
+#### Decisions bound in advance
+
+- **Good or Acceptable:** Phase 1b starts.
+- **Bad: no v3 will be written.** These rules will not be changed again. The
+  only step allowed is to change the infrastructure (another VPN, a cable,
+  another counterpart) and measure again **under the same v2 rules**.
+- If the buffer code is changed after the v2 records are seen, **the same
+  records are not evaluated again;** new measurements are needed. Otherwise the
+  code would have been fitted to the measured data.
 
 ---
 

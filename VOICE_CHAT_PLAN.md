@@ -341,7 +341,7 @@ kullanmıyorlar; CI'da çalışırlar. Ses donanımı gerektiren hiçbir test CI
 
 | Faz | İş | Çıktı |
 | --- | --- | --- |
-| **0. Ölçüm** | UDP gecikme, jitter ve kayıp ölçen küçük bir araç | **Karar kapısı**: rakamlar kötüyse plan burada durur — araç hazır, ölçüm bekliyor |
+| **0. Ölçüm** | UDP gecikme, jitter ve kayıp ölçen küçük bir araç | **Karar kapısı**: rakamlar kötüyse plan burada durur — v1: KÖTÜ; v2 kuralları ölçümden önce yazıldı, ölçüm bekliyor |
 | **1a. Çekirdek** ✅ | Paket biçimi, AES-GCM + HKDF, jitter tamponu, testler | Ses donanımı olmadan çalışan, test edilmiş çekirdek |
 | **1b. İskelet** | Sinyalleşme paketleri, UDP soketi, Host'ta aktarma, PCM 16 kHz, tek yönlü | Bir kişi konuşur, diğeri duyar |
 | **2. Çift yönlü** | Ses cihazı arayüzü, Qt entegrasyonu, iki yön | 2 kişi karşılıklı konuşur |
@@ -357,7 +357,10 @@ bu durumda gecikme sesli sohbet için yeterli olmayabilir. Bunu ölçmeden Faz
 1b'ye başlamak, en kötü ihtimalle haftalarca emeğin kullanılamaz çıkması
 demektir.
 
-### Faz 0 ölçüm aracı
+### Faz 0 ölçüm aracı (v1)
+
+> Bu alt bölüm v1'i anlatıyor. v1 kurallarıyla yapılan ölçümler KÖTÜ çıktı;
+> geçerli kurallar aşağıda, **Faz 0 v2** başlığında.
 
 `tools/ses_olcum.py` — yalnızca standart kütüphane kullanır, bağımsız
 çalışır.
@@ -390,6 +393,104 @@ PCM ölçümü yalnızca prototip aşamasının çalışıp çalışmayacağın�
 Bilinen sınırlar: 60 ms sabit tampon, planlanan uyarlanabilir tampondan
 katıdır (sonuç kötümser çıkabilir); en hızlı paketin transit süresi taban
 alınır; ölçüm tek bir anın fotoğrafıdır, farklı saatlerde tekrarlanmalıdır.
+
+### Faz 0 v2 — ölçümden önce yazılan kurallar (2026-09-17)
+
+**Bu bölüm, v2 ölçümlerinden önce yazıldı ve commit'lendi; commit tarihi bunun
+kanıtı.** Aşağıdaki kurallar, ölçüm sonuçları görüldükten sonra
+değiştirilmeyecek.
+
+#### v1'in sonucu
+
+v1 kurallarıyla iki ayrı internet bağlantısı arasında üç ölçüm yapıldı, üçü de
+**KÖTÜ** çıktı. Gecikme sorun değildi; sebep kayıp ve anlık takılmalardı. Bu
+sonuç kayıtta kalır ve yeniden yorumlanmaz. v2 kararına da katılmaz; zaten v1
+paket paket kayıt tutmadığı için katılamaz.
+
+#### Neden v2, ve bunun zayıf yanı
+
+v1'in sorusu şuydu: sabit 60 ms tampon ve kayıp telafisi olmadan bu hat sesi
+taşır mı? Plan en başından yetişen tampon ve kayıp gizleme öngörüyordu, v1'in
+kötümser çıkabileceği de ölçümden önce yazılmıştı (yukarıda, "Bilinen
+sınırlar"). **Ama v2'yi yazma isteği kötü sonucu gördükten sonra doğdu.** Bunu
+saklamıyorum; aşağıdaki kurallar bu zayıflığın kararı çarpıtmasını engellemek
+için var.
+
+#### Yöntem
+
+1. Ölçüm aracı (`tools/ses_olcum.py`, kayıt sürümü 2) iki yöndeki **her
+   paketin** gönderilme ve varış anını kaydeder. v1 aracıyla karışmasın diye
+   protokol sürümü değişti; iki sürüm birbirinin paketini tanımaz.
+2. Karar araçta verilmez. `tools/ses_degerlendir.py` kaydı **gerçek jitter
+   tamponu kodundan** (`core/voice_jitter.py`) geçirir ve ses cihazının her 20
+   ms'de bir çerçeve istediğini taklit eder.
+3. Bu oynatma döngüsü, simülasyon aracının ses ürettiği döngüyle **aynı
+   fonksiyon.** Simülasyon bu fonksiyona geçirildiğinde daha önce üretilmiş ses
+   dosyalarının hepsi bayt bayt aynı yeniden üretildi.
+4. İki bilgisayarın saati farklı olduğu için en hızlı paketin tek yön süresi,
+   gidiş-dönüşün en kısasının yarısı kabul edilir. Gönderenin zamanlama sapması
+   dışarıda bırakılır; gerçek bir ses uygulamasında çerçeveleri ses kartının
+   saati düzenli üretir.
+5. **FEC'e kredi verilmez:** eşiğin dayandığı dinlemede FEC yoktu.
+
+#### Ölçütler ve eşikler
+
+- **Kesinti oranı:** konuşma sırasında çalınamayan çerçevelerin payı: boşluk,
+  yetişmek için atılan çerçeve ve atlanan boş yuva.
+- **Ağızdan kulağa gecikme, %95:** ağ + tampon + 40 ms ses cihazı payı. v1
+  ortanca kullanıyordu; %95 daha katı ve tamponun gecikme biriktirmesini
+  gizlemez.
+- Her ölçümde **iki yönün kötüsü** sayılır. Karar, v1'deki gibi Opus benzeri
+  küçük paket fazından verilir.
+
+| Karar | Kesinti oranı | Ağızdan kulağa %95 |
+| --- | --- | --- |
+| **İyi** | ≤ %1 | ≤ 150 ms |
+| **Kabul edilebilir** | ≤ %5,8 | ≤ 300 ms |
+| **Kötü** | daha fazlası | daha fazlası |
+
+İyi eşikleri v1 ile aynı. Gecikme eşikleri ITU-T G.114'e dayanıyor.
+
+**Kabul edilebilir kesinti eşiği (%5,8) bir dinlemeye dayanıyor.** Ürün sahibi,
+16 Eylül'deki bir ölçümün istatistiklerine uydurulmuş sentetik bir ağ izinden
+yetişen tampon ve sönümlü tekrarla üretilmiş bir konuşma kaydını dinledi, ve
+kesintileri Discord'da ara sıra yaşanan kesintilerle aynı seviyede buldu. Eşik,
+o kaydın bu değerlendirmeyle ölçülen kesinti oranı: 2137 çerçevede 75 boşluk,
+46 atılan, 3 atlanan boş yuva. Referans kaydın SHA-256'sı `060f1138…0e39`; eşiği
+yeniden hesaplayan bir test var (`tests/test_ses_degerlendir.py`).
+
+Bu eşiğin zayıf yanları:
+
+- tek dinleyici;
+- robotik bir seslendirici sesi;
+- gecikme tek başına dinlenen kayıtta duyulmaz, bu yüzden gecikme eşiği sayı
+  olarak kaldı;
+- yargı v1 sonuçları görüldükten **sonra** verildi.
+
+#### Kaç ölçüm, hangisi sayılır
+
+- Ölçümler tarih sırasına göre sayılır. Bir takvim gününden **en fazla 3** ölçüm
+  sayılır ve **ilk 5** sayılan ölçüm kararı verir. Sonrakiler yok sayılır: iyi
+  bir sonuç gelene kadar ölçmeye devam etmek işe yaramaz.
+- **En kötü ölçüm dışarıda bırakılır;** kalan dördün en kötüsü kapı kararıdır.
+- Araç her ölçümden önce kısa bir koşul listesi sorar (indirme, bağlantı türü,
+  ekran paylaşımı). Cevaplar sonuç görülmeden kayda girer, ama yalnızca not
+  içindir.
+- **Sonradan ölçüm çıkarılmaz.** Bozucu bir durum sonradan anlaşılsa bile ölçüm
+  sayılır. Tek bir sapmaya karşı tolerans "en kötüsü hariç" kuralında.
+- Karşı tarafın paket kaydı alınamayan ölçüm **KÖTÜ** sayılır, tekrar ölçmek
+  için bahane olmasın diye.
+- Kablosuz bağlantı serbest; hedef kitle çoğunlukla kablosuz ağda.
+
+#### Önceden bağlanan kararlar
+
+- **İyi ya da kabul edilebilir:** Faz 1b başlar.
+- **Kötü: v3 yazılmaz.** Bu kurallar bir daha değiştirilmez. İzin verilen tek
+  adım altyapıyı değiştirmek (başka VPN, kablo, başka karşı taraf) ve **aynı v2
+  kurallarıyla** yeniden ölçmek.
+- Tampon kodu v2 kayıtları görüldükten sonra değiştirilirse, **aynı kayıtlarla
+  yeniden değerlendirilmez;** yeni ölçüm gerekir. Aksi hâlde kod ölçülen veriye
+  uydurulmuş olurdu.
 
 ---
 
