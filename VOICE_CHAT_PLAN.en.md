@@ -136,12 +136,13 @@ Decision: **AES-GCM, with a separate key for every sender in every voice
 session.** Written: `core/voice_crypto.py`, scheme label `aesgcm-hkdf-v2`.
 
 ```
-room password ──PBKDF2──▶ master key ──HKDF──▶ voice key
+room password ──Argon2id──▶ master key ──HKDF──▶ voice key
 voice key + session salt + sender id ──HKDF──▶ session key
 ```
 
-- The **master key** is shared with the text side. The text key is
-  bit-for-bit unchanged, so compatibility is intact; a test verifies it.
+- The **master key** is shared with the text side: the text key is its
+  base64 form, and a test verifies it. Since 1.7.0 the master key is derived
+  with Argon2id.
 - The **voice key** is derived with `HKDF(info=b"proxynet-voice-v1")`. It is
   not the same as the text key, and nothing is encrypted with it directly.
 - **Session salt:** every time a sender joins voice chat, it generates a

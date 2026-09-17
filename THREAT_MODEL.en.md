@@ -112,13 +112,26 @@ This is precisely the standard method of state-level adversaries: *record now,
 decrypt later*. Signal's Double Ratchet exists for this scenario. ProxyNet has
 no equivalent.
 
-### 5.2 History is handed out without authentication
+### 5.2 History is handed out without authentication — off by default (1.7.0)
 
-The server sends the last 100 messages to **everyone** who joins a room
-(`core/server.py` → `_send_room_history`), and no password is required to join.
-Someone who does not know the password can enter a room, collect 100 encrypted
-messages and take them away for an offline attack. Combined with 5.1 this is a
-serious combination.
+While history is on, the server sends the last 100 messages to **everyone** who
+joins a room (`core/server.py` → `_send_room_history`), and no password is
+required to join. Someone who does not know the password can enter a room,
+collect 100 encrypted messages and take them away for an offline attack.
+Combined with 5.1 this is a serious combination.
+
+Since 1.7.0 history is **off by default**: the server keeps no messages in
+memory and sends no history packet to people who join. Because the older version
+wrote the default value to the settings on every connection, changing the
+default alone would not have affected any existing user; on upgrade the stored
+value is deleted once (`apps/proxychat/settings.py` →
+`_migrate_privacy_defaults`). Tests: `tests/test_settings.py` →
+`HistoryDefaultTests`.
+
+Remaining limit: if the host **deliberately turns history on**, the gap is
+exactly as before. The only way to close it is to send history only to clients
+that prove they know the room password, which requires authentication for
+entering a room (5.4, 5.5).
 
 ### 5.3 Metadata is fully exposed
 
@@ -126,9 +139,15 @@ Usernames, room names, timestamps, message sizes and who is online at what time
 travel in plaintext. For an adversary at this scale, metadata is often more
 valuable than content.
 
-In addition, the event log written to the server console records the **length**
-of the ciphertext (`core/server_state.py` → `content_length`), so message
-lengths accumulate on the host's screen or log.
+~~In addition, the server's event log records the **length** of the
+ciphertext.~~ **Closed (1.5.0).** Since that version the server does not pass
+message content to the event log; a test verifies that the log of a real
+session contains no length: `tests/test_logging_and_scroll.py`. This document
+was not updated at the time. The logging helper itself kept the ability to
+write the length if given content until 1.7.0; that was removed too, so the
+leak cannot come back if a call passes content again
+(`tests/test_core.py` → `test_anonymous_logger_masks_user_identity`). Packet
+sizes on the wire are still exposed (5.7).
 
 ### 5.4 The transport layer is unencrypted
 
@@ -169,12 +188,29 @@ off), Host has to be started again.
 The length of Fernet output correlates with the length of the plaintext (at
 16-byte block granularity). No padding is applied.
 
-### 5.8 PBKDF2, not Argon2id
+### 5.8 PBKDF2, not Argon2id — closed (1.7.0)
 
 240,000 iterations of PBKDF2-HMAC-SHA256 is reasonable at a consumer level but
 parallelises on GPUs. Argon2id is memory-hard and makes attacks with dedicated
-hardware far more expensive, and it **is available** in the installed version of
-`cryptography`.
+hardware far more expensive.
+
+Since 1.7.0 the key is derived with **Argon2id**: the second option RFC 9106
+recommends for memory-constrained environments, 3 passes, 4 lanes, 64 MiB
+(`core/crypto.py`). Every password guess needs 64 MiB of memory, which breaks the
+thousands of parallel guesses that make GPUs effective against PBKDF2. The
+scheme label is `fernet-argon2id-v1`. A known-answer vector locks the
+parameters, the salt and the room name normalisation
+(`tests/test_crypto.py` → `Argon2idTests`).
+
+Higher memory was deliberately not chosen: because the salt is deterministic,
+changing the parameters breaks compatibility again, and a future client on
+another platform has to use exactly the same parameters.
+
+The cost is compatibility: 1.7.0 cannot talk to 1.6.x in encrypted rooms.
+Remaining limit: Argon2id makes guessing expensive, not impossible. Because the
+salt comes from the room name, the same room name and password yield the same
+key everywhere; a weak password can still be cracked offline (see section 3,
+5.1).
 
 ### 5.9 The distribution chain is unprotected
 
@@ -224,10 +260,10 @@ A decision record, so the same ideas are not re-litigated.
 
 | Order | Work | Impact | Size |
 | --- | --- | --- | --- |
-| 1 | Remove history / turn it off by default (5.2) | High | Small |
+| 1 | ~~Remove history / turn it off by default (5.2)~~ **Off by default (1.7.0)**; the gap remains if the host turns it on | High | Small |
 | 2 | ~~Make the host's listening interface selectable (5.6)~~ **Done (1.6.2)** | Medium | Small |
-| 3 | Remove `content_length` from the event log (5.3) | Low | Small |
-| 4 | Move to Argon2id (5.8) | Medium | Medium |
+| 3 | ~~Remove `content_length` from the event log (5.3)~~ **Done (1.5.0; capability removed in 1.7.0)** | Low | Small |
+| 4 | ~~Move to Argon2id (5.8)~~ **Done (1.7.0)** | Medium | Medium |
 | 5 | Transport-layer encryption / authentication (5.4) | High | Medium |
 | 6 | **Forward secrecy: key ratcheting (5.1)** | **Highest** | **Large** — protocol change |
 | 7 | Message padding (5.7) | Low | Small |

@@ -108,12 +108,23 @@ Devlet ölçeğinde rakiplerin standart yöntemi tam olarak budur: *şimdi kayde
 sonra çöz*. Signal'in Double Ratchet'i bu senaryo için vardır. ProxyNet'te
 karşılığı yoktur.
 
-### 5.2 Geçmiş, kimlik doğrulaması olmadan dağıtılıyor
+### 5.2 Geçmiş, kimlik doğrulaması olmadan dağıtılıyor — varsayılan kapatıldı (1.7.0)
 
-Sunucu, odaya katılan **herkese** son 100 mesajı gönderir
+Geçmiş açıkken sunucu, odaya katılan **herkese** son 100 mesajı gönderir
 (`core/server.py` → `_send_room_history`) ve odaya katılmak için parola gerekmez.
 Parolayı bilmeyen biri odaya girip 100 şifreli mesajı toplayıp çevrimdışı
 saldırıya alabilir. 5.1 ile birleştiğinde ciddi bir kombinasyondur.
+
+1.7.0'dan itibaren geçmiş **varsayılan olarak kapalı**: sunucu hiçbir mesajı
+bellekte tutmaz ve odaya girene geçmiş paketi göndermez. Eski sürüm varsayılan
+değeri her bağlantıda kayda yazdığı için yalnızca varsayılanı değiştirmek
+mevcut hiçbir kullanıcıyı etkilemezdi; güncellemede kayıtlı değer bir kez
+silinir (`apps/proxychat/settings.py` → `_migrate_privacy_defaults`). Testler:
+`tests/test_settings.py` → `HistoryDefaultTests`.
+
+Kalan sınır: Host geçmişi **bilerek açarsa** açık aynen sürer. Kapatmanın tek
+yolu geçmişi yalnızca oda parolasını bildiğini kanıtlayan istemcilere
+göndermek; bu da odaya giriş için kimlik doğrulaması gerektirir (5.4, 5.5).
 
 ### 5.3 Metadata tamamen açık
 
@@ -121,9 +132,14 @@ Kullanıcı adları, oda adları, zaman damgaları, mesaj boyutları ve kimin ne
 çevrimiçi olduğu düz metin taşınır. Bu ölçekte bir rakip için metadata çoğu zaman
 içerikten değerlidir.
 
-Ayrıca sunucu konsoluna basılan olay kayıtları şifreli metnin **uzunluğunu**
-yazar (`core/server_state.py` → `content_length`), yani host'un ekranında/logunda
-mesaj uzunlukları birikir.
+~~Ayrıca sunucunun olay kayıtları şifreli metnin **uzunluğunu** yazar.~~
+**Kapatıldı (1.5.0).** Sunucu o sürümden beri olay kaydına mesaj içeriğini
+vermiyor; gerçek bir oturumun logunda uzunluk olmadığını doğrulayan test:
+`tests/test_logging_and_scroll.py`. Bu belge o sırada güncellenmemişti. Kayıt
+aracının kendisi içerik verilirse uzunluğu yazma yeteneğini 1.7.0'a kadar
+koruyordu; o da kaldırıldı ki bir çağrı yeniden içerik verdiğinde sızıntı geri
+gelmesin (`tests/test_core.py` → `test_anonymous_logger_masks_user_identity`).
+Ağdaki paket boyutları ise hâlâ açık (5.7).
 
 ### 5.4 Taşıma katmanı şifresiz
 
@@ -164,11 +180,27 @@ başlatılmalıdır.
 Fernet çıktısının uzunluğu düz metnin uzunluğuyla korelasyonludur (16 baytlık
 blok hassasiyetinde). Dolgu (padding) uygulanmıyor.
 
-### 5.8 PBKDF2, Argon2id değil
+### 5.8 PBKDF2, Argon2id değil — kapatıldı (1.7.0)
 
 240.000 turluk PBKDF2-HMAC-SHA256 tüketici seviyesinde makul, ancak GPU'da
 paralelleşir. Argon2id bellek-zor olduğu için özel donanımla saldırıyı çok daha
-pahalı yapar ve kurulu `cryptography` sürümünde **kullanılabilir durumdadır**.
+pahalı yapar.
+
+1.7.0'dan itibaren anahtar **Argon2id** ile türetiliyor: RFC 9106'nın bellek
+kısıtlı ortamlar için önerdiği ikinci seçenek, 3 tur, 4 şerit, 64 MiB
+(`core/crypto.py`). Her parola denemesi 64 MiB bellek ister; GPU'yu PBKDF2'ye
+karşı etkili yapan binlerce paralel deneme bununla çöker. Şema etiketi
+`fernet-argon2id-v1`. Parametreleri, tuzu ve oda adı normalleştirmesini bilinen
+bir cevap vektörü kilitliyor (`tests/test_crypto.py` → `Argon2idTests`).
+
+Daha yüksek bellek bilerek seçilmedi: tuz deterministik olduğu için
+parametreleri değiştirmek yine uyumluluğu bozar, ve ileride başka bir
+platformdaki istemci birebir aynı parametreleri kullanmak zorunda.
+
+Bedeli uyumluluk: 1.7.0 şifreli odalarda 1.6.x ile konuşamaz. Kalan sınır:
+Argon2id denemeyi pahalı yapar, imkânsız yapmaz. Tuz oda adından geldiği için
+aynı oda adı ve parola her yerde aynı anahtarı verir; zayıf bir parola hâlâ
+çevrimdışı kırılabilir (bkz. 3. bölüm, 5.1).
 
 ### 5.9 Dağıtım zinciri korumasız
 
@@ -217,10 +249,10 @@ Karar kaydı — aynı fikirlerin tekrar gündeme gelmemesi için.
 
 | Sıra | İş | Etki | Büyüklük |
 | --- | --- | --- | --- |
-| 1 | Geçmişi kaldırmak / varsayılan kapatmak (5.2) | Yüksek | Küçük |
+| 1 | ~~Geçmişi kaldırmak / varsayılan kapatmak (5.2)~~ **Varsayılan kapatıldı (1.7.0)**; Host açarsa açık sürüyor | Yüksek | Küçük |
 | 2 | ~~Host'un dinlediği arayüzü seçilebilir yapmak (5.6)~~ **Yapıldı (1.6.2)** | Orta | Küçük |
-| 3 | Olay kayıtlarından `content_length`'i çıkarmak (5.3) | Düşük | Küçük |
-| 4 | Argon2id'ye geçiş (5.8) | Orta | Orta |
+| 3 | ~~Olay kayıtlarından `content_length`'i çıkarmak (5.3)~~ **Yapıldı (1.5.0; yetenek 1.7.0'da kaldırıldı)** | Düşük | Küçük |
+| 4 | ~~Argon2id'ye geçiş (5.8)~~ **Yapıldı (1.7.0)** | Orta | Orta |
 | 5 | Taşıma katmanı şifrelemesi / kimlik doğrulama (5.4) | Yüksek | Orta |
 | 6 | **İleri gizlilik: anahtar ilerletme (5.1)** | **En yüksek** | **Büyük** — protokol değişikliği |
 | 7 | Mesaj dolgusu (5.7) | Düşük | Küçük |

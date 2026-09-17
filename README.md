@@ -22,7 +22,7 @@ different promises.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | For whom | Everyday use, a group of friends | Situations where encryption is the priority |
-| Status | Working, version 1.6.3 (not distributed) | No code yet, only its limits written down |
+| Status | Working. 1.6.3 was built but not distributed; 1.7.0 is in development | No code yet, only its limits written down |
 | Goal | Be usable, protect content | Meet the T5 adversary in the threat model |
 
 The reason they are separate: fewer features is itself a security feature. They
@@ -35,8 +35,10 @@ contaminates ProxyNull.
   email, no phone number.
 - Messages are encrypted **on the client.** The server never sees plaintext;
   the ability to decrypt is deliberately **absent** from the server code.
-- The key is derived from the room password. Without it, content is unreadable.
-- History lives in memory only, never on disk. It is gone when the server stops.
+- The key is derived from the room password with Argon2id (from 1.7.0).
+  Without the password, content is unreadable.
+- Room history is **off** by default (from 1.7.0). If the host turns it on, it
+  lives in memory only, never on disk, and is gone when the server stops.
 - Diagnostic logging is **off** by default.
 - Turkish and English interface.
 
@@ -50,8 +52,12 @@ copy:
   the biggest gap.
 - **Metadata is fully exposed.** Who, with whom, when, at what length — all
   visible.
-- **No password is needed to enter a room.** Someone who does not know the
-  password can join and collect the encrypted history.
+- **No password is needed to enter a room.** Anyone who can reach the server
+  sees the user list and the rhythm of the traffic. If the host turns room
+  history on, they can also collect the encrypted history.
+- **A weak password can still be cracked offline.** Argon2id makes every guess
+  expensive, not impossible, and the same room name and password give the same
+  key everywhere.
 - **The transport layer is unencrypted.** An active attacker cannot forge
   message content but can forge envelope packets.
 - **The distributed file is unsigned.**

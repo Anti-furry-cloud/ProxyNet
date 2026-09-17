@@ -22,7 +22,7 @@ paylaşıyor ama farklı sözler veriyor.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | Kime | Günlük kullanım, arkadaş grubu | Şifrelemenin öncelik olduğu durumlar |
-| Durum | Çalışıyor, sürüm 1.6.3 (dağıtılmadı) | Henüz kod yok, yalnızca sınırları yazılı |
+| Durum | Çalışıyor. 1.6.3 derlendi ama dağıtılmadı; 1.7.0 geliştiriliyor | Henüz kod yok, yalnızca sınırları yazılı |
 | Hedefi | Kullanışlı olmak, içeriği korumak | Tehdit modelindeki T5 rakibini karşılamak |
 
 Ayrı iki ürün olmasının sebebi şu: az özellik, güvenlikte başlı başına bir
@@ -35,8 +35,10 @@ kirletmemesi için ikisi bilerek ayrıldı.
   Kayıt olmak, e-posta vermek, telefon numarası vermek yok.
 - Mesajlar **istemcide** şifreleniyor. Sunucu düz metni hiçbir zaman görmüyor;
   sunucu kodunda şifre çözme yeteneği bilerek **yok.**
-- Anahtar, oda parolasından türüyor. Parolayı bilmeyen içeriği okuyamıyor.
-- Geçmiş yalnızca bellekte, diskte değil. Sunucu kapanınca gidiyor.
+- Anahtar, oda parolasından Argon2id ile türüyor (1.7.0'dan itibaren).
+  Parolayı bilmeyen içeriği okuyamıyor.
+- Oda geçmişi varsayılan olarak **kapalı** (1.7.0'dan itibaren). Host açarsa
+  yalnızca bellekte tutulur, diske yazılmaz, sunucu kapanınca gider.
 - Tanılama kaydı varsayılan olarak **kapalı.**
 - Türkçe ve İngilizce arayüz.
 
@@ -49,8 +51,12 @@ Bunları saklamıyorum; saklarsam belge bir pazarlama metnine dönüşür:
   büyük açık bu.
 - **Metadata tamamen açık.** Kim, kiminle, ne zaman, ne uzunlukta — hepsi
   görünüyor.
-- **Odaya girmek için parola gerekmiyor.** Parolayı bilmeyen biri odaya girip
-  şifreli geçmişi toplayabilir.
+- **Odaya girmek için parola gerekmiyor.** Sunucuya ulaşabilen herkes
+  kullanıcı listesini ve trafiğin ritmini görür. Host oda geçmişini açarsa
+  şifreli geçmişi de toplayabilir.
+- **Zayıf bir parola hâlâ çevrimdışı kırılabilir.** Argon2id her denemeyi
+  pahalı yapar, imkânsız yapmaz; aynı oda adı ve parola her yerde aynı
+  anahtarı verir.
 - **Taşıma katmanı şifresiz.** Aktif bir saldırgan mesaj içeriğini
   sahteleyemez ama zarf paketlerini sahteleyebilir.
 - **Dağıtılan dosya imzasız.**

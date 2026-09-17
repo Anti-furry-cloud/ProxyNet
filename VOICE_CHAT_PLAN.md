@@ -132,12 +132,12 @@ Karar: **AES-GCM, ve her gönderenin her ses oturumu için ayrı bir anahtar.**
 Yazıldı: `core/voice_crypto.py`, şema etiketi `aesgcm-hkdf-v2`.
 
 ```
-oda parolası ──PBKDF2──▶ ana anahtar ──HKDF──▶ ses anahtarı
+oda parolası ──Argon2id──▶ ana anahtar ──HKDF──▶ ses anahtarı
 ses anahtarı + oturum tuzu + gönderen kimliği ──HKDF──▶ oturum anahtarı
 ```
 
-- **Ana anahtar** metin tarafıyla ortak. Metin anahtarı bit bit aynı kaldı,
-  uyumluluk bozulmadı; bir test bunu doğruluyor.
+- **Ana anahtar** metin tarafıyla ortak: metin anahtarı onun base64 hâli, bir
+  test bunu doğruluyor. 1.7.0'dan beri ana anahtar Argon2id ile türüyor.
 - **Ses anahtarı** `HKDF(info=b"proxynet-voice-v1")` ile türer. Metin
   anahtarıyla aynı değildir ve onunla doğrudan hiçbir şey şifrelenmez.
 - **Oturum tuzu:** her gönderen sesli sohbete her katılışında 16 baytlık
