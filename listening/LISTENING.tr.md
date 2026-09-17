@@ -44,8 +44,8 @@ kayıtta duyulmaz, o yüzden yalnızca duyduğunuzu değerlendirin.
 4. Kulaklıkla mı hoparlörle mi dinlediniz?
 5. Eklemek istediğiniz başka bir şey.
 
-Cevaplarınızı [Discussions](https://github.com/Anti-furry-cloud/ProxyNet/discussions) altındaki **"Listening test"** başlıklı
-tartışmaya yazabilirsiniz. İngilizce de yazabilirsiniz.
+Cevaplarınızı **[Listening test](https://github.com/Anti-furry-cloud/ProxyNet/discussions/1)** tartışmasına
+yazabilirsiniz. İngilizce de yazabilirsiniz.
 
 ## Cevaplar neyi değiştirir, neyi değiştirmez
 

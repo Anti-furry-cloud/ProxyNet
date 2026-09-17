@@ -124,8 +124,7 @@ kanıt değil, bir niyet beyanı ve bir tasarım taslağıdır.
 **Kod okumadan da yardım edebilirsin:** birkaç kısa kaydı dinleyip
 kesintilerin sana nasıl geldiğini söyle. Yönerge ve sorular:
 **[listening/LISTENING.tr.md](listening/LISTENING.tr.md)**. Cevaplar
-[Discussions](https://github.com/Anti-furry-cloud/ProxyNet/discussions)
-altındaki "Listening test" tartışmasına.
+[Listening test](https://github.com/Anti-furry-cloud/ProxyNet/discussions/1) tartışmasına.
 
 ---
 

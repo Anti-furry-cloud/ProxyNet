@@ -128,8 +128,7 @@ repository is not evidence; it is a statement of intent and a design draft.
 **You can also help without reading any code:** listen to a few short
 recordings and say how the interruptions sound to you. Instructions and
 questions: **[listening/LISTENING.md](listening/LISTENING.md)**. Answers go in
-the "Listening test" thread under
-[Discussions](https://github.com/Anti-furry-cloud/ProxyNet/discussions).
+the [Listening test](https://github.com/Anti-furry-cloud/ProxyNet/discussions/1) discussion.
 
 ---
 

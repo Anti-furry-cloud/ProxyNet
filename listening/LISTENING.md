@@ -44,7 +44,7 @@ played on its own, so please judge only what you hear.
 4. Did you listen with headphones or speakers?
 5. Anything else you want to say.
 
-Please answer in the **"Listening test"** thread under [Discussions](https://github.com/Anti-furry-cloud/ProxyNet/discussions).
+Please answer in the **[Listening test](https://github.com/Anti-furry-cloud/ProxyNet/discussions/1)** discussion.
 Answering in Turkish is fine too.
 
 ## What your answers will and will not change
