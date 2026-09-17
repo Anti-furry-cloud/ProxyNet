@@ -71,10 +71,15 @@ closed: **[THREAT_MODEL.en.md](THREAT_MODEL.en.md)**
 
 ### What is next
 
-Voice chat is being worked on; its core is written, the networking side does
-not exist yet. The design — the topology decision, the binary packet format,
+Voice chat is being worked on. Its core is written, and a prototype has now
+carried a live conversation between two computers on separate internet
+connections; that prototype is a separate command-line tool, not part of the
+program people install. Whether the connection quality is good enough is being
+decided by measurements whose rules were published before the measuring
+started. The design — the topology decision, the binary packet format,
 the AES-GCM scheme and the **security questions that are not yet solved** — is
-here: **[VOICE_CHAT_PLAN.en.md](VOICE_CHAT_PLAN.en.md)**
+here, together with what the prototype and the measurements have shown so
+far: **[VOICE_CHAT_PLAN.en.md](VOICE_CHAT_PLAN.en.md)**
 
 The reason I publish that document at this stage: I would rather hear about a
 mistake in the encryption design now than after months of code have been

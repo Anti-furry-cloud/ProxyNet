@@ -12,11 +12,12 @@
 > bug was found in the scheme in section 3 and fixed. What it was, how it was
 > found and the fix are written out plainly in section 3.
 
-Status: **Phase 1 started, the core is written.** The audio packet format,
-encryption and jitter buffer live under `core/` and are tested; audio hardware,
-networking and UI do not exist yet. Phase 0's decision gate is **still open** —
-the core that was written does not depend on the network measurement, so it did
-not wait.
+Status: **Phase 1 started, the core is written, and the prototype has carried
+a conversation between two computers.** The audio packet format, encryption and
+jitter buffer live under `core/` and are tested. Audio hardware and networking
+now exist, but only in a command-line tool that is not distributed; the UI side
+does not exist yet. Phase 0's decision gate is **still open**: three of the v2
+measurements are done and two are missing.
 
 Goal: letting a group of 2–5 friends talk over a virtual LAN (VPN) or a local
 network. Not replacing Discord.
@@ -230,8 +231,10 @@ reversed and the resulting growth **measured**, not guessed.
 | Release | Opus | ~24–32 kbit/s | 8–10× less bandwidth, better quality for speech |
 
 When moving to Opus, `libopus` must be added to the bundle and a Python binding
-chosen. Prototyping with PCM keeps codec problems from getting mixed up with
-network problems.
+chosen. The prototype uses a codec that needs no external library, which keeps codec
+problems from getting mixed up with network problems. The first run used 8 kHz
+and sounded like a telephone, so it was raised to 16 kHz. µ-law is temporary:
+the standard library module it relies on is being removed in Python 3.13.
 
 ---
 
@@ -242,8 +245,10 @@ at all. Writing them straight to the speaker produces harsh audio.
 
 Written: `core/voice_jitter.py`. It contains no clock, no socket and no Qt;
 input is a sequence number and a byte string, output is an ordered run of
-frames. The audio device calls `pop()` every 20 ms and plays silence for that
-frame when it returns `None`.
+frames. `pop()` is called as the audio device consumes (about every 20 ms)
+and silence or loss concealment is played for that frame when it returns
+`None`. The sound card, not a timer, sets the pace of those calls; the
+measurements behind that are in the prototype section.
 
 - Target buffer **60 ms**. The adaptive version does not exist yet.
 - Reordering by sequence number.
@@ -517,6 +522,50 @@ The weaknesses of this threshold:
 - If the buffer code is changed after the v2 records are seen, **the same
   records are not evaluated again;** new measurements are needed. Otherwise the
   code would have been fitted to the measured data.
+
+#### Status: first day (2026-09-17)
+
+Three counted measurements were made and all three stayed within the
+**acceptable** thresholds. The remaining two fall on another day; at most
+three count from one day. The gate decision comes when five are complete: the
+worst is left out and the worst of the remaining four decides. The numbers are
+not published here; when the decision is announced, its reasoning will be
+written down with it.
+
+---
+
+### Voice chat prototype (2026-09-17)
+
+The end-to-end audio path was tried on a real line for the first time:
+microphone → 20 ms frame → encryption → UDP → jitter buffer → loss
+concealment → speaker. Two computers on two separate internet connections
+**held a live conversation and the speech came through intelligibly.**
+
+The prototype is not part of the distributed program: it is a separate
+command-line tool and is not wired into the interface. Its purpose is to try
+the networking side.
+
+Two bugs were found by doing it, and both were fixed:
+
+- **No packets were being received at all.** The network socket was created
+  before Qt's application object, and the "data has arrived" notification is
+  never connected in that case. The program was sending and receiving
+  nothing. The first tests missed this because they created the application
+  object themselves beforehand; the new test runs in a separate process.
+- **Delay grew for nothing.** Playback hung off a 20 ms timer. Windows timer
+  resolution is ~15.6 ms, so playback fell behind what the microphone
+  produced and the difference piled up in the buffer: the target was 60 ms
+  but the buffer sat at 80-100 ms. There was no loss, only delay. Pull mode
+  (`QIODevice`) was tried and came out worse: the sound card asks for several
+  frames at once, so the buffer swung between 0 and 460 ms. The chosen way is
+  to look at the card's free space and write at most one frame at a time, so
+  the sound card sets the pace. Measured locally: the buffer holds at 40 ms,
+  with zero underruns and zero dropped frames over 30 seconds.
+
+The jitter buffer's code was **deliberately left alone.** Under the Phase 0 v2
+rules, if that code changes after the measurement records are seen the same
+records cannot be re-evaluated; loss concealment therefore lives in the
+prototype rather than in the buffer.
 
 ---
 

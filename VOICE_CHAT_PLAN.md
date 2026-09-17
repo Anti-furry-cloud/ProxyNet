@@ -12,10 +12,11 @@
 > hata bulundu ve düzeltildi. Ne olduğu, nasıl bulunduğu ve düzeltmesi 3.
 > bölümde açıkça yazılı.
 
-Durum: **Faz 1 başladı, çekirdek yazıldı.** Ses paketi biçimi, şifreleme ve
-jitter tamponu `core/` altında duruyor ve test ediliyor; ses donanımı, ağ ve
-arayüz henüz yok. Faz 0'ın karar kapısı **hâlâ açık** — yazılan çekirdek ağ
-ölçümünden bağımsız olduğu için beklemedi.
+Durum: **Faz 1 başladı, çekirdek yazıldı; prototip iki bilgisayar arasında
+konuştu.** Ses paketi biçimi, şifreleme ve jitter tamponu `core/` altında
+duruyor ve test ediliyor. Ses donanımı ve ağ artık var, ama yalnızca
+dağıtılmayan bir komut satırı aracında; arayüz tarafı henüz yok. Faz 0'ın
+karar kapısı **hâlâ açık**: v2 ölçümlerinin üçü yapıldı, ikisi eksik.
 
 Hedef: sanal LAN (VPN) ya da yerel ağ üzerinde 2–5 kişilik bir arkadaş
 grubunun konuşabilmesi. Discord'un yerini almak değil.
@@ -218,12 +219,15 @@ boyut artışı **ölçülmeli** — tahmin edilmemeli.
 
 | Aşama | Kodek | Bant genişliği (mono) | Neden |
 | --- | --- | --- | --- |
-| Prototip | Ham PCM 16 kHz 16-bit | ~256 kbit/s | Yeni ikili bağımlılık yok, hattı kanıtlar |
+| Prototip | G.711 µ-law 16 kHz | ~128 kbit/s | Yeni ikili bağımlılık yok, hattı kanıtlar |
 | Sürüm | Opus | ~24–32 kbit/s | 8–10 kat daha az bant, konuşmada daha iyi kalite |
 
 Opus'a geçildiğinde `libopus` pakete eklenmeli ve bir Python bağlaması
-seçilmeli. Prototipi PCM ile yapmak, kodek sorunlarıyla ağ sorunlarını
-birbirine karıştırmamayı sağlar.
+seçilmeli. Prototip dışarıdan kütüphane gerektirmeyen bir kodekle yapıldı;
+böylece kodek sorunlarıyla ağ sorunları birbirine karışmıyor. İlk deneme
+8 kHz ile yapıldı ve telefon kalitesinde duyuldu, 16 kHz'e çıkarıldı.
+µ-law geçici bir çözüm: dayandığı standart kütüphane modülü Python 3.13'te
+kaldırılıyor.
 
 ---
 
@@ -233,8 +237,10 @@ UDP paketleri sırasız, düzensiz aralıklarla ve bazıları hiç gelmeden var�
 Doğrudan hoparlöre yazmak cırtlak ses üretir.
 
 Yazıldı: `core/voice_jitter.py`. İçinde saat, soket ya da Qt yok; girdi sıra
-numarası ve bayt dizisi, çıktı çerçeve sırası. Ses cihazı her 20 ms'de bir
-`pop()` çağırır, `None` dönerse o çerçevede sessizlik çalar.
+numarası ve bayt dizisi, çıktı çerçeve sırası. Ses cihazı tükettikçe
+`pop()` çağrılır (ortalama 20 ms'de bir), `None` dönerse o çerçevede
+sessizlik ya da kayıp gizleme çalar. Çağrının hızını zamanlayıcı değil ses
+kartı belirliyor; gerekçesi prototip bölümünde ölçüldü.
 
 - Hedef tampon **60 ms**. Uyarlanabilir hâli henüz yok.
 - Sıra numarasına göre yeniden sıralama.
@@ -491,6 +497,47 @@ Bu eşiğin zayıf yanları:
 - Tampon kodu v2 kayıtları görüldükten sonra değiştirilirse, **aynı kayıtlarla
   yeniden değerlendirilmez;** yeni ölçüm gerekir. Aksi hâlde kod ölçülen veriye
   uydurulmuş olurdu.
+
+#### Durum: ilk gün (2026-09-17)
+
+Sayılan üç ölçüm yapıldı ve üçü de **kabul edilebilir** eşiklerin içinde
+kaldı. Kalan iki ölçüm başka bir güne kalıyor; bir günden en fazla üç ölçüm
+sayılıyor. Kapı kararı beşi tamamlanınca verilecek: en kötü ölçüm dışarıda
+bırakılıp kalan dördün en kötüsüne bakılacak. Sayılar burada yayınlanmıyor;
+karar açıklandığında gerekçesi de yazılacak.
+
+---
+
+### Sesli sohbet prototipi (2026-09-17)
+
+Sesli sohbetin uçtan uca yolu ilk kez gerçek bir hat üzerinde denendi:
+mikrofon → 20 ms çerçeve → şifreleme → UDP → jitter tamponu → kayıp gizleme →
+hoparlör. İki ayrı internet bağlantısındaki iki bilgisayar arasında **canlı
+konuşma yapıldı ve ses anlaşılır şekilde geldi.**
+
+Prototip, dağıtılan programın parçası değil: ayrı bir komut satırı aracı
+olarak duruyor ve arayüze bağlı değil. Amacı ağ tarafını denemek.
+
+Denemede iki hata bulundu, ikisi de düzeltildi:
+
+- **Hiçbir paket alınmıyordu.** Ağ soketi, Qt'nin uygulama nesnesinden önce
+  kuruluyordu; bu sırada "veri geldi" bildirimi hiç bağlanmıyor. Program
+  gönderiyor ama hiçbir şey almıyordu. İlk testler bunu yakalamamıştı, çünkü
+  uygulama nesnesini kendileri önceden kuruyorlardı; yeni test ayrı bir
+  süreçte çalışıyor.
+- **Gecikme boşu boşuna büyüyordu.** Çalma 20 ms'lik bir zamanlayıcıya
+  bağlıydı. Windows'ta zamanlayıcı çözünürlüğü ~15,6 ms olduğu için çalma,
+  mikrofonun üretiminden yavaş kalıyor ve fark tamponda birikiyordu: hedef
+  60 ms olmasına rağmen tampon 80–100 ms'te duruyordu. Kayıp yoktu, yalnızca
+  gecikme. Çekme kipi (`QIODevice`) de denendi ve daha kötü çıktı: ses kartı
+  tek seferde birkaç çerçeve istediği için tampon 0 ile 460 ms arasında
+  salındı. Seçilen yol, kartın boş yerine bakıp her seferinde en fazla bir
+  çerçeve yazmak; saati ses kartı belirliyor. Yerel ölçüm: tampon 40 ms'te
+  sabit, 30 saniyede sıfır boşalma ve sıfır atılan çerçeve.
+
+Jitter tamponunun kodu **kasten değiştirilmedi.** Faz 0 v2 kurallarına göre
+o kod ölçüm kayıtları görüldükten sonra değiştirilirse aynı kayıtlar yeniden
+değerlendirilemez; kayıp gizleme bu yüzden tamponun içinde değil prototipte.
 
 ---
 

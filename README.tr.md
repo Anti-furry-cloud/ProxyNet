@@ -70,9 +70,13 @@ Hepsinin ayrıntısı, neden böyle olduğu ve kapatılma sırası burada:
 
 ### Sırada ne var
 
-Sesli sohbet üzerinde çalışılıyor; çekirdeği yazıldı, ağ tarafı henüz yok.
-Tasarımı — topoloji kararı, ikili paket biçimi, AES-GCM şeması ve **henüz
-çözülmemiş güvenlik soruları** — burada:
+Sesli sohbet üzerinde çalışılıyor. Çekirdeği yazıldı ve bir prototip, ayrı
+internet bağlantılarındaki iki bilgisayar arasında canlı konuşmayı taşıdı; o
+prototip ayrı bir komut satırı aracı, kurulan programın parçası değil.
+Bağlantı kalitesinin yeterli olup olmadığına, kuralları ölçüm yapılmadan önce
+yayınlanmış ölçümlerle karar veriliyor. Tasarımı — topoloji kararı, ikili
+paket biçimi, AES-GCM şeması ve **henüz çözülmemiş güvenlik soruları** —
+prototipin ve ölçümlerin şimdiye kadar gösterdikleriyle birlikte burada:
 **[VOICE_CHAT_PLAN.md](VOICE_CHAT_PLAN.md)**
 
 O belgeyi bu aşamada yayınlamamın sebebi şu: şifreleme tasarımındaki bir
