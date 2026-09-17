@@ -105,6 +105,7 @@ Geliştirme Türkçe yürüyor; belgelerin hepsi Türkçe ve İngilizce yayınla
 | [THREAT_MODEL.en.md](THREAT_MODEL.en.md) | Aynısının İngilizcesi |
 | [VOICE_CHAT_PLAN.md](VOICE_CHAT_PLAN.md) | Sesli sohbetin tasarım planı — topoloji, paket biçimi, şifreleme şeması, açık güvenlik soruları |
 | [VOICE_CHAT_PLAN.en.md](VOICE_CHAT_PLAN.en.md) | Aynısının İngilizcesi |
+| [listening/](listening/LISTENING.tr.md) | Kör dinleme testi: simüle ağ kesintileri konuşmada nasıl duyuluyor |
 | [LICENSE](LICENSE) | GNU GPL v3 metni |
 
 Kod açıldığında bu depoya eklenecek; belgeler yerinde kalacak.
@@ -119,6 +120,12 @@ yazmadığın ama var olan bir açık şu."*
 
 Kod olmadan güvenlik iddiası denetlenemez — bunun farkındayım. Bu depo bir
 kanıt değil, bir niyet beyanı ve bir tasarım taslağıdır.
+
+**Kod okumadan da yardım edebilirsin:** birkaç kısa kaydı dinleyip
+kesintilerin sana nasıl geldiğini söyle. Yönerge ve sorular:
+**[listening/LISTENING.tr.md](listening/LISTENING.tr.md)**. Cevaplar
+[Discussions](https://github.com/Anti-furry-cloud/ProxyNet/discussions)
+altındaki "Listening test" tartışmasına.
 
 ---
 

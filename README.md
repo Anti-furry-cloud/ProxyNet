@@ -108,6 +108,7 @@ English. Where the two disagree, **the Turkish one is correct.**
 | [THREAT_MODEL.md](THREAT_MODEL.md) | The Turkish original |
 | [VOICE_CHAT_PLAN.en.md](VOICE_CHAT_PLAN.en.md) | The voice chat design plan — topology, packet format, encryption scheme, open security questions |
 | [VOICE_CHAT_PLAN.md](VOICE_CHAT_PLAN.md) | The Turkish original |
+| [listening/](listening/LISTENING.md) | A blind listening test: how simulated network interruptions sound in speech |
 | [LICENSE](LICENSE) | The GNU GPL v3 text |
 
 The code will be added to this repository when it opens; the documents will
@@ -123,6 +124,12 @@ is too optimistic, **open an issue.** The most useful feedback I can get is:
 
 A security claim cannot be audited without code — I am aware of that. This
 repository is not evidence; it is a statement of intent and a design draft.
+
+**You can also help without reading any code:** listen to a few short
+recordings and say how the interruptions sound to you. Instructions and
+questions: **[listening/LISTENING.md](listening/LISTENING.md)**. Answers go in
+the "Listening test" thread under
+[Discussions](https://github.com/Anti-furry-cloud/ProxyNet/discussions).
 
 ---
 
