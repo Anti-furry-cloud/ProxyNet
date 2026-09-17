@@ -128,6 +128,13 @@ value is deleted once (`apps/proxychat/settings.py` →
 `_migrate_privacy_defaults`). Tests: `tests/test_settings.py` →
 `HistoryDefaultTests`.
 
+With history off, the client keeps the messages the user **has already seen**
+in this session in memory only, so they come back when the user returns to a
+room (at most 200 per room; not written to disk, dropped when the session
+ends). This creates no new recipient: the same messages were already on that
+device's screen, and compromise of the endpoint is out of scope (section 3).
+Tests: `tests/test_proxychat_ui.py` → `RoomMemoryTests`.
+
 Remaining limit: if the host **deliberately turns history on**, the gap is
 exactly as before. The only way to close it is to send history only to clients
 that prove they know the room password, which requires authentication for
@@ -148,6 +155,15 @@ write the length if given content until 1.7.0; that was removed too, so the
 leak cannot come back if a call passes content again
 (`tests/test_core.py` → `test_anonymous_logger_masks_user_identity`). Packet
 sizes on the wire are still exposed (5.7).
+
+1.7.0 **added** one piece of metadata: when someone leaves a room by switching
+to another room, the server tells the people who stay, and the interface shows
+"went to another room". The destination room is not sent. Those in the room
+therefore learn that the person did not disconnect and is still on the server;
+before, this could only sometimes be inferred from changes in the room list.
+This was accepted deliberately: separate "left/joined" lines made someone
+switching rooms look as if they kept dropping and reconnecting. Tests:
+`tests/test_hardening.py` → `RoomMoveSnapshotTests`.
 
 ### 5.4 The transport layer is unencrypted
 

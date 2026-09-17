@@ -22,7 +22,7 @@ different promises.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | For whom | Everyday use, a group of friends | Situations where encryption is the priority |
-| Status | Working. 1.6.3 was built but not distributed; 1.7.0 is in development | No code yet, only its limits written down |
+| Status | Working. 1.7.0 is built and tested but not yet distributed | No code yet, only its limits written down |
 | Goal | Be usable, protect content | Meet the T5 adversary in the threat model |
 
 The reason they are separate: fewer features is itself a security feature. They
@@ -39,6 +39,10 @@ contaminates ProxyNull.
   Without the password, content is unreadable.
 - Room history is **off** by default (from 1.7.0). If the host turns it on, it
   lives in memory only, never on disk, and is gone when the server stops.
+- Messages you have seen come back when you return to a room. They are kept
+  in memory only and dropped when you disconnect.
+- The room password can be copied without showing it on screen. The copy is
+  kept out of Windows clipboard history and cleared after 30 seconds.
 - Diagnostic logging is **off** by default.
 - Turkish and English interface.
 

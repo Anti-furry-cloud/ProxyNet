@@ -22,7 +22,7 @@ paylaşıyor ama farklı sözler veriyor.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | Kime | Günlük kullanım, arkadaş grubu | Şifrelemenin öncelik olduğu durumlar |
-| Durum | Çalışıyor. 1.6.3 derlendi ama dağıtılmadı; 1.7.0 geliştiriliyor | Henüz kod yok, yalnızca sınırları yazılı |
+| Durum | Çalışıyor. 1.7.0 derlendi ve test edildi, henüz dağıtılmadı | Henüz kod yok, yalnızca sınırları yazılı |
 | Hedefi | Kullanışlı olmak, içeriği korumak | Tehdit modelindeki T5 rakibini karşılamak |
 
 Ayrı iki ürün olmasının sebebi şu: az özellik, güvenlikte başlı başına bir
@@ -39,6 +39,10 @@ kirletmemesi için ikisi bilerek ayrıldı.
   Parolayı bilmeyen içeriği okuyamıyor.
 - Oda geçmişi varsayılan olarak **kapalı** (1.7.0'dan itibaren). Host açarsa
   yalnızca bellekte tutulur, diske yazılmaz, sunucu kapanınca gider.
+- Başka odaya geçip dönünce o odada gördüğün mesajlar geri gelir. Yalnızca
+  bellekte tutulur, bağlantı kesilince silinir.
+- Oda parolası ekranda gösterilmeden kopyalanabilir. Kopya Windows pano
+  geçmişine girmez ve 30 saniye sonra panodan silinir.
 - Tanılama kaydı varsayılan olarak **kapalı.**
 - Türkçe ve İngilizce arayüz.
 

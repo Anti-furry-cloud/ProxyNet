@@ -122,6 +122,13 @@ mevcut hiçbir kullanıcıyı etkilemezdi; güncellemede kayıtlı değer bir ke
 silinir (`apps/proxychat/settings.py` → `_migrate_privacy_defaults`). Testler:
 `tests/test_settings.py` → `HistoryDefaultTests`.
 
+Geçmiş kapalıyken istemci, kullanıcının bu oturumda **zaten gördüğü**
+mesajları odaya geri döndüğünde gösterebilmek için yalnızca bellekte tutar
+(oda başına en fazla 200; diske yazılmaz, oturum bitince silinir). Bu yeni bir
+alıcı yaratmaz: aynı mesajlar zaten o cihazın ekranındaydı ve uç cihazın ele
+geçirilmesi kapsam dışı (3. bölüm). Testler: `tests/test_proxychat_ui.py` →
+`RoomMemoryTests`.
+
 Kalan sınır: Host geçmişi **bilerek açarsa** açık aynen sürer. Kapatmanın tek
 yolu geçmişi yalnızca oda parolasını bildiğini kanıtlayan istemcilere
 göndermek; bu da odaya giriş için kimlik doğrulaması gerektirir (5.4, 5.5).
@@ -140,6 +147,15 @@ aracının kendisi içerik verilirse uzunluğu yazma yeteneğini 1.7.0'a kadar
 koruyordu; o da kaldırıldı ki bir çağrı yeniden içerik verdiğinde sızıntı geri
 gelmesin (`tests/test_core.py` → `test_anonymous_logger_masks_user_identity`).
 Ağdaki paket boyutları ise hâlâ açık (5.7).
+
+1.7.0'da bir üstveri **eklendi:** biri odadan başka bir odaya geçerek
+ayrılınca sunucu bunu odada kalanlara ayrıca bildirir, arayüz de "başka bir
+odaya geçti" diye gösterir. Hangi odaya geçtiği gönderilmez. Böylece
+odadakiler, ayrılan kişinin bağlantıyı kesmediğini ve sunucuda kaldığını
+öğrenir; bu önceden yalnızca bazen, oda listesindeki değişimden
+çıkarılabiliyordu. Bilerek kabul edildi: tek tek "ayrıldı/katıldı"
+satırları oda değiştiren birini sürekli bağlanıp kopuyor gibi gösteriyordu.
+Testler: `tests/test_hardening.py` → `RoomMoveSnapshotTests`.
 
 ### 5.4 Taşıma katmanı şifresiz
 
