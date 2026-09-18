@@ -227,7 +227,7 @@ reversed and the resulting growth **measured**, not guessed.
 
 | Stage | Codec | Bandwidth (mono) | Why |
 | --- | --- | --- | --- |
-| Prototype | Raw PCM 16 kHz 16-bit | ~256 kbit/s | No new binary dependency, proves the path |
+| Prototype | G.711 µ-law 16 kHz | ~128 kbit/s | No new binary dependency, proves the path |
 | Release | Opus | ~24–32 kbit/s | 8–10× less bandwidth, better quality for speech |
 
 When moving to Opus, `libopus` must be added to the bundle and a Python binding
