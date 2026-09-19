@@ -65,7 +65,7 @@ Aktarmanın bedeli taşınabilir:
 | | Mesh | Host üzerinden aktarma |
 | --- | --- | --- |
 | Tek yön gecikme | doğrudan | bir durak fazla, kabaca iki katı — "iyi" eşiği 150 ms |
-| Host yükleme bandı (4 kişi, Opus) | 0 | ~0,4 Mbit/s — sıradan bir ev bağlantısının çok altında |
+| Host yükleme bandı (4 kişi, Opus) | 0 | ~0,6 Mbit/s — herkes sürekli gönderir (§4, sessizlikte susma kapalı); sıradan bir ev bağlantısının çok altında |
 | IP sızıntısı | herkes herkesi görür | yalnızca Host görür (metin sohbetindeki durumla aynı) |
 | Güvenlik duvarı izni | her katılımcıda | yalnızca Host'ta |
 
@@ -220,14 +220,47 @@ boyut artışı **ölçülmeli** — tahmin edilmemeli.
 | Aşama | Kodek | Bant genişliği (mono) | Neden |
 | --- | --- | --- | --- |
 | Prototip | G.711 µ-law 16 kHz | ~128 kbit/s | Yeni ikili bağımlılık yok, hattı kanıtlar |
-| Sürüm | Opus | ~24–32 kbit/s | 8–10 kat daha az bant, konuşmada daha iyi kalite |
+| Sürüm | Opus, sabit bit hızı | 24 kbit/s | ~4 kat daha küçük datagram, konuşmada daha iyi kalite, kayıp paketi geri kuran FEC |
 
-Opus'a geçildiğinde `libopus` pakete eklenmeli ve bir Python bağlaması
-seçilmeli. Prototip dışarıdan kütüphane gerektirmeyen bir kodekle yapıldı;
-böylece kodek sorunlarıyla ağ sorunları birbirine karışmıyor. İlk deneme
-8 kHz ile yapıldı ve telefon kalitesinde duyuldu, 16 kHz'e çıkarıldı.
-µ-law geçici bir çözüm: dayandığı standart kütüphane modülü Python 3.13'te
-kaldırılıyor.
+Prototip dışarıdan kütüphane gerektirmeyen bir kodekle yapıldı; böylece
+kodek sorunlarıyla ağ sorunları birbirine karışmıyor. İlk deneme 8 kHz ile
+yapıldı ve telefon kalitesinde duyuldu, 16 kHz'e çıkarıldı. µ-law geçici bir
+çözüm: dayandığı standart kütüphane modülü (`audioop`) Python 3.13'te
+kaldırıldı.
+
+### Opus araştırması (2026-09-18)
+
+Denemeler, dinleme testindeki kamu malı kayıtla yapıldı; kayıp gerçek bir
+hattan değil, rastgele üretildi. Aşağıdakiler karar önerisi, kesinleşmedi.
+
+- **Bağlama: doğrudan libopus.** Opus'u çalıştıran hazır Python paketleri
+  FFmpeg'in tamamını, video kodekleri dahil onlarca MB getiriyor. `libopus`
+  tek başına küçük bir kütüphane ve `ctypes` ile doğrudan çağrılabiliyor;
+  ağdan gelen, güvenilmeyen paketi çözen kod yalnızca libopus olur. Lisansı
+  BSD 3 maddedir, projenin GPLv3 lisansıyla uyumludur.
+- **Sabit bit hızı (CBR), sessizlikte susma (DTX) kapalı.** Değişken bit
+  hızında paket boyu sese göre değişiyor ve sessizliği açıkça gösteriyor.
+  Şifreli VoIP'te paket boylarından söylenen sözlerin kısmen
+  çıkarılabildiği yayımlanmış bir saldırıdır (Wright ve ark., 2008). CBR'de
+  her paket aynı boyda çıktı. DTX aynı sebeple kapalı: sessizlikte paket
+  göndermemek kimin ne zaman konuştuğunu ağa söyler. Bedeli, herkesin
+  konuşmasa da sürekli bant kullanması (§2.1).
+- **FEC çalışıyor.** Kayıp çerçeve bir sonraki paketin içindeki yedekten
+  kurulabiliyor; bunun için tampon en az bir çerçeve önde durmalı.
+- **Tedarik zinciri.** Dağıtılacak kütüphane, Xiph'in yayımladığı kaynak
+  arşivinden kendimiz derlenmeli; başka bir projenin derlediği ikiliyi
+  dağıtmak, o projenin derleme hattına güvenmek demek.
+
+| Kodek | Çerçeve (20 ms) | Datagram (başlık + GCM etiketi dahil) |
+| --- | --- | --- |
+| µ-law 16 kHz (prototip) | 320 bayt | 354 bayt |
+| Opus 24 kbit/s CBR | 60 bayt | 94 bayt |
+| Opus 16 kbit/s CBR | 40 bayt | 74 bayt |
+
+Açık: 24 mü 16 kbit/s mi (dinleyerek karar verilecek); 16 kHz'de mi
+kalınacak, 48 kHz'e mi çıkılacak; FEC'in gerçek hatta, art arda gelen
+kayıplarda ne kazandırdığı. Jitter tamponunun kodu Faz 0 v2 kapısı
+kapanana kadar değişmeyeceği için Opus önce yalnızca prototipe girecek.
 
 ---
 
@@ -347,9 +380,9 @@ kullanmıyorlar; CI'da çalışırlar. Ses donanımı gerektiren hiçbir test CI
 
 | Faz | İş | Çıktı |
 | --- | --- | --- |
-| **0. Ölçüm** | UDP gecikme, jitter ve kayıp ölçen küçük bir araç | **Karar kapısı**: rakamlar kötüyse plan burada durur — v1: KÖTÜ; v2 kuralları ölçümden önce yazıldı, ölçüm bekliyor |
+| **0. Ölçüm** | UDP gecikme, jitter ve kayıp ölçen küçük bir araç | **Karar kapısı**: rakamlar kötüyse plan burada durur — v1: KÖTÜ; v2: beş ölçümün üçü yapıldı, ikisi bekliyor |
 | **1a. Çekirdek** ✅ | Paket biçimi, AES-GCM + HKDF, jitter tamponu, testler | Ses donanımı olmadan çalışan, test edilmiş çekirdek |
-| **1b. İskelet** | Sinyalleşme paketleri, UDP soketi, Host'ta aktarma, PCM 16 kHz, tek yönlü | Bir kişi konuşur, diğeri duyar |
+| **1b. İskelet** | Sinyalleşme paketleri, UDP soketi, Host'ta aktarma, µ-law 16 kHz, tek yönlü | Bir kişi konuşur, diğeri duyar |
 | **2. Çift yönlü** | Ses cihazı arayüzü, Qt entegrasyonu, iki yön | 2 kişi karşılıklı konuşur |
 | **3. Kullanılabilirlik** | Opus, bas-konuş, konuşma göstergesi, sustur | 4 kişi kullanabilir |
 | **4. Paketleme** | Qt ses modüllerini pakete geri al, boyutu ölç, UDP güvenlik duvarı kuralı, belgeler | Dağıtılabilir sürüm |
@@ -538,6 +571,26 @@ Denemede iki hata bulundu, ikisi de düzeltildi:
 Jitter tamponunun kodu **kasten değiştirilmedi.** Faz 0 v2 kurallarına göre
 o kod ölçüm kayıtları görüldükten sonra değiştirilirse aynı kayıtlar yeniden
 değerlendirilemez; kayıp gizleme bu yüzden tamponun içinde değil prototipte.
+
+### Gerçek kullanım denemesi (2026-09-18) — kapıya sayılmaz
+
+Prototip, iki ayrı internet bağlantısı arasında bir saati aşkın, kesintisiz
+ve şifreli bir gerçek konuşmada kullanıldı. Konuşanların izlenimi: "Discord
+kullanıyormuş gibi."
+
+- Faz 0 v2 tanımıyla kesinti oranı iki yönde de %1,5'in altında kaldı.
+- Tampon birkaç kısa sıçramadan ve bir kez birkaç saniyelik bir takılmadan
+  sonra her seferinde kendiliğinden toparlandı.
+- O takılmada gelmeyen çerçeveler **kayıp sayılmadı**, çünkü sıra
+  numarasında boşluk yoktu. Gönderen tarafın takılması (mikrofonun çerçeve
+  üretmemesi) prototipin bugünkü sayaçlarında görünmüyor; bir sonraki
+  sürümde ayrıca sayılacak.
+
+**Neden kapıya sayılmıyor:** Faz 0 v2 ölçüm aracıyla ve Opus benzeri küçük
+paketlerle ölçülür, burada 354 baytlık µ-law paketi vardı; ağızdan kulağa
+%95 hiç ölçülmedi; ve sonucu gördükten sonra hangi verinin sayılacağını
+seçmek, ön kaydın önlemeye çalıştığı hatanın kendisi. Bu oturum ayrı bir
+kanıt olarak duruyor.
 
 ---
 

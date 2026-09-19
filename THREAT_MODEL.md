@@ -25,8 +25,9 @@ Her yeni özellik bu belgeye karşı ölçülür. Belgedeki ilkeleri ihlal eden 
 
 > **Bugünkü durum, tek cümleyle:** ProxyNet mesaj içeriğini sunucuya ve odaya
 > giremeyen üçüncü kişilere karşı koruyor; ancak **devlet ölçeğinde bir rakibe
-> karşı koruma sağlamıyor.** Aradaki fark bu belgenin 5. ve 6. bölümlerinde
-> açıkça listelenmiştir. Bunlar kapanmadan aksi iddia edilmemelidir.
+> karşı koruma sağlamıyor.** Aradaki fark bu belgenin 5. bölümünde açıkça
+> listelenmiştir, kapatılma sırası 8. bölümdedir. Bunlar kapanmadan aksi
+> iddia edilmemelidir.
 
 ---
 
@@ -91,6 +92,17 @@ Bunların hepsi test edilmiştir (`tests/test_crypto.py`, `tests/test_hardening.
 - Kaynak tükenmesine karşı sınırlar: paket 64 KiB, içerik 8 KiB, 10 saniyede
   20 mesaj, en fazla 50 istemci, boşta kalma 120 saniye.
 
+Kapanan açıklar (ayrıntısı ve kalan sınırları 5. bölümde duruyor):
+
+- **Oda geçmişi varsayılan olarak kapalı** (5.2, 1.7.0) —
+  `tests/test_settings.py` → `HistoryDefaultTests`.
+- **Anahtar Argon2id ile türetiliyor** (5.8, 1.7.0) —
+  `tests/test_crypto.py` → `Argon2idTests`.
+- **Host'un dinlediği ağ her başlatışta elle seçiliyor** (5.6, 1.6.2) —
+  `tests/test_listen_address.py`.
+- **Olay kaydı mesaj uzunluğunu yazmıyor** (5.3, 1.5.0) —
+  `tests/test_logging_and_scroll.py`.
+
 ---
 
 ## 5. Bugün verilmeyen güvenceler
@@ -110,7 +122,7 @@ karşılığı yoktur.
 
 ### 5.2 Geçmiş, kimlik doğrulaması olmadan dağıtılıyor — varsayılan kapatıldı (1.7.0)
 
-Geçmiş açıkken sunucu, odaya katılan **herkese** son 100 mesajı gönderir
+Geçmiş açıkken sunucu, odaya katılan **herkese** son 100 mesaja kadar gönderir
 (`core/server.py` → `_send_room_history`) ve odaya katılmak için parola gerekmez.
 Parolayı bilmeyen biri odaya girip 100 şifreli mesajı toplayıp çevrimdışı
 saldırıya alabilir. 5.1 ile birleştiğinde ciddi bir kombinasyondur.

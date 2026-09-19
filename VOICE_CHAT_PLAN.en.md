@@ -67,7 +67,7 @@ The cost of relaying is affordable:
 | | Mesh | Relay through the host |
 | --- | --- | --- |
 | One-way latency | direct | one extra hop, roughly double — the "good" threshold is 150 ms |
-| Host upstream (4 people, Opus) | 0 | ~0.4 Mbit/s — far below an ordinary home connection |
+| Host upstream (4 people, Opus) | 0 | ~0.6 Mbit/s — everyone sends all the time (§4, silence suppression off); far below an ordinary home connection |
 | IP leak | everyone sees everyone | only the host (same as in text chat) |
 | Firewall permission | on every participant | only on the host |
 
@@ -228,13 +228,48 @@ reversed and the resulting growth **measured**, not guessed.
 | Stage | Codec | Bandwidth (mono) | Why |
 | --- | --- | --- | --- |
 | Prototype | G.711 µ-law 16 kHz | ~128 kbit/s | No new binary dependency, proves the path |
-| Release | Opus | ~24–32 kbit/s | 8–10× less bandwidth, better quality for speech |
+| Release | Opus, constant bitrate | 24 kbit/s | ~4× smaller datagrams, better quality for speech, FEC that rebuilds a lost packet |
 
-When moving to Opus, `libopus` must be added to the bundle and a Python binding
-chosen. The prototype uses a codec that needs no external library, which keeps codec
+The prototype uses a codec that needs no external library, which keeps codec
 problems from getting mixed up with network problems. The first run used 8 kHz
 and sounded like a telephone, so it was raised to 16 kHz. µ-law is temporary:
-the standard library module it relies on is being removed in Python 3.13.
+the standard library module it relies on (`audioop`) was removed in Python
+3.13.
+
+### Opus research (2026-09-18)
+
+The trials used the public-domain recording from the listening test; the
+loss was generated at random, not taken from a real line. What follows are
+proposed decisions, not final ones.
+
+- **Binding: libopus directly.** The ready-made Python packages that run
+  Opus bring the whole of FFmpeg, video codecs included, tens of MB. `libopus`
+  on its own is a small library that can be called directly with `ctypes`;
+  the only code decoding untrusted packets from the network is then libopus.
+  Its licence is BSD 3-clause, compatible with the project's GPLv3.
+- **Constant bitrate (CBR), silence suppression (DTX) off.** With variable
+  bitrate the packet size follows the speech and gives silence away plainly.
+  Recovering parts of what was said from packet sizes in encrypted VoIP is a
+  published attack (Wright et al., 2008). With CBR every packet came out
+  the same size. DTX stays off for the same reason: not sending packets
+  during silence tells the network who speaks when. The cost is that
+  everyone uses bandwidth all the time, speaking or not (§2.1).
+- **FEC works.** A lost frame can be rebuilt from the copy carried in the
+  next packet; for that the buffer has to stay at least one frame ahead.
+- **Supply chain.** The library that gets distributed should be built by us
+  from the source archive Xiph publishes; distributing a binary another
+  project built means trusting that project's build pipeline.
+
+| Codec | Frame (20 ms) | Datagram (header + GCM tag included) |
+| --- | --- | --- |
+| µ-law 16 kHz (prototype) | 320 bytes | 354 bytes |
+| Opus 24 kbit/s CBR | 60 bytes | 94 bytes |
+| Opus 16 kbit/s CBR | 40 bytes | 74 bytes |
+
+Open: 24 or 16 kbit/s (to be decided by listening); stay at 16 kHz or move
+to 48 kHz; what FEC gains on a real line, where losses come in bursts.
+Because the jitter buffer's code stays unchanged until the Phase 0 v2 gate
+is decided, Opus goes into the prototype first.
 
 ---
 
@@ -362,9 +397,9 @@ should run in CI.
 
 | Phase | Work | Output |
 | --- | --- | --- |
-| **0. Measurement** | A small tool measuring UDP latency, jitter and loss | **Decision gate**: if the numbers are bad, the plan stops here — v1: BAD; v2 rules written before measuring, measurement pending |
+| **0. Measurement** | A small tool measuring UDP latency, jitter and loss | **Decision gate**: if the numbers are bad, the plan stops here — v1: BAD; v2: three of five measurements done, two pending |
 | **1a. Core** ✅ | Packet format, AES-GCM + HKDF, jitter buffer, tests | A tested core that works without audio hardware |
-| **1b. Skeleton** | Signalling packets, UDP socket, relaying on the host, PCM 16 kHz, one direction | One person speaks, the other hears |
+| **1b. Skeleton** | Signalling packets, UDP socket, relaying on the host, µ-law 16 kHz, one direction | One person speaks, the other hears |
 | **2. Two-way** | Audio device interface, Qt integration, both directions | Two people talk to each other |
 | **3. Usability** | Opus, push-to-talk, speaking indicator, mute | Four people can use it |
 | **4. Packaging** | Put Qt's audio modules back in the bundle, measure the size, UDP firewall rule, documentation | A distributable release |
@@ -566,6 +601,27 @@ The jitter buffer's code was **deliberately left alone.** Under the Phase 0 v2
 rules, if that code changes after the measurement records are seen the same
 records cannot be re-evaluated; loss concealment therefore lives in the
 prototype rather than in the buffer.
+
+### Real-use trial (2026-09-18) — does not count toward the gate
+
+The prototype carried a real, uninterrupted, encrypted conversation of more
+than an hour between two separate internet connections. The impression of
+the people talking: "it feels like using Discord."
+
+- By the Phase 0 v2 definition, the interruption rate stayed below 1.5% in
+  both directions.
+- After a few short spikes and one stall of a few seconds, the buffer
+  recovered on its own every time.
+- The frames missing during that stall were **not counted as lost**,
+  because there was no gap in the sequence numbers. A stall on the sending
+  side (the microphone not producing frames) does not show up in the
+  prototype's current counters; the next version will count it separately.
+
+**Why it does not count toward the gate:** Phase 0 v2 is measured with the
+measurement tool and small Opus-like packets, while this used 354-byte
+µ-law packets; mouth-to-ear p95 was never measured; and choosing which data
+counts after seeing the result is exactly the mistake the pre-registration
+is meant to prevent. This session stands as separate evidence.
 
 ---
 

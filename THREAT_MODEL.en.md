@@ -26,8 +26,9 @@ its principles is rejected, however useful it may be.
 > **Today's status, in one sentence:** ProxyNet protects message content
 > against the server and against third parties who cannot enter the room; it
 > **does not protect against a state-level adversary.** The difference is
-> listed explicitly in sections 5 and 6. Until those are closed, no claim to
-> the contrary should be made.
+> listed explicitly in section 5, and the order in which it gets closed in
+> section 8. Until those gaps are closed, no claim to the contrary should be
+> made.
 
 ---
 
@@ -94,6 +95,18 @@ All of these are tested (`tests/test_crypto.py`, `tests/test_hardening.py`):
 - Limits against resource exhaustion: 64 KiB per packet, 8 KiB per message,
   20 messages per 10 seconds, at most 50 clients, 120-second idle timeout.
 
+Gaps from section 5 that have been closed (the detail and the remaining
+limits stay there):
+
+- **Room history is off by default** (5.2, 1.7.0) —
+  `tests/test_settings.py` → `HistoryDefaultTests`.
+- **The key is derived with Argon2id** (5.8, 1.7.0) —
+  `tests/test_crypto.py` → `Argon2idTests`.
+- **The network the host listens on is picked by hand at every start**
+  (5.6, 1.6.2) — `tests/test_listen_address.py`.
+- **The event log does not record message length** (5.3, 1.5.0) —
+  `tests/test_logging_and_scroll.py`.
+
 ---
 
 ## 5. Guarantees NOT given today
@@ -114,7 +127,7 @@ no equivalent.
 
 ### 5.2 History is handed out without authentication — off by default (1.7.0)
 
-While history is on, the server sends the last 100 messages to **everyone** who
+While history is on, the server sends up to the last 100 messages to **everyone** who
 joins a room (`core/server.py` → `_send_room_history`), and no password is
 required to join. Someone who does not know the password can enter a room,
 collect 100 encrypted messages and take them away for an offline attack.
