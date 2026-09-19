@@ -85,10 +85,13 @@ Yeni paket tipleri:
 | `voice_join` | istemci → sunucu | UDP portu, oturum tuzu (16 bayt) |
 | `voice_leave` | istemci → sunucu | — |
 | `voice_peers` | sunucu → istemci | odadaki ses katılımcıları: `user`, `sender_id`, oturum tuzu — **IP yok** |
-| `voice_state` | çift yönlü | `muted`, `speaking` |
 
-Sunucu ses verisine hiç dokunmaz; yalnızca kimin konuştuğunu ve paketleri
-kime ileteceğini bilir.
+Sunucu ses verisine hiç dokunmaz; yalnızca kimin sesli sohbette olduğunu ve
+paketleri kime ileteceğini bilir. **Kimin konuştuğunu ya da mikrofonunu
+kapattığını bilmez** (2026-09-19): ilk taslaktaki `voice_state` paketi
+(`muted`, `speaking`) kaldırıldı. Gerekçe §4'teki Opus araştırmasında: ses
+akışı konuşma olsun olmasın sabit hızda akıyor, bu bilgiyi sunucuya ayrıca
+vermek o önlemi boşa çıkarırdı.
 
 ### 2.3 Ses paketi biçimi (UDP)
 
@@ -339,7 +342,10 @@ hızlandırma) ve tek tük kayıp paketleri geri kuran **Opus FEC**.
 ## 6. Arayüz
 
 - Sol kenar çubuğunda "Sesli Sohbet" bölümü, katıl/ayrıl düğmesi.
-- Katılanların listesi; konuşan kişinin adı vurgulanır (basit RMS eşiği).
+- Katılanların listesi; konuşan kişinin adı vurgulanır (basit RMS eşiği; her
+  alıcı çözdüğü sesten kendisi hesaplar, ağdan böyle bir bilgi gelmez).
+- Sustur ve bas-konuş, gönderilen akışı durdurmaz: tuşa basılmadığında ya da
+  mikrofon kapalıyken de sessizlik çerçevesi gider, dışarıdan fark görünmez.
 - Sustur (mikrofon) ve sağırlaştır (hoparlör) düğmeleri.
 - **Bas-konuş (push-to-talk)** seçeneği — varsayılan açık olsun.
 

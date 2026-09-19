@@ -87,10 +87,13 @@ New packet types:
 | `voice_join` | client → server | UDP port, session salt (16 bytes) |
 | `voice_leave` | client → server | — |
 | `voice_peers` | server → client | voice participants in the room: `user`, `sender_id`, session salt — **no IP** |
-| `voice_state` | both ways | `muted`, `speaking` |
 
-The server never touches audio data; it only knows who is speaking and where to
-forward the packets.
+The server never touches audio data; it only knows who is in voice chat and
+where to forward the packets. **It does not know who is speaking or who has
+muted their microphone** (2026-09-19): the `voice_state` packet of the first
+draft (`muted`, `speaking`) was dropped. The reason is in the Opus research in
+§4: the audio stream flows at a constant rate whether anyone speaks or not,
+and handing that information to the server separately would undo it.
 
 ### 2.3 Audio packet format (UDP)
 
@@ -353,7 +356,11 @@ packet.
 
 - A "Voice chat" section in the left sidebar, with a join/leave button.
 - A list of participants; the speaker's name is highlighted (simple RMS
-  threshold).
+  threshold; each receiver computes it from the audio it decrypts, nothing
+  about it comes over the network).
+- Mute and push-to-talk do not stop the outgoing stream: while the key is
+  not pressed or the microphone is muted, silence frames keep going, so no
+  difference shows from outside.
 - Mute (microphone) and deafen (speaker) buttons.
 - A **push-to-talk** option — on by default.
 
