@@ -622,13 +622,73 @@ the people talking: "it feels like using Discord."
 - The frames missing during that stall were **not counted as lost**,
   because there was no gap in the sequence numbers. A stall on the sending
   side (the microphone not producing frames) does not show up in the
-  prototype's current counters; the next version will count it separately.
+  prototype's counters of that day; it is now counted separately (see the
+  prototype update below).
 
 **Why it does not count toward the gate:** Phase 0 v2 is measured with the
 measurement tool and small Opus-like packets, while this used 354-byte
 µ-law packets; mouth-to-ear p95 was never measured; and choosing which data
 counts after seeing the result is exactly the mistake the pre-registration
 is meant to prevent. This session stands as separate evidence.
+
+### Prototype update: measurement and handshake security (2026-09-19)
+
+Two aims: to measure what the first long trial could not answer, and to
+close the prototype's own gaps. This update has not yet been tried live
+between two computers; it is verified by tests only.
+
+**Measurement.**
+
+- Every session writes a record file on its own (JSON lines). No IP
+  address, password or audio content is written.
+- **Long stalls** (0.5 seconds or longer) are counted in two places. On the
+  playback side, what is counted is an unplayable stretch. On the arrival
+  side the cause is told apart from the packet header:
+  - if the sender's timestamp moved on without a gap in the sequence
+    numbers, the frames were never produced on the sending side;
+  - if the sequence jumped, the frames were lost in the network;
+  - if neither moved, the packets were held up in the network and arrived
+    in a burst.
+- **Sender rate:** how fast the other side's sequence number advances,
+  divided by the receiving side's clock. This separates clock drift from
+  stalls.
+- **The round trip is measured inside the stream.** Every frame's encrypted
+  part carries a fixed 6-byte addition: the timestamp of the last packet
+  received from the other side and the time elapsed since (RTCP's method).
+  There is no separate measurement packet and every packet is the same size
+  (360 bytes), so nobody outside can see that a measurement takes place.
+- **Mouth-to-ear p95**, by the Phase 0 v2 definition: RTT/2 + buffer + 40 ms.
+  One-way delay is taken as half the round trip, assuming symmetric paths.
+- Because the wire format changed, both sides compare the prototype version
+  during the handshake; no connection is made with a different version.
+
+**Handshake security.** In the prototype's first version the handshake was
+not authenticated. Anyone who could reach the port could pull the
+conversation over to themselves with a single packet. With a password they
+could not decrypt the audio, but the conversation would be cut. The fix:
+
+- Four steps: request → challenge (a random challenge the listener creates
+  at every start) → hello (salt + challenge, HMAC-SHA256 with a key derived
+  from the password's key under a separate label) → welcome (a signature
+  that also covers the connecting side's salt). Only someone who knows the
+  password can produce the signature.
+- A captured hello cannot be replayed from another address; a salt seen
+  before is refused. An established connection moves to another address
+  only with a new, valid session, for example when the VPN reconnects.
+- Replies are accepted only from the target address, and audio only from
+  the address that completed the handshake. A packet that cannot be verified
+  is dropped silently; replying would let packets with a forged source
+  address direct traffic at someone else.
+- The listener listens on an address picked from a list, not on every
+  network; there is no default. The same rule as threat model 5.6.
+- The password is asked for without showing it on screen.
+- The passwordless mode stays in the prototype on purpose but has no
+  protection: audio travels in the clear, the first connecting IP is locked
+  in, and a warning is shown.
+
+Remaining limits: the password can be guessed offline, there is no forward
+secrecy, and the handshake packets give away that the traffic is this
+prototype. Those are for the protocol design, not the prototype.
 
 ---
 

@@ -589,14 +589,66 @@ kullanıyormuş gibi."
   sonra her seferinde kendiliğinden toparlandı.
 - O takılmada gelmeyen çerçeveler **kayıp sayılmadı**, çünkü sıra
   numarasında boşluk yoktu. Gönderen tarafın takılması (mikrofonun çerçeve
-  üretmemesi) prototipin bugünkü sayaçlarında görünmüyor; bir sonraki
-  sürümde ayrıca sayılacak.
+  üretmemesi) o günkü sayaçlarda görünmüyordu; artık ayrıca sayılıyor
+  (aşağıda, prototip güncellemesi).
 
 **Neden kapıya sayılmıyor:** Faz 0 v2 ölçüm aracıyla ve Opus benzeri küçük
 paketlerle ölçülür, burada 354 baytlık µ-law paketi vardı; ağızdan kulağa
 %95 hiç ölçülmedi; ve sonucu gördükten sonra hangi verinin sayılacağını
 seçmek, ön kaydın önlemeye çalıştığı hatanın kendisi. Bu oturum ayrı bir
 kanıt olarak duruyor.
+
+### Prototip güncellemesi: ölçüm ve el sıkışma güvenliği (2026-09-19)
+
+İki amaç var: ilk uzun denemenin cevaplayamadığı soruları ölçmek ve
+prototipin kendi açıklarını kapatmak. Bu güncelleme henüz iki bilgisayar
+arasında canlı denenmedi; yalnızca testlerle doğrulandı.
+
+**Ölçüm.**
+
+- Her oturum kendiliğinden bir kayıt dosyası yazar (JSON satırları). IP
+  adresi, parola ya da ses içeriği yazılmaz.
+- **Uzun takılma** (0,5 saniye ya da daha uzun) iki yerde sayılır. Çalma
+  tarafında sayılan, çalınamayan aralıktır. Geliş tarafında ise sebep paket
+  başlığından ayrılır:
+  - sıra numarası atlamadan gönderenin zaman damgası ilerlediyse çerçeveler
+    gönderen tarafta hiç üretilmemiş;
+  - sıra atladıysa çerçeveler ağda kaybolmuş;
+  - ikisi de ilerlemediyse paketler ağda bekletilip toplu gelmiş.
+- **Gönderen hızı:** karşı tarafın sıra numarası ilerleyişinin alan tarafın
+  saatine oranı. Saat kayması ile takılma bununla ayrılır.
+- **Gidiş-dönüş akışın içinde ölçülür.** Her çerçevenin şifreli kısmına
+  6 baytlık sabit bir ek girer: karşıdan son gelen paketin zaman damgası ve
+  o andan beri geçen süre (RTCP'nin yöntemi). Ayrı bir ölçüm paketi yok ve
+  her paket aynı boyda (360 bayt); dışarıdan ölçüm yapıldığı görülmez.
+- **Ağızdan kulağa %95**, Faz 0 v2 tanımıyla: RTT/2 + tampon + 40 ms. Tek
+  yön gecikme, yolların simetrik olduğu varsayılarak RTT'nin yarısı sayılır.
+- Tel biçimi değiştiği için iki taraf el sıkışmada prototip sürümünü
+  karşılaştırır; farklı sürümle bağlantı kurulmaz.
+
+**El sıkışma güvenliği.** Prototipin ilk hâlinde el sıkışma
+doğrulanmıyordu. Porta ulaşabilen herkes tek bir paketle konuşmayı kendine
+çekebilirdi. Parola varsa sesi çözemezdi, ama konuşma kesilirdi. Düzeltme:
+
+- Dört adım: istek → soru (dinleyenin her açılışta ürettiği rastgele soru)
+  → merhaba (tuz + soru, parolanın anahtarından ayrı bir etiketle türeyen
+  anahtarla HMAC-SHA256) → hoşgeldin (bağlananın tuzunu da kapsayan imza).
+  İmzayı yalnızca parolayı bilen üretebilir.
+- Yakalanan bir merhaba başka bir adresten tekrar oynatılamaz; daha önce
+  görülmüş bir tuz reddedilir. Kurulu bağlantı yalnızca yeni ve geçerli bir
+  oturumla başka adrese geçer, örneğin VPN yeniden bağlandığında.
+- Cevaplar yalnızca hedef adresten, ses yalnızca el sıkışmayı tamamlayan
+  adresten kabul edilir. Doğrulanamayan paket sessizce atılır; cevap vermek
+  sahte kaynak adresli paketlerle başkasına trafik yönlendirmeye yarardı.
+- Dinleyen bütün ağları değil, listeden seçilen adresi dinler; varsayılan
+  yok. Tehdit modelinin 5.6'daki kuralının aynısı.
+- Parola ekranda gösterilmeden sorulur.
+- Parolasız mod prototipte bilerek duruyor ama korumasız: ses açık gider,
+  ilk bağlananın IP'si kilitlenir ve ekranda uyarı çıkar.
+
+Kalan sınırlar: parola çevrimdışı denenebilir, ileri gizlilik yok ve el
+sıkışma paketleri trafiğin bu prototip olduğunu belli eder. Bunlar
+prototipin değil, protokol tasarımının işi.
 
 ---
 
