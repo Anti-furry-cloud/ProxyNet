@@ -67,7 +67,7 @@ The cost of relaying is affordable:
 | | Mesh | Relay through the host |
 | --- | --- | --- |
 | One-way latency | direct | one extra hop, roughly double — the "good" threshold is 150 ms |
-| Host upstream (4 people, Opus) | 0 | ~0.6 Mbit/s — everyone sends all the time (§4, silence suppression off); far below an ordinary home connection |
+| Host upstream (4 people, Opus) | 0 | ~0.45 Mbit/s (if the host is one of the speakers) — everyone sends all the time (§4, silence suppression off); far below an ordinary home connection |
 | IP leak | everyone sees everyone | only the host (same as in text chat) |
 | Firewall permission | on every participant | only on the host |
 

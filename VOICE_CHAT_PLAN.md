@@ -65,7 +65,7 @@ Aktarmanın bedeli taşınabilir:
 | | Mesh | Host üzerinden aktarma |
 | --- | --- | --- |
 | Tek yön gecikme | doğrudan | bir durak fazla, kabaca iki katı — "iyi" eşiği 150 ms |
-| Host yükleme bandı (4 kişi, Opus) | 0 | ~0,6 Mbit/s — herkes sürekli gönderir (§4, sessizlikte susma kapalı); sıradan bir ev bağlantısının çok altında |
+| Host yükleme bandı (4 kişi, Opus) | 0 | ~0,45 Mbit/s (Host da konuşanlardan biriyse) — herkes sürekli gönderir (§4, sessizlikte susma kapalı); sıradan bir ev bağlantısının çok altında |
 | IP sızıntısı | herkes herkesi görür | yalnızca Host görür (metin sohbetindeki durumla aynı) |
 | Güvenlik duvarı izni | her katılımcıda | yalnızca Host'ta |
 
