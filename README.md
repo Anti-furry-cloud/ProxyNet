@@ -74,9 +74,11 @@ closed: **[THREAT_MODEL.en.md](THREAT_MODEL.en.md)**
 Voice chat is being worked on. Its core is written, and a prototype has now
 carried a live conversation between two computers on separate internet
 connections; that prototype is a separate command-line tool, not part of the
-program people install. Whether the connection quality is good enough is being
+program people install. Whether the connection quality is good enough was
 decided by measurements whose rules were published before the measuring
-started. The design — the topology decision, the binary packet format,
+started; on 2026-09-24 the result came out **acceptable**, so the network
+work may continue. Shipping voice chat as a default also depends on a
+live-use test whose rules were likewise written in advance. The design — the topology decision, the binary packet format,
 the AES-GCM scheme and the **security questions that are not yet solved** — is
 here, together with what the prototype and the measurements have shown so
 far: **[VOICE_CHAT_PLAN.en.md](VOICE_CHAT_PLAN.en.md)**

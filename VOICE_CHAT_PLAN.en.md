@@ -16,8 +16,9 @@ Status: **Phase 1 started, the core is written, and the prototype has carried
 a conversation between two computers.** The audio packet format, encryption and
 jitter buffer live under `core/` and are tested. Audio hardware and networking
 now exist, but only in a command-line tool that is not distributed; the UI side
-does not exist yet. Phase 0's decision gate is **still open**: three of the v2
-measurements are done and two are missing.
+does not exist yet. **Phase 0's decision gate came out ACCEPTABLE on
+2026-09-24**; Phase 1b may start, but shipping voice chat as a default also
+depends on the live-use test.
 
 Goal: letting a group of 2–5 friends talk over a virtual LAN (VPN) or a local
 network. Not replacing Discord.
@@ -420,7 +421,7 @@ should run in CI.
 
 | Phase | Work | Output |
 | --- | --- | --- |
-| **0. Measurement** | A small tool measuring UDP latency, jitter and loss | **Decision gate**: if the numbers are bad, the plan stops here — v1: BAD; v2: three of five measurements done, two pending |
+| **0. Measurement** | A small tool measuring UDP latency, jitter and loss | **Decision gate**: if the numbers are bad, the plan stops here — v1: BAD; v2 (2026-09-24): **ACCEPTABLE** |
 | **1a. Core** ✅ | Packet format, AES-GCM + HKDF, jitter buffer, tests | A tested core that works without audio hardware |
 | **1b. Skeleton** | Signalling packets, UDP socket, relaying on the host, µ-law 16 kHz, one direction | One person speaks, the other hears |
 | **2. Two-way** | Audio device interface, Qt integration, both directions | Two people talk to each other |
@@ -589,6 +590,36 @@ three count from one day. The gate decision comes when five are complete: the
 worst is left out and the worst of the remaining four decides. The numbers are
 not published here; when the decision is announced, its reasoning will be
 written down with it.
+
+#### Gate decision (2026-09-24): ACCEPTABLE
+
+The five counted measurements are complete: three on 17 September, two on
+24 September. The results, in order: acceptable, acceptable, acceptable,
+**bad** and **good**. By the rule the worst measurement was left out; the
+worst of the remaining four stayed within the acceptable thresholds.
+**Decision: ACCEPTABLE, Phase 1b starts.**
+
+**I am not hiding this:** the measurement that was left out was bad because
+it went over the mouth-to-ear delay threshold. The rule "the worst is left
+out" was written and published before the measuring, to tolerate a single
+outlier, so the decision follows it. But without that rule the gate would
+have closed. One measurement in five going over the threshold means the line
+is not always good enough.
+
+What that means in practice: voice chat **can work, but is not guaranteed.**
+Moments like the bad measurement will happen in real use too. So this
+decision alone does not put voice chat into ProxyChat; shipping it as a
+default also depends on passing the live-use test (below).
+
+What changes after the decision:
+
+- Phase 1b may start: signalling packets, the UDP socket and relaying on the
+  host.
+- `core/voice_jitter.py` may change now. If it does, these five records are
+  not re-scored; new measurements are needed.
+- The Phase 0 v2 rules are closed. Had the result been bad, no v3 would have
+  been written; because it was not bad, the rules are not loosened in
+  hindsight either.
 
 ---
 

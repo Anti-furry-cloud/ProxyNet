@@ -72,9 +72,12 @@ Hepsinin ayrıntısı, neden böyle olduğu ve kapatılma sırası burada:
 
 Sesli sohbet üzerinde çalışılıyor. Çekirdeği yazıldı ve bir prototip, ayrı
 internet bağlantılarındaki iki bilgisayar arasında canlı konuşmayı taşıdı; o
-prototip ayrı bir komut satırı aracı, kurulan programın parçası değil.
-Bağlantı kalitesinin yeterli olup olmadığına, kuralları ölçüm yapılmadan önce
-yayınlanmış ölçümlerle karar veriliyor. Tasarımı — topoloji kararı, ikili
+prototip ayrı bir araç, kurulan programın parçası değil. Bağlantı
+kalitesinin yeterli olup olmadığına, kuralları ölçüm yapılmadan önce
+yayınlanmış ölçümlerle karar verildi: 2026-09-24'te sonuç **kabul
+edilebilir** çıktı, yani ağ tarafına devam edilebilir. Sesli sohbetin ürüne
+varsayılan olarak girmesi, kuralları yine önceden yazılmış canlı kullanım
+testine de bağlı. Tasarımı — topoloji kararı, ikili
 paket biçimi, AES-GCM şeması ve **henüz çözülmemiş güvenlik soruları** —
 prototipin ve ölçümlerin şimdiye kadar gösterdikleriyle birlikte burada:
 **[VOICE_CHAT_PLAN.md](VOICE_CHAT_PLAN.md)**

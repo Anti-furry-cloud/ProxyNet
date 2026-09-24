@@ -15,8 +15,9 @@
 Durum: **Faz 1 başladı, çekirdek yazıldı; prototip iki bilgisayar arasında
 konuştu.** Ses paketi biçimi, şifreleme ve jitter tamponu `core/` altında
 duruyor ve test ediliyor. Ses donanımı ve ağ artık var, ama yalnızca
-dağıtılmayan bir komut satırı aracında; arayüz tarafı henüz yok. Faz 0'ın
-karar kapısı **hâlâ açık**: v2 ölçümlerinin üçü yapıldı, ikisi eksik.
+dağıtılmayan bir araçta. **Faz 0'ın karar kapısı 2026-09-24'te KABUL
+EDİLEBİLİR çıktı**; Faz 1b başlayabilir, ama sesli sohbetin ürüne varsayılan
+olarak girmesi canlı kullanım testine de bağlı.
 
 Hedef: sanal LAN (VPN) ya da yerel ağ üzerinde 2–5 kişilik bir arkadaş
 grubunun konuşabilmesi. Discord'un yerini almak değil.
@@ -400,7 +401,7 @@ kullanmıyorlar; CI'da çalışırlar. Ses donanımı gerektiren hiçbir test CI
 
 | Faz | İş | Çıktı |
 | --- | --- | --- |
-| **0. Ölçüm** | UDP gecikme, jitter ve kayıp ölçen küçük bir araç | **Karar kapısı**: rakamlar kötüyse plan burada durur — v1: KÖTÜ; v2: beş ölçümün üçü yapıldı, ikisi bekliyor |
+| **0. Ölçüm** | UDP gecikme, jitter ve kayıp ölçen küçük bir araç | **Karar kapısı**: rakamlar kötüyse plan burada durur — v1: KÖTÜ; v2 (2026-09-24): **KABUL EDİLEBİLİR** |
 | **1a. Çekirdek** ✅ | Paket biçimi, AES-GCM + HKDF, jitter tamponu, testler | Ses donanımı olmadan çalışan, test edilmiş çekirdek |
 | **1b. İskelet** | Sinyalleşme paketleri, UDP soketi, Host'ta aktarma, µ-law 16 kHz, tek yönlü | Bir kişi konuşur, diğeri duyar |
 | **2. Çift yönlü** | Ses cihazı arayüzü, Qt entegrasyonu, iki yön | 2 kişi karşılıklı konuşur |
@@ -558,6 +559,33 @@ kaldı. Kalan iki ölçüm başka bir güne kalıyor; bir günden en fazla üç 
 sayılıyor. Kapı kararı beşi tamamlanınca verilecek: en kötü ölçüm dışarıda
 bırakılıp kalan dördün en kötüsüne bakılacak. Sayılar burada yayınlanmıyor;
 karar açıklandığında gerekçesi de yazılacak.
+
+#### Kapı kararı (2026-09-24): KABUL EDİLEBİLİR
+
+Beş sayılan ölçüm tamamlandı: 17 Eylül'de üç, 24 Eylül'de iki. Sonuçlar
+sırasıyla kabul edilebilir, kabul edilebilir, kabul edilebilir, **kötü** ve
+**iyi**. Kurala göre en kötü ölçüm dışarıda bırakıldı; kalan dördün en
+kötüsü kabul edilebilir eşiklerinin içinde kaldı. **Karar: KABUL
+EDİLEBİLİR, Faz 1b başlar.**
+
+**Saklamıyorum:** dışarıda bırakılan ölçüm, ağızdan kulağa gecikme eşiğini
+aştığı için kötüydü. "En kötüsü dışarıda bırakılır" kuralı ölçümlerden önce
+yazılıp yayınlanmıştı ve tek bir sapmaya tolerans tanımak içindi; karar o
+kurala uygun. Ama o kural olmasaydı kapı kapanırdı. Beşte bir ölçümün eşiği
+aşması, hattın her zaman yetmediği anlamına gelir.
+
+Bunun pratik karşılığı: sesli sohbet **çalışabilir ama garanti değil.** Kötü
+çıkan ölçümdeki gibi anlar gerçek kullanımda da olacak. Bu yüzden karar tek
+başına sesli sohbeti ProxyChat'e sokmuyor; ürün olarak girmesi canlı kullanım
+testini de geçmesine bağlı (aşağıda).
+
+Karardan sonra değişenler:
+
+- Faz 1b başlayabilir: sinyalleşme paketleri, UDP soketi ve Host'ta aktarma.
+- `core/voice_jitter.py` artık değiştirilebilir. Değiştirilirse bu beş kayıt
+  yeniden değerlendirilmez; yeni ölçüm gerekir.
+- Faz 0 v2 kuralları kapandı. Kötü çıksaydı v3 yazılmayacaktı; iyi çıktığı
+  için de kurallar geriye dönük gevşetilmiyor.
 
 ---
 
