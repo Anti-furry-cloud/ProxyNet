@@ -797,7 +797,13 @@ ProxyChat's interface files were touched.** Voice chat entering ProxyChat
 still depends on the Phase 0 gate and on Phase 1b; this window is part of
 the tool, not of the product. Opening two windows on one machine turned up
 a bug, now fixed: two sessions started in the same second opened the same
-record file and the second overwrote the first's record.
+record file and the second overwrote the first's record. The prototype now comes with two
+windows: its own small one and **ProxyChat's own interface** with a voice
+panel in the right sidebar. The second imports ProxyChat's window class;
+nothing under `apps/proxychat/` was changed or copied. The audio still takes
+the prototype's own path: straight UDP to the other side, not through the
+room. Chat and voice appear in one window but do not share a channel; real
+integration depends on Phase 1b.
 
 ---
 

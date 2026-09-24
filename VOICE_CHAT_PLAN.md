@@ -752,7 +752,13 @@ alınıyor, kopyalanmıyor; **ProxyChat'in arayüz dosyalarına dokunulmadı.**
 Sesli sohbetin ProxyChat'e girmesi hâlâ Faz 0 kapısına ve Faz 1b'ye bağlı;
 bu pencere ürünün değil, aracın parçası. Pencereyi iki kez açıp tek makinede
 denerken bir hata çıktı ve düzeltildi: aynı saniyede başlayan iki oturum
-aynı kayıt dosyasını açıyor, ikincisi birincinin kaydını eziyordu.
+aynı kayıt dosyasını açıyor, ikincisi birincinin kaydını eziyordu. Prototip iki
+pencereyle gelebiliyor: kendi küçük penceresi ve **ProxyChat'in kendi
+arayüzü** (sağ kenarda sesli sohbet paneli). İkincisi ProxyChat'in pencere
+sınıfını içeri aktarıyor; `apps/proxychat/` altında hiçbir dosya değişmedi
+ve kopyalanmadı. Ses yine prototipin kendi yolundan geçiyor: karşı tarafa
+doğrudan UDP, oda üzerinden değil. Yani sohbet ve ses aynı pencerede
+görünüyor ama aynı kanaldan geçmiyor; gerçek entegrasyon Faz 1b'ye bağlı.
 
 ---
 
