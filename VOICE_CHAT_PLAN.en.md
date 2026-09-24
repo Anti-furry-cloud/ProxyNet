@@ -259,6 +259,10 @@ proposed decisions, not final ones.
   everyone uses bandwidth all the time, speaking or not (§2.1).
 - **FEC works.** A lost frame can be rebuilt from the copy carried in the
   next packet; for that the buffer has to stay at least one frame ahead.
+- **Correction (2026-09-24):** FEC does not work at every setting. At
+  24 kbit/s constant bitrate the redundant frame is only added when the
+  expected loss is set to 10% or more; at 16 kbit/s it is never added, so
+  that bitrate means giving up FEC.
 - **Supply chain.** The library that gets distributed should be built by us
   from the source archive Xiph publishes; distributing a binary another
   project built means trusting that project's build pipeline.
@@ -630,6 +634,87 @@ measurement tool and small Opus-like packets, while this used 354-byte
 µ-law packets; mouth-to-ear p95 was never measured; and choosing which data
 counts after seeing the result is exactly the mistake the pre-registration
 is meant to prevent. This session stands as separate evidence.
+
+### Live-use test (2026-09-19, approved 2026-09-24)
+
+> **Status: binding.** The product owner approved it on 2026-09-24 and this
+> commit bound the rules. No session held before approval counts, the
+> 2026-09-18 session included. From here on no rule in it changes.
+
+**Purpose.** Phase 0 measures whether the line can carry voice. This test
+measures whether a real conversation is good enough for people. It does not
+replace Phase 0, it adds to it: voice chat does not enter ProxyChat as a
+default until both pass.
+
+**When.** After the Phase 0 v2 gate comes out good or acceptable, as the
+acceptance test of Phase 1b. If Phase 0 comes out bad, this test is not run.
+
+**Tool requirement.** The test does not start until the measuring tool is
+ready. On both sides, without the user doing anything, the tool writes a
+record file at the end of the session with:
+
+- received, lost, late, concealed and dropped frames, per direction;
+- **long stalls:** the start and length of every stretch of 500 ms or more
+  that could not be played, with or without a sequence gap;
+- **the other side's send rate:** the span of sequence numbers against the
+  local clock, so clock drift and sender stalls are reported separately;
+- **mouth-to-ear delay:** one-way network delay (half the round trip,
+  measured with a timestamp carried in the audio stream and echoed back) +
+  buffer + 40 ms device allowance, 95th percentile. Device delays such as
+  Bluetooth cannot be measured and are recorded as a condition.
+
+**Decision (2026-09-19): the round trip is measured inside the stream.**
+Every frame's encrypted part carries a fixed 6-byte addition (the timestamp
+of the last packet received from the other side and the time elapsed since;
+RTCP's method). With no separate measurement packet and every packet the
+same size, nobody outside can see that a measurement is taking place. Tool:
+the voice prototype (`tools/ses_prototip.py`); it writes all four items
+above to a `ses-prototip-kaydi-*.jsonl` file. Long stalls are counted both
+on the playback side (this definition) and on the arrival side, where the
+cause (sender or network) is told apart.
+
+**Session rules.**
+
+- Each session is at least **45 minutes** of continuous talk. What people do
+  meanwhile is free (a game, a chat); the point is real use.
+- **Three sessions on three separate calendar days**, at most one counted per
+  day. After approval every session held with the tool counts in order; the
+  first three decide.
+- Conditions are recorded before each session: connection type, game running,
+  downloads, Bluetooth. They are notes only, never grounds for exclusion.
+- **No session is removed afterwards.** A session that ends before 45
+  minutes, crashes, or lacks either side's record counts as **BAD**.
+- Right after the session, before looking at any number, both people answer
+  one question in writing: *"How comfortable was the conversation?
+  (1 = unusable, 5 = no different from Discord)"*.
+
+**Measures and thresholds** (the worse of the two directions in each
+session):
+
+| Measure | Good | Acceptable |
+| --- | --- | --- |
+| Interruption rate (v2 definition) | ≤ 1% | ≤ 5.8% |
+| Mouth-to-ear, 95th percentile | ≤ 150 ms | ≤ 300 ms |
+| Long stalls (≥ 500 ms) per hour | ≤ 2 | ≤ 6 |
+| Comfort score, lower of the two people | ≥ 4 | ≥ 3 |
+
+A session's result is the worst of its four measures. **The worst of the
+three sessions decides;** dropping the worst of three would leave the result
+to a single good day, so it is not dropped.
+
+The interruption and delay thresholds match Phase 0 v2 on purpose, so both
+tests use the same bar. The long-stall and comfort thresholds are new; they
+were approved on 2026-09-24, before any measurement.
+
+**Decisions bound in advance.**
+
+- **Good or acceptable:** voice chat may be offered in ProxyChat by default.
+- **Bad:** voice chat does not go in by default. Unlike Phase 0, code may
+  change here (buffer, codec, FEC), because what is measured is the product
+  itself. But any change needs **three new sessions**; old sessions are not
+  re-scored with new code, and failed rounds stay in the document.
+
+---
 
 ### Prototype update: measurement and handshake security (2026-09-19)
 

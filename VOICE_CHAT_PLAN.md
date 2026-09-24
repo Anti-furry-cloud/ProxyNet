@@ -250,6 +250,9 @@ hattan değil, rastgele üretildi. Aşağıdakiler karar önerisi, kesinleşmedi
   konuşmasa da sürekli bant kullanması (§2.1).
 - **FEC çalışıyor.** Kayıp çerçeve bir sonraki paketin içindeki yedekten
   kurulabiliyor; bunun için tampon en az bir çerçeve önde durmalı.
+- **Düzeltme (2026-09-24):** FEC her ayarda çalışmıyor. 24 kbit/s sabit bit
+  hızında yedek çerçeve ancak kayıp beklentisi %10 ve üstündeyken konuyor;
+  16 kbit/s'de hiç konmuyor, yani o bit hızı FEC'ten vazgeçmek demek.
 - **Tedarik zinciri.** Dağıtılacak kütüphane, Xiph'in yayımladığı kaynak
   arşivinden kendimiz derlenmeli; başka bir projenin derlediği ikiliyi
   dağıtmak, o projenin derleme hattına güvenmek demek.
@@ -597,6 +600,85 @@ paketlerle ölçülür, burada 354 baytlık µ-law paketi vardı; ağızdan kula
 %95 hiç ölçülmedi; ve sonucu gördükten sonra hangi verinin sayılacağını
 seçmek, ön kaydın önlemeye çalıştığı hatanın kendisi. Bu oturum ayrı bir
 kanıt olarak duruyor.
+
+### Canlı kullanım testi (2026-09-19, onaylandı 2026-09-24)
+
+> **Durum: bağlayıcı.** Ürün sahibi 2026-09-24'te onayladı ve bu commit'le
+> kurallar bağlandı. Onaydan önce yapılan hiçbir oturum sayılmaz, 2026-09-18
+> oturumu dahil. Bundan sonra kuralların hiçbir maddesi değiştirilmez.
+
+**Amaç.** Faz 0 hattın kaldırıp kaldırmadığını ölçer. Bu test, gerçek bir
+konuşmanın insanlara yetip yetmediğini ölçer. Faz 0'ın yerine geçmez, ona
+eklenir: sesli sohbet, ikisi de geçmeden ProxyChat'e varsayılan olarak girmez.
+
+**Ne zaman.** Faz 0 v2 kapısı iyi ya da kabul edilebilir çıktıktan sonra, Faz
+1b'nin kabul testi olarak. Faz 0 kötü çıkarsa bu test yapılmaz.
+
+**Araç koşulu.** Test, ölçen araç hazır olmadan başlamaz. Araç her iki tarafta
+da, kullanıcı bir şey yapmadan, oturum sonunda bir kayıt dosyası yazar:
+
+- iki yön için ayrı ayrı alınan, kayıp, geç, gizlenen, atılan çerçeve;
+- **uzun takılmalar:** art arda 500 ms ya da daha uzun çalınamayan her
+  aralığın başlangıcı ve süresi (sıra numarası boşluğu olsun olmasın);
+- **karşı tarafın gönderme hızı:** sıra numarası aralığının yerel saate
+  oranı; saat kayması ile gönderen takılması ayrı raporlanır;
+- **ağızdan kulağa gecikme:** tek yön ağ gecikmesi (ses akışının içinde giden
+  zaman damgası ve yankısıyla ölçülen gidiş-dönüşün yarısı) + tampon + 40 ms
+  ses cihazı payı, %95'i. Bluetooth gibi cihaz gecikmeleri ölçülemez, koşul
+  olarak kayda girer.
+
+**Karar (2026-09-19): gidiş-dönüş akışın içinde ölçülür.** Her çerçevenin
+şifreli kısmına 6 baytlık sabit bir ek girer (karşıdan son gelen paketin
+zaman damgası ve o andan beri geçen süre; RTCP'nin yöntemi). Ayrı bir ölçüm
+paketi olmadığı ve her paket aynı boyda kaldığı için dışarıdan ölçüm yapıldığı
+görülmez. Araç: ses prototipi (`tools/ses_prototip.py`); yukarıdaki dört
+maddenin hepsini `ses-prototip-kaydi-*.jsonl` dosyasına yazıyor. Uzun takılma
+hem çalma tarafında (bu tanım) hem geliş tarafında sayılıyor; geliş
+tarafındaki sebebini (gönderen mi, ağ mı) ayırıyor.
+
+**Oturum kuralları.**
+
+- Her oturum en az **45 dakika** kesintisiz konuşmadır. Ne yapıldığı serbest
+  (oyun, sohbet); amaç gerçek kullanım.
+- **Üç oturum, üç ayrı takvim günü**, günde en fazla bir oturum sayılır.
+  Onaydan sonra araçla yapılan her oturum sırasıyla sayılır; ilk üçü karar
+  verir.
+- Oturumdan önce koşullar kayda girer: bağlantı türü, oyun açık mı, indirme
+  var mı, Bluetooth var mı. Yalnızca not içindir, hiçbirini dışarıda
+  bırakmaya gerekçe değildir.
+- **Sonradan oturum çıkarılmaz.** 45 dakikadan kısa biten, çöken ya da iki
+  taraftan birinin kaydı eksik olan oturum **KÖTÜ** sayılır.
+- Oturum biter bitmez, sayılara bakmadan, iki taraf da tek bir soruyu yazılı
+  cevaplar: *"Konuşma ne kadar rahattı? (1 = kullanılamaz, 5 = Discord'dan
+  farksız)"*.
+
+**Ölçütler ve eşikler** (her oturumda iki yönün kötüsü alınır):
+
+| Ölçüt | İyi | Kabul edilebilir |
+| --- | --- | --- |
+| Kesinti oranı (v2 tanımı) | ≤ %1 | ≤ %5,8 |
+| Ağızdan kulağa %95 | ≤ 150 ms | ≤ 300 ms |
+| Uzun takılma (≥ 500 ms), saat başına | ≤ 2 | ≤ 6 |
+| Rahatlık puanı, iki kişinin düşüğü | ≥ 4 | ≥ 3 |
+
+Bir oturumun sonucu, dört ölçütün en kötüsüdür. **Kararı üç oturumun en
+kötüsü verir;** üç oturumda en kötüsünü atmak sonucu tek bir iyi güne
+bırakır, o yüzden atılmaz.
+
+Kesinti ve gecikme eşikleri Faz 0 v2 ile aynı, bilerek: iki test aynı
+çıtayla değerlendirilsin. Uzun takılma ve rahatlık puanı eşikleri yeni;
+ölçüm yapılmadan, 2026-09-24'te onaylandılar.
+
+**Önceden bağlanan kararlar.**
+
+- **İyi ya da kabul edilebilir:** sesli sohbet ProxyChat'te varsayılan olarak
+  sunulabilir.
+- **Kötü:** sesli sohbet varsayılan olarak girmez. Faz 0'dan farklı olarak
+  burada kod değişebilir (tampon, kodek, FEC), çünkü ölçülen şey ürünün
+  kendisi. Ama değişiklikten sonra **üç yeni oturum** gerekir; eski oturumlar
+  yeni kodla yeniden değerlendirilmez ve başarısız turlar belgede kalır.
+
+---
 
 ### Prototip güncellemesi: ölçüm ve el sıkışma güvenliği (2026-09-19)
 
