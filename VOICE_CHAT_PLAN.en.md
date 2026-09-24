@@ -787,6 +787,18 @@ Remaining limits: the password can be guessed offline, there is no forward
 secrecy, and the handshake packets give away that the traffic is this
 prototype. Those are for the protocol design, not the prototype.
 
+**A window for the prototype (2026-09-24).** The prototype can now be used
+without the console: a form for role, network, room, password and port;
+start/stop; live numbers (codec, buffer, loss, stalls, sender rate, round
+trip, mouth-to-ear p95) and an event log. The point is that in the live-use
+test the other side should not have to deal with a command line. The look
+comes from ProxyChat's own stylesheet rather than a copy, and **none of
+ProxyChat's interface files were touched.** Voice chat entering ProxyChat
+still depends on the Phase 0 gate and on Phase 1b; this window is part of
+the tool, not of the product. Opening two windows on one machine turned up
+a bug, now fixed: two sessions started in the same second opened the same
+record file and the second overwrote the first's record.
+
 ---
 
 ## 9. Open security questions

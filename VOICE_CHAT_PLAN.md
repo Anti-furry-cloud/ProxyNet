@@ -743,6 +743,17 @@ Kalan sınırlar: parola çevrimdışı denenebilir, ileri gizlilik yok ve el
 sıkışma paketleri trafiğin bu prototip olduğunu belli eder. Bunlar
 prototipin değil, protokol tasarımının işi.
 
+**Prototipin penceresi (2026-09-24).** Prototip artık konsol olmadan da
+kullanılabiliyor: rol, ağ, oda, parola ve port için form; başlat/durdur;
+canlı sayılar (kodek, tampon, kayıp, takılma, gönderen hızı, gidiş-dönüş,
+ağızdan kulağa %95) ve olay günlüğü. Amaç canlı kullanım testinde karşı
+tarafın komut satırıyla uğraşmaması. Görünüm ProxyChat'in kendi stilinden
+alınıyor, kopyalanmıyor; **ProxyChat'in arayüz dosyalarına dokunulmadı.**
+Sesli sohbetin ProxyChat'e girmesi hâlâ Faz 0 kapısına ve Faz 1b'ye bağlı;
+bu pencere ürünün değil, aracın parçası. Pencereyi iki kez açıp tek makinede
+denerken bir hata çıktı ve düzeltildi: aynı saniyede başlayan iki oturum
+aynı kayıt dosyasını açıyor, ikincisi birincinin kaydını eziyordu.
+
 ---
 
 ## 9. Açık güvenlik soruları
