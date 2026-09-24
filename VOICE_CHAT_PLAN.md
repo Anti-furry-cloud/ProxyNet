@@ -83,7 +83,8 @@ Yeni paket tipleri:
 
 | Paket | Yön | İçerik |
 | --- | --- | --- |
-| `voice_join` | istemci → sunucu | UDP portu, oturum tuzu (16 bayt) |
+| `voice_join` | istemci → sunucu | oturum tuzu (16 bayt) |
+| `voice_joined` | sunucu → istemci | atanan `sender_id`, 16 baytlık UDP jetonu, ses portu |
 | `voice_leave` | istemci → sunucu | — |
 | `voice_peers` | sunucu → istemci | odadaki ses katılımcıları: `user`, `sender_id`, oturum tuzu — **IP yok** |
 
@@ -93,6 +94,13 @@ kapattığını bilmez** (2026-09-19): ilk taslaktaki `voice_state` paketi
 (`muted`, `speaking`) kaldırıldı. Gerekçe §4'teki Opus araştırmasında: ses
 akışı konuşma olsun olmasın sabit hızda akıyor, bu bilgiyi sunucuya ayrıca
 vermek o önlemi boşa çıkarırdı.
+
+**Yazıldı (2026-09-24).** Sunucu tarafı duruyor: `core/voice_relay.py` ve
+`core/server.py`. İstemci UDP portunu artık söylemiyor; adres, ilk UDP
+paketindeki jetondan öğreniliyor (§8, "Faz 1b tasarımı"). **Ses portu TCP
+ile aynı numara**, protokoller ayrı olduğu için çakışma yok ve kullanıcıdan
+tek bir güvenlik duvarı izni isteniyor. Soket açılamazsa metin sohbeti
+etkilenmiyor, yalnızca ses çalışmıyor.
 
 ### 2.3 Ses paketi biçimi (UDP)
 

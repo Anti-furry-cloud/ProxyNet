@@ -85,7 +85,8 @@ New packet types:
 
 | Packet | Direction | Content |
 | --- | --- | --- |
-| `voice_join` | client → server | UDP port, session salt (16 bytes) |
+| `voice_join` | client → server | session salt (16 bytes) |
+| `voice_joined` | server → client | the assigned `sender_id`, a 16-byte UDP token, the voice port |
 | `voice_leave` | client → server | — |
 | `voice_peers` | server → client | voice participants in the room: `user`, `sender_id`, session salt — **no IP** |
 
@@ -95,6 +96,14 @@ muted their microphone** (2026-09-19): the `voice_state` packet of the first
 draft (`muted`, `speaking`) was dropped. The reason is in the Opus research in
 §4: the audio stream flows at a constant rate whether anyone speaks or not,
 and handing that information to the server separately would undo it.
+
+**Written (2026-09-24).** The server side is in place: `core/voice_relay.py`
+and `core/server.py`. The client no longer announces its UDP port; the
+address is learned from the token in the first UDP packet (§8, "Phase 1b
+design"). **The voice port is the same number as TCP** — the protocols are
+separate, so there is no clash and the user is asked for one firewall
+permission. If the socket cannot be opened, text chat is unaffected and only
+voice stops working.
 
 ### 2.3 Audio packet format (UDP)
 

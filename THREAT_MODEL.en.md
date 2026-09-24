@@ -169,6 +169,18 @@ leak cannot come back if a call passes content again
 (`tests/test_core.py` → `test_anonymous_logger_masks_user_identity`). Packet
 sizes on the wire are still exposed (5.7).
 
+**Voice chat metadata (Phase 1b, 2026-09-24).** The server now knows who
+joined voice chat and when they left, and announces it to the room with
+`voice_peers` (username, sender id and session salt — **no IP**). Because it
+relays, it also sees participants' IPs, but it already saw those in text
+chat. **It cannot see who is speaking:** the audio stream goes out at a
+constant rate and a constant size whether anyone speaks or not. Audio content
+is not decrypted on the server; the relay code does not import
+`cryptography`, and a test locks that down (`tests/test_voice_relay.py`). The
+audio packet's header (version, type, sender id, sequence number, timestamp)
+travels in the clear; it is needed for routing and cannot be altered, since
+it is also the authentication data.
+
 1.7.0 **added** one piece of metadata: when someone leaves a room by switching
 to another room, the server tells the people who stay, and the interface shows
 "went to another room". The destination room is not sent. Those in the room

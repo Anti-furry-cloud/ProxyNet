@@ -160,6 +160,18 @@ koruyordu; o da kaldırıldı ki bir çağrı yeniden içerik verdiğinde sızı
 gelmesin (`tests/test_core.py` → `test_anonymous_logger_masks_user_identity`).
 Ağdaki paket boyutları ise hâlâ açık (5.7).
 
+**Sesli sohbet üstverisi (Faz 1b, 2026-09-24).** Sunucu artık kimin sesli
+sohbete katıldığını ve ne zaman ayrıldığını biliyor; bunu odadakilere
+`voice_peers` ile duyuruyor (kullanıcı adı, gönderen kimliği ve oturum tuzu —
+**IP yok**). Aktarma yaptığı için katılımcıların IP'lerini de görüyor, ama
+metin sohbetinde zaten görüyordu. **Kimin konuştuğunu göremiyor:** ses akışı
+konuşulmasa da sabit hızda ve sabit boyda gidiyor. Ses içeriği sunucuda
+çözülmüyor; aktarma kodu `cryptography` import etmiyor ve bir test bunu
+kilitliyor (`tests/test_voice_relay.py`). Ses paketinin başlığı (sürüm, tip,
+gönderen kimliği, sıra numarası, zaman damgası) yolda açık gidiyor;
+yönlendirme için gerekli ve zaten kimlik doğrulama verisi olduğu için
+değiştirilemiyor.
+
 1.7.0'da bir üstveri **eklendi:** biri odadan başka bir odaya geçerek
 ayrılınca sunucu bunu odada kalanlara ayrıca bildirir, arayüz de "başka bir
 odaya geçti" diye gösterir. Hangi odaya geçtiği gönderilmez. Böylece
