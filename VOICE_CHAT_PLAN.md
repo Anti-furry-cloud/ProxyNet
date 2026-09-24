@@ -231,6 +231,17 @@ yapıldı ve telefon kalitesinde duyuldu, 16 kHz'e çıkarıldı. µ-law geçici
 çözüm: dayandığı standart kütüphane modülü (`audioop`) Python 3.13'te
 kaldırıldı.
 
+
+**Prototipte artık Opus var (2026-09-24).** Kodek el sıkışmada anlaşılıyor:
+iki tarafta da libopus varsa Opus 24 kbit/s sabit bit hızı, yoksa µ-law.
+Seçim el sıkışma imzasının içinde, yani yoldaki biri kodeği değiştiremiyor.
+Datagram 360 bayttan **100 bayta** indi (18 başlık + 60 ses + 6 zaman eki +
+16 GCM etiketi). Kayıp gizlemeyi Opus'ta kodek kendisi yapıyor; çözücü her
+çerçeve için bir kez çağrılmazsa iç durumu akışın gerisinde kalıyor.
+**FEC kodlayıcıda kapalı:** yedeği kullanmak için kayıp çerçeveden sonraki
+paketi tampondan okumak gerekiyor, jitter tamponu ise Faz 0 v2 kapısı
+kapanana kadar değişmiyor. Açık kalsaydı boşuna bit harcardı.
+
 ### Opus araştırması (2026-09-18)
 
 Denemeler, dinleme testindeki kamu malı kayıtla yapıldı; kayıp gerçek bir

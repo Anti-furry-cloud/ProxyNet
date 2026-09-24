@@ -239,6 +239,18 @@ and sounded like a telephone, so it was raised to 16 kHz. µ-law is temporary:
 the standard library module it relies on (`audioop`) was removed in Python
 3.13.
 
+
+**The prototype now speaks Opus (2026-09-24).** The codec is agreed during
+the handshake: Opus at 24 kbit/s constant bitrate when both sides have
+libopus, µ-law otherwise. The choice is inside the handshake signature, so
+nobody on the path can change it. The datagram went from 360 bytes down to
+**100** (18 header + 60 audio + 6 timing + 16 GCM tag). With Opus the codec
+does the concealment itself; the decoder has to be called once per frame or
+its internal state falls behind the stream. **FEC is off in the encoder:**
+using the redundancy means reading the packet after the lost frame out of
+the jitter buffer, and that buffer does not change until the Phase 0 v2 gate
+is decided. Left on, it would spend bits for nothing.
+
 ### Opus research (2026-09-18)
 
 The trials used the public-domain recording from the listening test; the
