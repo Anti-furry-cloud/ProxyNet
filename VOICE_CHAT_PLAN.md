@@ -853,6 +853,18 @@ yol testlerle doğrulandı — üç kişinin sesinin karışması, yanlış paro
 çözememesi, merhabasız sesin iletilmemesi dahil — ama kulakla dinlenmedi.
 Sıradaki iş bu, sonra canlı kullanım testi.
 
+**İlk gerçek deneme (2026-09-25).** Aynı makinede iki kopya, biri Host biri
+katılan, kulaklıkla: **ses geldi ve sustur çalıştı.** Yani uçtan uca yol —
+mikrofon, şifreleme, UDP, Host'ta aktarma, jitter tamponu, hoparlör — artık
+yalnızca testlerle değil kulakla da doğrulandı. Henüz denenmeyen: iki ayrı
+bilgisayar ve gerçek bir hat.
+
+**Sürüm 1.8.0.** Sesli sohbet ve dört yeni sinyalleşme paketi girdiği için
+numara yükseldi. Eski bir sunucu `voice_join`'i tanımadığı için hiç cevap
+vermiyor; istemci beş saniye sonra vazgeçiyor ve "sunucu cevap vermedi,
+sürümler farklı olabilir" diyor. Kullanıcı "katılınıyor" yazısında asılı
+kalmıyor.
+
 ---
 
 ## 9. Açık güvenlik soruları

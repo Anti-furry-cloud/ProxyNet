@@ -904,6 +904,18 @@ microphones. The whole path is covered by tests — three voices mixing, a
 wrong password failing to decrypt, audio without a hello not being relayed —
 but nobody has listened to it. That is next, and then the live-use test.
 
+**First real trial (2026-09-25).** Two copies on one machine, one hosting
+and one joining, with headphones: **the audio came through and mute
+worked.** So the end-to-end path — microphone, encryption, UDP, relaying on
+the host, jitter buffer, speaker — is now confirmed by ear and not only by
+tests. Not tried yet: two separate computers on a real line.
+
+**Version 1.8.0.** The number went up because voice chat and four new
+signalling packets landed. An older server does not know `voice_join` and
+never answers; the client gives up after five seconds and says the server
+did not answer and the versions may differ, so nobody is left staring at
+"joining".
+
 ---
 
 ## 9. Open security questions
