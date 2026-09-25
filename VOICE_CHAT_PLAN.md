@@ -674,9 +674,20 @@ da, kullanıcı bir şey yapmadan, oturum sonunda bir kayıt dosyası yazar:
   ses cihazı payı, %95'i. Bluetooth gibi cihaz gecikmeleri ölçülemez, koşul
   olarak kayda girer.
 
+**Sayım ne zaman başlar (2026-09-25).** Bu testin oturumları, kayıt dosyası
+**ürün tarafında** hazır olduktan sonra sayılmaya başlar. Bugün o kaydı
+yalnızca ses prototipi yazıyor; ProxyChat'in kendi sesli sohbeti henüz
+yazmıyor. Dolayısıyla ProxyChat ile yapılan konuşmalar — deneme, ilk
+mikrofon denemesi, "çalışıyor mu" bakışı — **bu testin oturumu sayılmaz**
+ve kötü sonuç olarak da kayda geçmez. Kayıt ürüne eklendiğinde bu belgeye o
+commit yazılır ve sayım o andan itibaren işler. Bu boşluk, kural yazılırken
+görülmedi; sonradan tartışma çıkmasın diye böyle kapatıldı.
+
 **Karar (2026-09-19): gidiş-dönüş akışın içinde ölçülür.** Her çerçevenin
-şifreli kısmına 6 baytlık sabit bir ek girer (karşıdan son gelen paketin
-zaman damgası ve o andan beri geçen süre; RTCP'nin yöntemi). Ayrı bir ölçüm
+şifreli kısmına sabit boyda bir ek girer: karşıdan son gelen paketin zaman
+damgası ve o andan beri geçen süre (RTCP'nin yöntemi). Prototipte 6 bayt;
+üründe 10 bayt, çünkü ikiden fazla kişi varken kimin damgasının
+yankılandığı da yazılıyor. Ayrı bir ölçüm
 paketi olmadığı ve her paket aynı boyda kaldığı için dışarıdan ölçüm yapıldığı
 görülmez. Araç: ses prototipi (`tools/ses_prototip.py`); yukarıdaki dört
 maddenin hepsini `ses-prototip-kaydi-*.jsonl` dosyasına yazıyor. Uzun takılma

@@ -715,10 +715,21 @@ record file at the end of the session with:
   buffer + 40 ms device allowance, 95th percentile. Device delays such as
   Bluetooth cannot be measured and are recorded as a condition.
 
+**When counting starts (2026-09-25).** Sessions of this test count only
+after the record file exists **on the product side**. Today only the voice
+prototype writes that record; ProxyChat's own voice chat does not yet. So
+conversations held with ProxyChat — trials, the first microphone test, a
+quick "does it work" look — **do not count as sessions of this test**, and
+are not recorded as bad results either. When the record is added to the
+product, that commit is written into this document and counting starts from
+then. This gap was not seen when the rules were written; it is closed here
+so that there is no argument about it later.
+
 **Decision (2026-09-19): the round trip is measured inside the stream.**
-Every frame's encrypted part carries a fixed 6-byte addition (the timestamp
-of the last packet received from the other side and the time elapsed since;
-RTCP's method). With no separate measurement packet and every packet the
+Every frame's encrypted part carries a fixed-size addition: the timestamp of
+the last packet received from the other side and the time elapsed since
+(RTCP's method). Six bytes in the prototype; ten in the product, because
+with more than two people it also has to say whose timestamp is echoed. With no separate measurement packet and every packet the
 same size, nobody outside can see that a measurement is taking place. Tool:
 the voice prototype (`tools/ses_prototip.py`); it writes all four items
 above to a `ses-prototip-kaydi-*.jsonl` file. Long stalls are counted both
