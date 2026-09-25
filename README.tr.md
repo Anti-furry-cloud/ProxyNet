@@ -123,6 +123,28 @@ Kod açıldığında bu depoya eklenecek; belgeler yerinde kalacak.
 
 ---
 
+## Resmî kaynak ve kopyalar
+
+Bu projenin tek resmî kaynağı **https://github.com/Anti-furry-cloud/ProxyNet**
+adresidir. Başka bir yerde dolaşan bir ProxyChat/ProxyNet kopyası buradan
+çıkmamış olabilir; indirmeden önce buraya bakın.
+
+Proje **GNU GPL v3** ile yayınlanıyor. Bu, kopyalamayı yasaklamıyor — tam
+tersi, serbest bırakıyor. Yalnızca üç şart var:
+
+- Değiştirilmiş sürümü dağıtan, **kaynak kodunu da** vermek zorunda.
+- Lisans ve telif notları korunur; kim yazdı sorusu silinemez.
+- Türev iş de aynı lisansla dağıtılır.
+
+Yani kodu alıp kapalı kaynak bir ürüne çevirmek ya da yazarını değiştirmek
+lisans ihlalidir.
+
+Henüz herkese açık bir sürüm yok. Bir sürüm dağıtıldığında dosyaların
+SHA-256 özetleri bu depoda yayınlanacak; elinizdeki dosyanın özeti orada
+yazanla aynı değilse, o dosya bizim dağıttığımız dosya değildir.
+
+---
+
 ## Geri bildirim
 
 Tehdit modelinde bir hata, eksik bir rakip ya da fazla iyimser bir iddia

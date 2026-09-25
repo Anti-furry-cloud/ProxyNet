@@ -432,10 +432,10 @@ should run in CI.
 | --- | --- | --- |
 | **0. Measurement** | A small tool measuring UDP latency, jitter and loss | **Decision gate**: if the numbers are bad, the plan stops here — v1: BAD; v2 (2026-09-24): **ACCEPTABLE** |
 | **1a. Core** ✅ | Packet format, AES-GCM + HKDF, jitter buffer, tests | A tested core that works without audio hardware |
-| **1b. Skeleton** | Signalling packets, UDP socket, relaying on the host, µ-law 16 kHz, one direction | One person speaks, the other hears |
-| **2. Two-way** | Audio device interface, Qt integration, both directions | Two people talk to each other |
+| **1b. Skeleton** ✅ | Signalling packets, UDP socket, relaying on the host | `core/voice_relay.py`, `core/voice_net.py`; covered by tests |
+| **2. Two-way** ✅ | The audio device layer, Qt integration, several people | Voices mix; not yet tried on a real line |
 | **3. Usability** | Opus, push-to-talk, speaking indicator, mute | Four people can use it |
-| **4. Packaging** | Put Qt's audio modules back in the bundle, measure the size, UDP firewall rule, documentation | A distributable release |
+| **4. Packaging** | Qt's audio modules are back and the size was **measured** (below); left: the Opus library decision, the UDP firewall rule, documentation | A distributable release |
 
 Phase 1a did not wait for Phase 0 because none of the three modules written
 depend on the network measurement. What a bad result would stop is 1b onwards.
@@ -844,6 +844,54 @@ nothing under `apps/proxychat/` was changed or copied. The audio still takes
 the prototype's own path: straight UDP to the other side, not through the
 room. Chat and voice appear in one window but do not share a channel; real
 integration depends on Phase 1b.
+
+---
+
+### Phase 1b and the interface: voice chat inside ProxyChat (2026-09-25)
+
+The work that started the day the gate came out acceptable is done. Voice
+chat is no longer in the prototype but in the application itself.
+
+**Server.** `voice_join` → `voice_joined` (id + token + port + codec), then
+`voice_salt`; `voice_peers` to the room. Audio goes over a separate UDP
+socket on the same port number as TCP. The host relays **without
+decrypting**; the relay code does not import `cryptography` and a test locks
+that down.
+
+**Client.** `core/voice_session.py` is one person's session: encryption,
+sequence numbers, the jitter buffer, loss concealment, mixing several
+speakers, the timing field and mouth-to-ear p95. `core/voice_net.py` is the
+UDP socket and the hello refresh. `core/voice_codec.py` puts µ-law and Opus
+behind one interface.
+
+**Interface.** A "Voice chat" section in the right sidebar: join/leave, the
+list of people in voice, a status line and a mute box. **Muting does not
+stop the stream**, it sends silence frames; stopping the stream would tell
+the network who speaks when. Leaving the room or closing the window releases
+the audio device.
+
+**Why joining takes two steps:** the decryption key comes from both the
+sender id and the session salt. The host assigns the id, so the salt can
+only be generated after the id arrives. A participant whose salt is unknown
+does not appear in the list — nobody could decrypt them anyway.
+
+**The first person to join sets the room's codec.** Because the host relays
+without decrypting, it cannot tell who uses which codec; everyone has to use
+the same one. Someone joining later who does not support it cannot enter
+voice. The real fix is to tie the codec to a room setting; not done yet.
+
+**Packaging was measured (the first item of Phase 4).** QtMultimedia was
+taken out of the exclusion list in `ProxyChat.spec`. The exe went from
+**52.7 MB to 62.4 MB**, so +9.7 MB. The growth comes from Qt's FFmpeg-based
+audio plugin (`ffmpegmediaplugin.dll`, `avcodec`, `avformat`); those are
+LGPL and compatible with GPLv3. **libopus is not bundled:** unless the
+application finds `libopus.dll` next to it, it uses µ-law. Where that
+library should come from (built by us?) is still undecided.
+
+**Not tried yet:** a real conversation between two computers with
+microphones. The whole path is covered by tests — three voices mixing, a
+wrong password failing to decrypt, audio without a hello not being relayed —
+but nobody has listened to it. That is next, and then the live-use test.
 
 ---
 

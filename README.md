@@ -127,6 +127,30 @@ stay where they are.
 
 ---
 
+## The official source, and copies
+
+The only official source of this project is
+**https://github.com/Anti-furry-cloud/ProxyNet**. A copy of ProxyChat or
+ProxyNet circulating elsewhere may not have come from here; check this
+place before downloading.
+
+The project is released under the **GNU GPL v3**. That does not forbid
+copying — it permits it. There are only three conditions:
+
+- Anyone distributing a modified version must also provide **its source**.
+- The licence and copyright notices stay; who wrote it cannot be erased.
+- Derived work is distributed under the same licence.
+
+So taking the code into a closed-source product, or changing whose work it
+is, is a licence violation.
+
+There is no public release yet. When one is distributed, the SHA-256
+checksums of the files will be published in this repository; if the checksum
+of your file does not match the one listed there, that file is not the one
+we distributed.
+
+---
+
 ## Feedback
 
 If you see a mistake in the threat model, a missing adversary, or a claim that

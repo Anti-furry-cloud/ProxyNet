@@ -411,10 +411,10 @@ kullanmıyorlar; CI'da çalışırlar. Ses donanımı gerektiren hiçbir test CI
 | --- | --- | --- |
 | **0. Ölçüm** | UDP gecikme, jitter ve kayıp ölçen küçük bir araç | **Karar kapısı**: rakamlar kötüyse plan burada durur — v1: KÖTÜ; v2 (2026-09-24): **KABUL EDİLEBİLİR** |
 | **1a. Çekirdek** ✅ | Paket biçimi, AES-GCM + HKDF, jitter tamponu, testler | Ses donanımı olmadan çalışan, test edilmiş çekirdek |
-| **1b. İskelet** | Sinyalleşme paketleri, UDP soketi, Host'ta aktarma, µ-law 16 kHz, tek yönlü | Bir kişi konuşur, diğeri duyar |
-| **2. Çift yönlü** | Ses cihazı arayüzü, Qt entegrasyonu, iki yön | 2 kişi karşılıklı konuşur |
+| **1b. İskelet** ✅ | Sinyalleşme paketleri, UDP soketi, Host'ta aktarma | `core/voice_relay.py`, `core/voice_net.py`; testlerle doğrulandı |
+| **2. Çift yönlü** ✅ | Ses cihazı katmanı, Qt entegrasyonu, çok kişi | Sesler karışıyor; gerçek hatta henüz denenmedi |
 | **3. Kullanılabilirlik** | Opus, bas-konuş, konuşma göstergesi, sustur | 4 kişi kullanabilir |
-| **4. Paketleme** | Qt ses modüllerini pakete geri al, boyutu ölç, UDP güvenlik duvarı kuralı, belgeler | Dağıtılabilir sürüm |
+| **4. Paketleme** | Qt ses modülleri geri alındı ve boyut **ölçüldü** (aşağıda); kalan: Opus kütüphanesi kararı, UDP güvenlik duvarı kuralı, belgeler | Dağıtılabilir sürüm |
 
 Faz 1a'nın Faz 0'ı beklememesinin sebebi: yazılan üç modülün hiçbiri ağ
 ölçümüne bağlı değil. Ölçüm kötü çıkarsa duracak olan 1b ve sonrası.
@@ -795,6 +795,52 @@ sınıfını içeri aktarıyor; `apps/proxychat/` altında hiçbir dosya değiş
 ve kopyalanmadı. Ses yine prototipin kendi yolundan geçiyor: karşı tarafa
 doğrudan UDP, oda üzerinden değil. Yani sohbet ve ses aynı pencerede
 görünüyor ama aynı kanaldan geçmiyor; gerçek entegrasyon Faz 1b'ye bağlı.
+
+---
+
+### Faz 1b ve arayüz: sesli sohbet ProxyChat'in içinde (2026-09-25)
+
+Kapı kabul edilebilir çıktığı gün başlanan iş bitti. Sesli sohbet artık
+prototipte değil, uygulamanın kendisinde.
+
+**Sunucu.** `voice_join` → `voice_joined` (kimlik + jeton + port + kodek),
+sonra `voice_salt`; odadakilere `voice_peers`. Ses ayrı bir UDP soketinden
+geçiyor, TCP ile aynı port numarası. Host paketi **çözmeden** aktarıyor;
+aktarma kodu `cryptography` import etmiyor ve bunu bir test kilitliyor.
+
+**İstemci.** `core/voice_session.py` bir kişinin oturumu: şifreleme, sıra
+numarası, jitter tamponu, kayıp gizleme, birden fazla konuşanın sesini
+karıştırma, zaman eki ve ağızdan kulağa %95. `core/voice_net.py` UDP
+soketi ve merhaba yenilemesi. `core/voice_codec.py` µ-law ile Opus'u tek
+arayüzün arkasına alıyor.
+
+**Arayüz.** Sağ kenarda "Sesli sohbet": katıl/ayrıl, seste olanların
+listesi, durum satırı ve sustur kutusu. **Susturmak akışı durdurmuyor**,
+sessizlik çerçevesi gidiyor; akışın kesilmesi kimin ne zaman konuştuğunu
+ağa söylerdi. Odadan çıkınca ve pencere kapanınca ses bırakılıyor.
+
+**Katılım neden iki adım:** çözme anahtarı hem gönderen kimliğinden hem
+oturum tuzundan türüyor. Kimliği Host veriyor, dolayısıyla tuz ancak
+kimlik geldikten sonra üretilebiliyor. Tuzu bilinmeyen katılımcı listede
+görünmüyor; zaten kimse onu çözemezdi.
+
+**Odanın kodeğini ilk katılan belirliyor.** Host paketleri çözmeden
+aktardığı için kimin hangi kodeği kullandığına bakamıyor; herkesin aynı
+kodekte olması gerekiyor. Sonradan katılan biri o kodeği desteklemiyorsa
+sese giremez. Kalıcı çözüm, kodeği oda ayarına bağlamak; henüz yapılmadı.
+
+**Paketleme ölçüldü (Faz 4'ün ilk maddesi).** QtMultimedia `ProxyChat.spec`
+içindeki dışlama listesinden çıkarıldı. Exe **52,7 MB'dan 62,4 MB'a** çıktı,
+yani +9,7 MB. Büyümenin kaynağı Qt'nin FFmpeg tabanlı ses eklentisi
+(`ffmpegmediaplugin.dll`, `avcodec`, `avformat`); bunlar LGPL ve GPLv3 ile
+uyumlu. **libopus pakete konmadı:** uygulama, yanında `libopus.dll`
+bulamazsa µ-law kullanıyor. Kütüphanenin nereden geleceği (kendi derlememiz
+mi) hâlâ karara bağlı değil.
+
+**Denenmeyen:** gerçek iki bilgisayar arasında mikrofonla konuşma. Bütün bu
+yol testlerle doğrulandı — üç kişinin sesinin karışması, yanlış parolanın
+çözememesi, merhabasız sesin iletilmemesi dahil — ama kulakla dinlenmedi.
+Sıradaki iş bu, sonra canlı kullanım testi.
 
 ---
 

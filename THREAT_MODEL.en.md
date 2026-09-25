@@ -259,6 +259,13 @@ The distributed `.exe` is unsigned and shared via a cloud link. An adversary
 could deliver a modified binary to a user. There are no reproducible builds and
 no signing.
 
+One step was taken (2026-09-25): the SHA-256 checksums of the distributed
+files are published (`tools/surum_ozetleri.py` produces them). Whoever
+downloads can compare the checksum of their file. This does NOT replace
+signing: if someone who takes over the distribution link can also change the
+checksum list, the check collapses. The real fix is a reproducible, signed
+build.
+
 ---
 
 ## 6. Design principles

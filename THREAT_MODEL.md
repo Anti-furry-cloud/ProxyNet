@@ -248,6 +248,12 @@ Dağıtılan `.exe` imzasızdır ve bulut linkiyle paylaşılır. Rakip, kullan�
 değiştirilmiş bir binary ulaştırabilir. Yeniden üretilebilir derleme ve imzalama
 yoktur.
 
+Bir adim atildi (2026-09-25): dagitilan dosyalarin SHA-256 ozetleri
+yayinlaniyor (`tools/surum_ozetleri.py` uretiyor). Indiren kisi kendi
+dosyasinin ozetini karsilastirabilir. Bu, imzalamanin yerini TUTMAZ:
+dagitim linkini ele geciren biri ozet listesini de degistirebilirse
+dogrulama coker. Asil cozum yeniden uretilebilir ve imzali derleme.
+
 ---
 
 ## 6. Tasarım ilkeleri
