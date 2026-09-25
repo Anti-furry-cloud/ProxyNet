@@ -22,7 +22,7 @@ paylaşıyor ama farklı sözler veriyor.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | Kime | Günlük kullanım, arkadaş grubu | Şifrelemenin öncelik olduğu durumlar |
-| Durum | Çalışıyor. 1.7.0 derlendi ve test edildi, henüz dağıtılmadı | Henüz kod yok, yalnızca sınırları yazılı |
+| Durum | Çalışıyor. 1.8.0 derlendi ve test edildi, henüz dağıtılmadı; sesli sohbet uygulamaya girdi | Henüz kod yok, yalnızca sınırları yazılı |
 | Hedefi | Kullanışlı olmak, içeriği korumak | Tehdit modelindeki T5 rakibini karşılamak |
 
 Ayrı iki ürün olmasının sebebi şu: az özellik, güvenlikte başlı başına bir
@@ -44,6 +44,11 @@ kirletmemesi için ikisi bilerek ayrıldı.
 - Oda parolası ekranda gösterilmeden kopyalanabilir. Kopya Windows pano
   geçmişine girmez ve 30 saniye sonra panodan silinir.
 - Tanılama kaydı varsayılan olarak **kapalı.**
+- **Sesli sohbet** (1.8.0): aynı odadakiler konuşabilir. Ses de oda
+  parolasından türeyen anahtarla şifreleniyor; sunucu onu çözmeden
+  aktarıyor ve kimin konuştuğunu göremiyor. Konuşma yokken mikrofonu
+  sessizleştiren bir gürültü kapısı var. Henüz **varsayılan olarak
+  sunulmuyor**: canlı kullanım testi geçilmeden öyle anlatılmayacak.
 - Türkçe ve İngilizce arayüz.
 
 ### ProxyChat bugün ne yapmıyor
@@ -70,16 +75,20 @@ Hepsinin ayrıntısı, neden böyle olduğu ve kapatılma sırası burada:
 
 ### Sırada ne var
 
-Sesli sohbet üzerinde çalışılıyor. Çekirdeği yazıldı ve bir prototip, ayrı
-internet bağlantılarındaki iki bilgisayar arasında canlı konuşmayı taşıdı; o
-prototip ayrı bir araç, kurulan programın parçası değil. Bağlantı
-kalitesinin yeterli olup olmadığına, kuralları ölçüm yapılmadan önce
-yayınlanmış ölçümlerle karar verildi: 2026-09-24'te sonuç **kabul
-edilebilir** çıktı, yani ağ tarafına devam edilebilir. Sesli sohbetin ürüne
-varsayılan olarak girmesi, kuralları yine önceden yazılmış canlı kullanım
-testine de bağlı. Tasarımı — topoloji kararı, ikili
-paket biçimi, AES-GCM şeması ve **henüz çözülmemiş güvenlik soruları** —
-prototipin ve ölçümlerin şimdiye kadar gösterdikleriyle birlikte burada:
+**Sesli sohbet artık uygulamanın içinde** (2026-09-25). Sunucu sesi
+çözmeden aktarıyor, istemci ayrı bir UDP yolundan konuşuyor, arayüzde
+katıl/ayrıl, katılımcı listesi, sustur ve gürültü kapısı var. Aynı makinede
+iki kopyayla denendi ve ses duyuldu; iki ayrı bilgisayarla henüz
+denenmedi.
+
+Bağlantı kalitesinin yeterli olup olmadığına, kuralları ölçüm yapılmadan
+önce yayınlanmış ölçümlerle karar verildi: 2026-09-24'te sonuç **kabul
+edilebilir** çıktı. Sesli sohbetin **varsayılan** olarak sunulması, kuralları
+yine önceden yazılmış canlı kullanım testine bağlı; o test henüz başlamadı.
+
+Tasarımı — topoloji kararı, ikili paket biçimi, AES-GCM şeması, kimlik ve
+adres doğrulaması ve **henüz çözülmemiş güvenlik soruları** — ölçümlerin
+gösterdikleriyle birlikte burada:
 **[VOICE_CHAT_PLAN.md](VOICE_CHAT_PLAN.md)**
 
 O belgeyi bu aşamada yayınlamamın sebebi şu: şifreleme tasarımındaki bir

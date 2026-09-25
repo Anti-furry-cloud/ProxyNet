@@ -364,13 +364,26 @@ hızlandırma) ve tek tük kayıp paketleri geri kuran **Opus FEC**.
 
 ## 6. Arayüz
 
-- Sol kenar çubuğunda "Sesli Sohbet" bölümü, katıl/ayrıl düğmesi.
-- Katılanların listesi; konuşan kişinin adı vurgulanır (basit RMS eşiği; her
-  alıcı çözdüğü sesten kendisi hesaplar, ağdan böyle bir bilgi gelmez).
-- Sustur ve bas-konuş, gönderilen akışı durdurmaz: tuşa basılmadığında ya da
-  mikrofon kapalıyken de sessizlik çerçevesi gider, dışarıdan fark görünmez.
-- Sustur (mikrofon) ve sağırlaştır (hoparlör) düğmeleri.
-- **Bas-konuş (push-to-talk)** seçeneği — varsayılan açık olsun.
+Yazılanlar (2026-09-25, sağ kenar çubuğunda):
+
+- ✅ "Sesli sohbet" bölümü, katıl/ayrıl düğmesi ve durum satırı.
+- ✅ Seste olanların listesi.
+- ✅ Sustur (mikrofon). Akışı **durdurmaz**: sessizlik çerçevesi gider,
+  dışarıdan fark görünmez.
+- ✅ **Gürültü kapısı**, varsayılan açık. Konuşma yokken mikrofonu
+  sessizleştirir; klavye sesi ve boşta gelen cızırtı karşıya gitmez. Bu da
+  akışı durdurmaz. Kapatan kullanıcı ham sesi gönderir. Ayrıntısı
+  `core/voice_gate.py`: iki eşik (histerezis), tutma süresi, sönümlenerek
+  kapanma. Gürültü **bastırma** değildir: konuşurken arka plan duyulmaya
+  devam eder, onun için ayrı bir kütüphane gerekir.
+
+Yazılmayanlar:
+
+- Konuşan kişinin adının vurgulanması (basit RMS eşiği; her alıcı çözdüğü
+  sesten kendisi hesaplar, ağdan böyle bir bilgi gelmez).
+- **Bas-konuş (push-to-talk)**. Klavye sesini gürültü kapısı azaltıyor ama
+  bas-konuş daha kesin çözüm; yankı bölümündeki gerekçe hâlâ geçerli.
+- Sağırlaştır (hoparlör) düğmesi.
 
 ### Yankı sorunu, dürüst hâliyle
 
@@ -388,8 +401,9 @@ Küçük projelerin tamamı bunu böyle çözer; belgede açıkça yazılmalı.
 Mevcut test yapısı, ses eklendiğinde çürümemeli. Bunun tek yolu **ses
 donanımını arayüzün arkasına almak**:
 
-- `AudioDevice` protokolü: `read_frame()` / `write_frame()`. Gerçek uygulaması
-  Qt, testlerde sahte uygulama (sentetik dalga). **Henüz yazılmadı.**
+- ✅ Ses donanımı arayüzün arkasında: `apps/proxychat/voice.py` içindeki ses
+  kartı katmanı dışarıdan verilebiliyor (`audio_factory`), testler sahte bir
+  cihazla çalışıyor. Ses donanımı açan tek bir test yok.
 - ✅ Jitter buffer birim testleri: sırasız, tekrar eden ve kayıp paketler ver,
   çıkan çerçeve sırasını doğrula. Bir gecikme sıçramasından sonra
   gecikmenin hedefe geri indiği ve yetişme hızının sınırlı kaldığı da.
@@ -399,9 +413,12 @@ donanımını arayüzün arkasına almak**:
 - ✅ Uçtan uca test: sentetik ses → şifrele → bozuk bir ağ (kayıp, sıra
   bozulması, kopya paket) → çöz → tampon → doğru çerçeve sırası.
 
-Hepsi `tests/test_voice.py` içinde, 76 test. Ses donanımı, soket ya da Qt
-kullanmıyorlar; CI'da çalışırlar. Ses donanımı gerektiren hiçbir test CI'da
-çalışmamalı.
+Sesli sohbetin testleri 2026-09-25'te **201** adet: çekirdek (76), aktarma
+(26), sinyalleşme (13), oturum (24), uçtan uca (12), arayüz (22), gürültü
+kapısı (15), Opus (13). Hiçbiri ses donanımı açmıyor. Sinyalleşme ve uçtan
+uca testleri gerçek TCP/UDP soketi kullanıyor (yalnızca 127.0.0.1); Opus
+testleri kütüphane yoksa atlanıyor. Ses donanımı gerektiren hiçbir test
+CI'da çalışmamalı.
 
 ---
 

@@ -380,15 +380,27 @@ packet.
 
 ## 6. Interface
 
-- A "Voice chat" section in the left sidebar, with a join/leave button.
-- A list of participants; the speaker's name is highlighted (simple RMS
-  threshold; each receiver computes it from the audio it decrypts, nothing
-  about it comes over the network).
-- Mute and push-to-talk do not stop the outgoing stream: while the key is
-  not pressed or the microphone is muted, silence frames keep going, so no
-  difference shows from outside.
-- Mute (microphone) and deafen (speaker) buttons.
-- A **push-to-talk** option — on by default.
+Written (2026-09-25, in the right sidebar):
+
+- ✅ A "Voice chat" section with a join/leave button and a status line.
+- ✅ The list of people in voice.
+- ✅ Mute (microphone). It does **not** stop the stream: silence frames keep
+  going, so no difference shows from outside.
+- ✅ A **noise gate**, on by default. It silences the microphone while
+  nobody is speaking, so keystrokes and idle hiss do not travel. It does not
+  stop the stream either. Turning it off sends the raw audio. Details in
+  `core/voice_gate.py`: two thresholds (hysteresis), a hold time and a faded
+  close. It is not noise **suppression**: background noise is still audible
+  while you speak, which needs a separate library.
+
+Not written:
+
+- Highlighting the person speaking (a simple RMS threshold; each receiver
+  computes it from the audio it decrypts, nothing about it comes over the
+  network).
+- **Push-to-talk.** The noise gate reduces keyboard noise, but push-to-talk
+  is the firmer answer; the reasoning in the echo section still holds.
+- A deafen (speaker) button.
 
 ### The echo problem, honestly
 
@@ -407,9 +419,9 @@ the documentation.
 The existing test suite must not rot when audio is added. The only way to
 achieve that is to **put the audio hardware behind an interface**:
 
-- An `AudioDevice` protocol: `read_frame()` / `write_frame()`. The real
-  implementation uses Qt; tests use a fake one (a synthetic wave). **Not
-  written yet.**
+- ✅ The audio hardware sits behind an interface: the audio layer in
+  `apps/proxychat/voice.py` can be supplied from outside (`audio_factory`),
+  and tests run with a fake device. No test opens audio hardware.
 - ✅ Jitter buffer unit tests: feed out-of-order, duplicated and missing
   packets, assert the resulting frame order. Also that delay returns to the target after
   a latency spike and that catching up stays rate-limited.
@@ -420,9 +432,12 @@ achieve that is to **put the audio hardware behind an interface**:
 - ✅ End-to-end test: synthetic audio → encrypt → a broken network (loss,
   reordering, duplicates) → decrypt → buffer → the correct frame order.
 
-All of it is in `tests/test_voice.py`, 76 tests. They use no audio hardware, no
-sockets and no Qt, so they run in CI. No test that requires audio hardware
-should run in CI.
+As of 2026-09-25 voice chat has **201** tests: the core (76), the relay
+(26), signalling (13), the session (24), end to end (12), the interface
+(22), the noise gate (15) and Opus (13). None of them opens audio hardware.
+The signalling and end-to-end tests use real TCP/UDP sockets (127.0.0.1
+only); the Opus tests are skipped when the library is missing. No test that
+needs audio hardware should run in CI.
 
 ---
 

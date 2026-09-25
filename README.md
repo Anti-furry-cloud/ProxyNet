@@ -22,7 +22,7 @@ different promises.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | For whom | Everyday use, a group of friends | Situations where encryption is the priority |
-| Status | Working. 1.7.0 is built and tested but not yet distributed | No code yet, only its limits written down |
+| Status | Working. 1.8.0 is built and tested but not yet distributed; voice chat landed in the app | No code yet, only its limits written down |
 | Goal | Be usable, protect content | Meet the T5 adversary in the threat model |
 
 The reason they are separate: fewer features is itself a security feature. They
@@ -44,6 +44,12 @@ contaminates ProxyNull.
 - The room password can be copied without showing it on screen. The copy is
   kept out of Windows clipboard history and cleared after 30 seconds.
 - Diagnostic logging is **off** by default.
+- **Voice chat** (1.8.0): people in the same room can talk. The audio is
+  encrypted with a key derived from the room password too; the server
+  relays it without decrypting and cannot tell who is speaking. A noise
+  gate silences the microphone while nobody speaks. It is **not offered
+  as a default** yet: it will not be described that way until the
+  live-use test passes.
 - Turkish and English interface.
 
 ### What ProxyChat does not do today
@@ -71,17 +77,22 @@ closed: **[THREAT_MODEL.en.md](THREAT_MODEL.en.md)**
 
 ### What is next
 
-Voice chat is being worked on. Its core is written, and a prototype has now
-carried a live conversation between two computers on separate internet
-connections; that prototype is a separate command-line tool, not part of the
-program people install. Whether the connection quality is good enough was
-decided by measurements whose rules were published before the measuring
-started; on 2026-09-24 the result came out **acceptable**, so the network
-work may continue. Shipping voice chat as a default also depends on a
-live-use test whose rules were likewise written in advance. The design — the topology decision, the binary packet format,
-the AES-GCM scheme and the **security questions that are not yet solved** — is
-here, together with what the prototype and the measurements have shown so
-far: **[VOICE_CHAT_PLAN.en.md](VOICE_CHAT_PLAN.en.md)**
+**Voice chat now lives inside the application** (2026-09-25). The server
+relays audio without decrypting it, the client speaks over a separate UDP
+path, and the interface has join/leave, a participant list, mute and a noise
+gate. It was tried with two copies on one machine and the audio was heard;
+two separate computers are still untried.
+
+Whether the connection quality is good enough was decided by measurements
+whose rules were published before the measuring started; on 2026-09-24 the
+result came out **acceptable**. Offering voice chat **by default** depends on
+a live-use test whose rules were likewise written in advance; that test has
+not started yet.
+
+The design — the topology decision, the binary packet format, the AES-GCM
+scheme, identity and address checks, and the **security questions that are
+not yet solved** — is here, together with what the measurements showed:
+**[VOICE_CHAT_PLAN.en.md](VOICE_CHAT_PLAN.en.md)**
 
 The reason I publish that document at this stage: I would rather hear about a
 mistake in the encryption design now than after months of code have been
