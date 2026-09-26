@@ -22,7 +22,7 @@ different promises.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | For whom | Everyday use, a group of friends | Situations where encryption is the priority |
-| Status | Working. 1.9.0 is built and tested but not yet distributed; voice chat and forward secrecy for text landed in the app | No code yet, only its limits written down |
+| Status | Working. 1.9.0 is built and tested but not yet distributed; voice chat and forward secrecy for text landed in the app | No code yet; its [limits](apps/proxynull/README.en.md) and [protocol design](apps/proxynull/PROTOCOL.en.md) are written down |
 | Goal | Be usable, protect content | Meet the T5 adversary in the threat model |
 
 The reason they are separate: fewer features is itself a security feature. They
@@ -150,6 +150,8 @@ English. Where the two disagree, **the Turkish one is correct.**
 | [THREAT_MODEL.md](THREAT_MODEL.md) | The Turkish original |
 | [VOICE_CHAT_PLAN.en.md](VOICE_CHAT_PLAN.en.md) | The voice chat design plan — topology, packet format, encryption scheme, open security questions |
 | [VOICE_CHAT_PLAN.md](VOICE_CHAT_PLAN.md) | The Turkish original |
+| [apps/proxynull/README.en.md](apps/proxynull/README.en.md) | ProxyNull's limits: what it must do, what it refuses, why it is separate from ProxyChat |
+| [apps/proxynull/PROTOCOL.en.md](apps/proxynull/PROTOCOL.en.md) | ProxyNull's protocol design — the rendezvous code, the Noise handshake, the verification code, padding; decided and undecided items marked apart |
 | [listening/](listening/LISTENING.md) | A blind listening test: how simulated network interruptions sound in speech |
 | [LICENSE](LICENSE) | The GNU GPL v3 text |
 
