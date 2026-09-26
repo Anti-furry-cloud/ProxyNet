@@ -172,6 +172,19 @@ gönderen kimliği, sıra numarası, zaman damgası) yolda açık gidiyor;
 yönlendirme için gerekli ve zaten kimlik doğrulama verisi olduğu için
 değiştirilemiyor.
 
+**Gürültü kapısı üstveriye bir şey eklemiyor (1.8.0).** Konuşma yokken
+mikrofonu sessize çeviren gürültü kapısı akışı durdurmuyor: çerçeve yine
+gönderiliyor, yalnızca içeriği sessizlik oluyor. Paket boyu içerikten
+bağımsızdır — Opus'ta her çerçeve 60 bayt, µ-law'da 320 bayt; dijital sessizlik
+de aynı boyda çıkar. Sabit bit hızı ve kapalı DTX tam bu yüzden seçildi. Sonuç:
+**susturmayla kapının kapanması ağdan ayırt edilemez**, ikisi de aynı boyda
+sessizlik gönderir. Kelimelerin başını kurtaran iki çerçevelik ön bakış paket
+sayısını da değiştirmez: her çerçeveye bir paket. Arayüzdeki seviye çubuğu ve
+eşik kaydırıcısı yereldir; ölçülen seviye ağa gitmez, eşik yalnızca
+kullanıcının kendi makinesinde saklanır. Testler:
+`tests/test_voice_opus.py` → `test_paket_boyu_sese_gore_degismiyor`,
+`tests/test_voice_gate.py` → `OnBakisTests`.
+
 1.7.0'da bir üstveri **eklendi:** biri odadan başka bir odaya geçerek
 ayrılınca sunucu bunu odada kalanlara ayrıca bildirir, arayüz de "başka bir
 odaya geçti" diye gösterir. Hangi odaya geçtiği gönderilmez. Böylece

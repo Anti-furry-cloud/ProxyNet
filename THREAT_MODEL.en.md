@@ -181,6 +181,20 @@ audio packet's header (version, type, sender id, sequence number, timestamp)
 travels in the clear; it is needed for routing and cannot be altered, since
 it is also the authentication data.
 
+**The noise gate adds no metadata (1.8.0).** The noise gate mutes the
+microphone when nobody is speaking, but it does not stop the stream: the frame
+still goes out, only its contents become silence. Packet size is independent of
+content — 60 bytes per Opus frame, 320 for µ-law; digital silence comes out the
+same size. Constant bit rate and disabled DTX were chosen for exactly this
+reason. The result: **muting and the gate closing are indistinguishable on the
+wire** — both send silence of the same size. The two-frame lookahead that saves
+the beginnings of words does not change the packet count either: one packet per
+frame. The level meter and threshold slider in the interface are local; the
+measured level never goes to the network, and the threshold is stored only on
+the user's own machine. Tests: `tests/test_voice_opus.py` →
+`test_paket_boyu_sese_gore_degismiyor`, `tests/test_voice_gate.py` →
+`OnBakisTests`.
+
 1.7.0 **added** one piece of metadata: when someone leaves a room by switching
 to another room, the server tells the people who stay, and the interface shows
 "went to another room". The destination room is not sent. Those in the room
