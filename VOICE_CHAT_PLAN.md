@@ -12,12 +12,13 @@
 > hata bulundu ve düzeltildi. Ne olduğu, nasıl bulunduğu ve düzeltmesi 3.
 > bölümde açıkça yazılı.
 
-Durum: **Faz 1 başladı, çekirdek yazıldı; prototip iki bilgisayar arasında
-konuştu.** Ses paketi biçimi, şifreleme ve jitter tamponu `core/` altında
-duruyor ve test ediliyor. Ses donanımı ve ağ artık var, ama yalnızca
-dağıtılmayan bir araçta. **Faz 0'ın karar kapısı 2026-09-24'te KABUL
-EDİLEBİLİR çıktı**; Faz 1b başlayabilir, ama sesli sohbetin ürüne varsayılan
-olarak girmesi canlı kullanım testine de bağlı.
+Durum: **Faz 1b bitti; sesli sohbet ProxyChat'in içinde** (1.8.0,
+2026-09-25). Sunucu sesi çözmeden aktarıyor, istemci ayrı bir UDP yolundan
+konuşuyor, arayüzde katıl/ayrıl, katılımcı listesi, sustur, gürültü kapısı ve
+eşik ayarı var. Aynı makinede iki kopyayla denendi ve ses duyuldu; **iki ayrı
+bilgisayarla henüz denenmedi.** **Faz 0'ın karar kapısı 2026-09-24'te KABUL
+EDİLEBİLİR çıktı.** Sesli sohbetin ürüne **varsayılan** olarak girmesi canlı
+kullanım testine bağlı ve o test henüz başlamadı (8. bölüm).
 
 Hedef: sanal LAN (VPN) ya da yerel ağ üzerinde 2–5 kişilik bir arkadaş
 grubunun konuşabilmesi. Discord'un yerini almak değil.
@@ -131,6 +132,13 @@ Toplam şifreleme yükü çerçeve başına 16 bayt (yalnızca GCM etiketi).
 ---
 
 ## 3. Şifreleme — mevcut oda parolasını kullan, ama Fernet ile değil
+
+> **Not (1.9.0):** metin sohbeti artık Fernet kullanmıyor; oturum başına
+> üretilen geçici anahtarlarla AES-256-GCM kullanıyor ve **ileri gizliliği
+> var** (THREAT_MODEL 5.1). Aşağıdaki karşılaştırma 1.8.0 ve öncesinin
+> durumudur; ses için verilen karar değişmedi. Ama bir sonuç doğdu: ses
+> anahtarı hâlâ paroladan türüyor, yani ileri gizlilik **seste yok.** 9.
+> bölümde açık soru olarak duruyor.
 
 Ses de oda parolasından türetilen anahtarla şifrelenmeli, yoksa metin şifreli
 ses açık olur ve vaat tutarsız hale gelir.
@@ -886,21 +894,30 @@ kalmıyor.
 
 ## 9. Açık güvenlik soruları
 
-Bunlar 1b'ye başlamadan çözülmesi gereken, bilinen ve tanımlı problemler.
-Buraya yazılmalarının sebebi, çözülmüş gibi davranılmasını engellemek.
+Bunlar bilinen ve tanımlı problemler. Buraya yazılmalarının sebebi,
+çözülmüş gibi davranılmasını engellemek.
 
-- **`sender_id` nasıl atanacak?** Host atamalı ve bir oturum içinde aynı
-  kimliği iki kişiye vermemeli: kimlik, paketin kime yönlendirileceğini ve
-  hangi tekrar penceresine düşeceğini belirliyor. **Gizlilik artık buna
-  bağlı değil** (§3'teki oturum tuzu), ama bir çakışma sesleri karıştırır.
-  İstemci kendi kimliğinin başka bir tuzla kaydedildiğini fark edip hata
-  veriyor; Host tarafındaki atama kuralı 1b'de yazılacak.
-- **Aktarma yapan Host'a kimlik doğrulaması yok.** Host, gelen ses paketini
-  kime ileteceğine `sender_id` ile karar veriyor. Odaya bağlı olmayan biri
-  Host'a UDP paketi yollarsa Host onu çözemez ama yönlendirebilir. Hız sınırı
-  ve bir tür kimlik doğrulama gerekecek.
+- **Ses tarafında ileri gizlilik yok.** Metin sohbetinde 1.9.0'da geldi: anahtar
+  her oturumda yeniden doğuyor ve parola yalnızca doğrulama yapıyor. Ses
+  anahtarı ise hâlâ paroladan türüyor. Oturum tuzu her oturumda yeniden
+  üretiliyor ama `voice_peers` ile **düz metin** duyuruluyor, yani kaydı tutan
+  rakip tuzu da kaydetmiş olur; parola sonradan sızarsa ses açılır. Tuz
+  oturumları birbirinden ayırmaya yarıyor, gelecekteki bir parola sızıntısına
+  karşı değil. Çözümü belli: ses oturum anahtarı, oda oturumunun gönderen
+  anahtarından türetilecek. Bunu işaretleyen test `expectedFailure` ile kırmızı
+  duruyor, yani kapandığı gün fark edilmesi zorunlu.
 
 Kapanan sorular:
+
+- ~~`sender_id` nasıl atanacak?~~ → **Host atıyor ve bir oturum içinde aynı
+  kimliği iki kez vermiyor** (Faz 1b, 2026-09-24). Kimlik istemcinin
+  söylediği bir şey değil, Host'un verdiği bir şey.
+- ~~Aktarma yapan Host'a kimlik doğrulaması yok.~~ → **16 baytlık UDP jetonu,
+  adres bağlama ve hız sınırı** (Faz 1b, 2026-09-24). Jeton `voice_joined`
+  cevabında gidiyor; Host paketi hem jetona hem de TCP bağlantısının IP'sine
+  bakarak kabul ediyor, saniyede 60 paketi aşanı sessizce düşürüyor. Kuralı
+  bozan pakete **cevap verilmiyor** — cevap, neyin yanlış olduğunu söyleyen bir
+  sinyal olurdu.
 
 - ~~Mesh mi, aktarma mı?~~ → **Host üzerinden aktarma** (2026-09-16, §2.1).
 - ~~Oturumlar arasında nonce tekrarı~~ → **oturum tuzu** (2026-09-16, §3).

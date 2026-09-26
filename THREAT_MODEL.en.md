@@ -61,8 +61,11 @@ These threats cannot be solved by ProxyNet and must not be pretended otherwise:
 - **The channel used to share the room password.** If you send the password
   over WhatsApp, the chain breaks there. It should be shared face to face or
   through a separate secure channel.
-- **The user's choice of password.** Because key derivation is deterministic, a
-  guessable password collapses the entire model.
+- **The user's choice of password.** Since 1.9.0 the password is not the key
+  that encrypts text (5.1), but it is the key of the signature that proves the
+  other side belongs to the room — and the voice key is still derived from it. A
+  guessable password opens the door both to an offline dictionary attack and to
+  getting in between.
 - **Security of the layers below** (operating system, VPN client, hardware).
 
 ---
@@ -79,9 +82,9 @@ All of these are tested (`tests/test_crypto.py`, `tests/test_hardening.py`):
 - **History held in server memory is encrypted.**
 - **Content cannot be opened with the wrong password**; the user sees a
   placeholder instead of plaintext.
-- **Tampered ciphertext is rejected.** Fernet is authenticated encryption
-  (AES-128-CBC + HMAC-SHA256), so an adversary cannot silently alter message
-  content.
+- **Tampered ciphertext is rejected.** Since 1.9.0 text chat uses AES-256-GCM
+  (before that Fernet, i.e. AES-128-CBC + HMAC-SHA256); both are authenticated
+  encryption, so an adversary cannot silently alter message content.
 - **No third-party dependency on the server side** — attack surface and supply
   chain risk are small.
 - Limits against resource exhaustion: 64 KiB per packet, 8 KiB per message,
@@ -287,8 +290,12 @@ off), Host has to be started again.
 
 ### 5.7 Message length leaks
 
-The length of Fernet output correlates with the length of the plaintext (at
-16-byte block granularity). No padding is applied.
+The length of the ciphertext correlates with the length of the plaintext. Since
+1.9.0 the relation is at **byte granularity**: AES-GCM is a stream mode, so it
+carries the length exactly. Before that, Fernet's 16-byte block granularity
+applied, which means this gap has in fact **grown** a little — a small price paid
+for forward secrecy, and one that closes separately, with padding. No padding is
+applied. Voice does not have this problem: frames go out at a fixed size.
 
 ### 5.8 PBKDF2, not Argon2id — closed (1.7.0)
 
@@ -299,10 +306,15 @@ hardware far more expensive.
 Since 1.7.0 the key is derived with **Argon2id**: the second option RFC 9106
 recommends for memory-constrained environments, 3 passes, 4 lanes, 64 MiB
 (`core/crypto.py`). Every password guess needs 64 MiB of memory, which breaks the
-thousands of parallel guesses that make GPUs effective against PBKDF2. The
-scheme label is `fernet-argon2id-v1`. A known-answer vector locks the
-parameters, the salt and the room name normalisation
-(`tests/test_crypto.py` → `Argon2idTests`).
+thousands of parallel guesses that make GPUs effective against PBKDF2. A
+known-answer vector locks the parameters, the salt and the room name
+normalisation (`tests/test_crypto.py` → `Argon2idTests`).
+
+Argon2id's **job changed in 1.9.0**: the key it derives no longer encrypts
+messages, it is the key of the signature that proves the other side belongs to
+the room (and the voice key is derived from it, 5.1). That is why text chat's
+scheme label is now `aesgcm-x25519-v1`; the label `fernet-argon2id-v1` belongs to
+1.8.0 and earlier.
 
 Higher memory was deliberately not chosen: because the salt is deterministic,
 changing the parameters breaks compatibility again, and a future client on

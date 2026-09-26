@@ -22,7 +22,7 @@ paylaşıyor ama farklı sözler veriyor.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | Kime | Günlük kullanım, arkadaş grubu | Şifrelemenin öncelik olduğu durumlar |
-| Durum | Çalışıyor. 1.8.0 derlendi ve test edildi, henüz dağıtılmadı; sesli sohbet uygulamaya girdi | Henüz kod yok, yalnızca sınırları yazılı |
+| Durum | Çalışıyor. 1.9.0 derlendi ve test edildi, henüz dağıtılmadı; sesli sohbet ve metinde ileri gizlilik uygulamaya girdi | Henüz kod yok, yalnızca sınırları yazılı |
 | Hedefi | Kullanışlı olmak, içeriği korumak | Tehdit modelindeki T5 rakibini karşılamak |
 
 Ayrı iki ürün olmasının sebebi şu: az özellik, güvenlikte başlı başına bir
@@ -35,18 +35,24 @@ kirletmemesi için ikisi bilerek ayrıldı.
   Kayıt olmak, e-posta vermek, telefon numarası vermek yok.
 - Mesajlar **istemcide** şifreleniyor. Sunucu düz metni hiçbir zaman görmüyor;
   sunucu kodunda şifre çözme yeteneği bilerek **yok.**
-- Anahtar, oda parolasından Argon2id ile türüyor (1.7.0'dan itibaren).
-  Parolayı bilmeyen içeriği okuyamıyor.
-- Oda geçmişi varsayılan olarak **kapalı** (1.7.0'dan itibaren). Host açarsa
-  yalnızca bellekte tutulur, diske yazılmaz, sunucu kapanınca gider.
+- Metin sohbetinde şifreleme anahtarı **her oturumda yeniden doğuyor**
+  (1.9.0'dan itibaren): geçici X25519 anahtarları takas ediliyor ve oturum
+  kapanınca bırakılıyor. Parolanın işi şifrelemek değil, karşı tarafın odaya
+  ait olduğunu **doğrulamak**; o imzanın anahtarı paroladan Argon2id ile
+  türüyor (1.7.0'dan itibaren). Parolayı bilmeyen odaya anahtar veremiyor ve
+  içeriği okuyamıyor.
+- Oda geçmişi varsayılan olarak **kapalı** (1.7.0'dan itibaren) ve şifreli
+  odalarda **hiç tutulmuyor** (1.9.0'dan itibaren): ileri gizlilikte sonradan
+  bağlanan onu zaten çözemez. Parolasız odalarda Host açarsa yalnızca bellekte
+  tutulur, diske yazılmaz, sunucu kapanınca gider.
 - Başka odaya geçip dönünce o odada gördüğün mesajlar geri gelir. Yalnızca
   bellekte tutulur, bağlantı kesilince silinir.
 - Oda parolası ekranda gösterilmeden kopyalanabilir. Kopya Windows pano
   geçmişine girmez ve 30 saniye sonra panodan silinir.
 - Tanılama kaydı varsayılan olarak **kapalı.**
-- **Sesli sohbet** (1.8.0): aynı odadakiler konuşabilir. Ses de oda
-  parolasından türeyen anahtarla şifreleniyor; sunucu onu çözmeden
-  aktarıyor ve kimin konuştuğunu göremiyor. Konuşma yokken mikrofonu
+- **Sesli sohbet** (1.8.0): aynı odadakiler konuşabilir. Ses hâlâ oda
+  parolasından türeyen anahtarla şifreleniyor — yani metinde olan ileri gizlilik
+  seste **yok**; sunucu onu çözmeden aktarıyor ve kimin konuştuğunu göremiyor. Konuşma yokken mikrofonu
   sessizleştiren bir gürültü kapısı var. Henüz **varsayılan olarak
   sunulmuyor**: canlı kullanım testi geçilmeden öyle anlatılmayacak.
 - Türkçe ve İngilizce arayüz.
@@ -55,17 +61,18 @@ kirletmemesi için ikisi bilerek ayrıldı.
 
 Bunları saklamıyorum; saklarsam belge bir pazarlama metnine dönüşür:
 
-- **İleri gizlilik yok.** Anahtar hiç değişmiyor. Bugün kaydedilen şifreli
-  trafik, parola gelecekte ele geçerse geriye dönük olarak okunabilir. En
-  büyük açık bu.
+- **İleri gizlilik seste yok.** Metin sohbetinde 1.9.0'da geldi: anahtar her
+  oturumda yeniden doğuyor, yani parola gelecekte ele geçse bile kaydedilmiş
+  metin okunamıyor. Ses anahtarı ise hâlâ paroladan türüyor; kaydedilen ses,
+  parola sonradan sızarsa açılabilir. Sıradaki iş bu.
 - **Metadata tamamen açık.** Kim, kiminle, ne zaman, ne uzunlukta — hepsi
   görünüyor.
 - **Odaya girmek için parola gerekmiyor.** Sunucuya ulaşabilen herkes
-  kullanıcı listesini ve trafiğin ritmini görür. Host oda geçmişini açarsa
-  şifreli geçmişi de toplayabilir.
+  kullanıcı listesini ve trafiğin ritmini görür. Parolayı bilmediği için
+  içeriği okuyamaz ve şifreli odada toplayacağı bir geçmiş de artık yok.
 - **Zayıf bir parola hâlâ çevrimdışı kırılabilir.** Argon2id her denemeyi
-  pahalı yapar, imkânsız yapmaz; aynı oda adı ve parola her yerde aynı
-  anahtarı verir.
+  pahalı yapar, imkânsız yapmaz. Parolayı bulan biri o oturumun anahtar
+  takasını taklit edebilir ve sesi açabilir. Asıl çözüm bir PAKE.
 - **Taşıma katmanı şifresiz.** Aktif bir saldırgan mesaj içeriğini
   sahteleyemez ama zarf paketlerini sahteleyebilir.
 - **Dağıtılan dosya imzasız.**
@@ -75,9 +82,19 @@ Hepsinin ayrıntısı, neden böyle olduğu ve kapatılma sırası burada:
 
 ### Sırada ne var
 
+**Metin sohbetinde ileri gizlilik geldi** (1.9.0, 2026-09-27). Anahtar artık
+paroladan türemiyor: her oturumda geçici X25519 anahtarları takas ediliyor ve
+oturum kapanınca bırakılıyor; parolanın işi şifrelemek değil, karşı tarafın
+odaya ait olduğunu doğrulamak. Sonuç: parola aylar sonra sızsa bile kaydedilmiş
+metin trafiği açılamaz. En büyük açık buydu ve metin tarafında kapandı.
+
+Sıradaki iş **aynısını seste yapmak**: ses anahtarı hâlâ paroladan türüyor.
+Sonra taşıma katmanı şifrelemesi ve mesaj dolgusu. Sırası ve gerekçesi
+[THREAT_MODEL.md](THREAT_MODEL.md) 8. bölümde.
+
 **Sesli sohbet artık uygulamanın içinde** (2026-09-25). Sunucu sesi
 çözmeden aktarıyor, istemci ayrı bir UDP yolundan konuşuyor, arayüzde
-katıl/ayrıl, katılımcı listesi, sustur ve gürültü kapısı var. Aynı makinede
+katıl/ayrıl, katılımcı listesi, sustur, gürültü kapısı ve eşik ayarı var. Aynı makinede
 iki kopyayla denendi ve ses duyuldu; iki ayrı bilgisayarla henüz
 denenmedi.
 

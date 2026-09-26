@@ -60,8 +60,10 @@ Bu tehditler ProxyNet tarafından çözülemez ve çözülüyormuş gibi davran�
 - **Oda parolasının paylaşım kanalı.** Parolayı WhatsApp'tan gönderirseniz
   zincir orada kırılır. Parola yüz yüze veya ayrı bir güvenli kanaldan
   paylaşılmalıdır.
-- **Kullanıcının parola seçimi.** Deterministik anahtar türetmesi nedeniyle
-  tahmin edilebilir parola, tüm modeli çökertir.
+- **Kullanıcının parola seçimi.** Parola 1.9.0'dan beri metni şifreleyen
+  anahtar değil (5.1), ama karşı tarafın odaya ait olduğunu doğrulayan imzanın
+  anahtarı — ve ses anahtarı hâlâ ondan türüyor. Tahmin edilebilir bir parola
+  hem çevrimdışı sözlük saldırısına hem de araya girmeye kapı açar.
 - **Alt katman (işletim sistemi, VPN istemcisi, donanım) güvenliği.**
 
 ---
@@ -76,8 +78,9 @@ Bunların hepsi test edilmiştir (`tests/test_crypto.py`, `tests/test_hardening.
   yeteneği yoktur, olmaması tasarım gereğidir.
 - **Sunucu belleğindeki geçmiş şifrelidir.**
 - **Yanlış parolayla içerik açılamaz**; kullanıcı düz metin yerine yer tutucu görür.
-- **Değiştirilmiş şifreli metin reddedilir.** Fernet kimlik doğrulamalı şifreleme
-  kullanır (AES-128-CBC + HMAC-SHA256), yani rakip mesaj içeriğini sessizce
+- **Değiştirilmiş şifreli metin reddedilir.** Metin sohbeti 1.9.0'dan beri
+  AES-256-GCM kullanıyor (öncesinde Fernet, yani AES-128-CBC + HMAC-SHA256);
+  ikisi de kimlik doğrulamalı şifreleme, yani rakip mesaj içeriğini sessizce
   değiştiremez.
 - **Sunucu tarafında üçüncü parti bağımlılık yoktur** — saldırı yüzeyi ve
   tedarik zinciri riski küçüktür.
@@ -276,8 +279,12 @@ başlatılmalıdır.
 
 ### 5.7 Mesaj uzunluğu sızar
 
-Fernet çıktısının uzunluğu düz metnin uzunluğuyla korelasyonludur (16 baytlık
-blok hassasiyetinde). Dolgu (padding) uygulanmıyor.
+Şifreli metnin uzunluğu düz metnin uzunluğuyla korelasyonludur. 1.9.0'dan beri
+ilişki **bayt hassasiyetinde**: AES-GCM bir akış kipi, yani uzunluğu birebir
+taşıyor. Öncesinde Fernet'in 16 baytlık blok hassasiyeti vardı, yani bu açık bir
+miktar **büyüdü** — ileri gizlilik kazanırken ödenen küçük bir bedel, ve
+kapatılması dolguya bağlı olduğu için ayrıca kapanacak. Dolgu (padding)
+uygulanmıyor. Ses tarafında bu sorun yok: çerçeveler sabit boyda gidiyor.
 
 ### 5.8 PBKDF2, Argon2id değil — kapatıldı (1.7.0)
 
@@ -288,9 +295,14 @@ pahalı yapar.
 1.7.0'dan itibaren anahtar **Argon2id** ile türetiliyor: RFC 9106'nın bellek
 kısıtlı ortamlar için önerdiği ikinci seçenek, 3 tur, 4 şerit, 64 MiB
 (`core/crypto.py`). Her parola denemesi 64 MiB bellek ister; GPU'yu PBKDF2'ye
-karşı etkili yapan binlerce paralel deneme bununla çöker. Şema etiketi
-`fernet-argon2id-v1`. Parametreleri, tuzu ve oda adı normalleştirmesini bilinen
-bir cevap vektörü kilitliyor (`tests/test_crypto.py` → `Argon2idTests`).
+karşı etkili yapan binlerce paralel deneme bununla çöker. Parametreleri, tuzu ve
+oda adı normalleştirmesini bilinen bir cevap vektörü kilitliyor
+(`tests/test_crypto.py` → `Argon2idTests`).
+
+Argon2id'nin **işi 1.9.0'da değişti**: türettiği anahtar artık mesajları
+şifrelemiyor, karşı tarafın odaya ait olduğunu doğrulayan imzanın anahtarı oluyor
+(ve ses anahtarı ondan türüyor, 5.1). Metin sohbetinin şema etiketi bu yüzden
+`aesgcm-x25519-v1`; `fernet-argon2id-v1` etiketi 1.8.0 ve öncesine ait.
 
 Daha yüksek bellek bilerek seçilmedi: tuz deterministik olduğu için
 parametreleri değiştirmek yine uyumluluğu bozar, ve ileride başka bir

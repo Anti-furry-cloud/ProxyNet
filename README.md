@@ -22,7 +22,7 @@ different promises.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | For whom | Everyday use, a group of friends | Situations where encryption is the priority |
-| Status | Working. 1.8.0 is built and tested but not yet distributed; voice chat landed in the app | No code yet, only its limits written down |
+| Status | Working. 1.9.0 is built and tested but not yet distributed; voice chat and forward secrecy for text landed in the app | No code yet, only its limits written down |
 | Goal | Be usable, protect content | Meet the T5 adversary in the threat model |
 
 The reason they are separate: fewer features is itself a security feature. They
@@ -35,18 +35,24 @@ contaminates ProxyNull.
   email, no phone number.
 - Messages are encrypted **on the client.** The server never sees plaintext;
   the ability to decrypt is deliberately **absent** from the server code.
-- The key is derived from the room password with Argon2id (from 1.7.0).
-  Without the password, content is unreadable.
-- Room history is **off** by default (from 1.7.0). If the host turns it on, it
+- In text chat the encryption key is **born again every session** (from 1.9.0):
+  ephemeral X25519 keys are exchanged and dropped when the session ends. The
+  password's job is not to encrypt but to **authenticate** that the other side
+  belongs to the room; the key of that signature is derived from the password
+  with Argon2id (from 1.7.0). Without the password, content is unreadable.
+- Room history is **off** by default (from 1.7.0) and is **never kept at all**
+  in encrypted rooms (from 1.9.0): with forward secrecy a later joiner cannot
+  decrypt it anyway. In rooms without a password, if the host turns it on, it
   lives in memory only, never on disk, and is gone when the server stops.
 - Messages you have seen come back when you return to a room. They are kept
   in memory only and dropped when you disconnect.
 - The room password can be copied without showing it on screen. The copy is
   kept out of Windows clipboard history and cleared after 30 seconds.
 - Diagnostic logging is **off** by default.
-- **Voice chat** (1.8.0): people in the same room can talk. The audio is
-  encrypted with a key derived from the room password too; the server
-  relays it without decrypting and cannot tell who is speaking. A noise
+- **Voice chat** (1.8.0): people in the same room can talk. The audio is still
+  encrypted with a key derived from the room password — so the forward secrecy
+  text now has is **absent** for voice; the server relays it without decrypting
+  and cannot tell who is speaking. A noise
   gate silences the microphone while nobody speaks. It is **not offered
   as a default** yet: it will not be described that way until the
   live-use test passes.
@@ -57,17 +63,19 @@ contaminates ProxyNull.
 I am not hiding these; hiding them would turn this document into marketing
 copy:
 
-- **No forward secrecy.** The key never changes. Encrypted traffic recorded
-  today can be read retroactively if the password is ever compromised. This is
-  the biggest gap.
+- **No forward secrecy for voice.** Text chat got it in 1.9.0: the key is born
+  again every session, so recorded text cannot be read even if the password is
+  compromised later. The voice key is still derived from the password, so
+  recorded audio can be opened if the password leaks. This is the next job.
 - **Metadata is fully exposed.** Who, with whom, when, at what length — all
   visible.
 - **No password is needed to enter a room.** Anyone who can reach the server
-  sees the user list and the rhythm of the traffic. If the host turns room
-  history on, they can also collect the encrypted history.
+  sees the user list and the rhythm of the traffic. Without the password they
+  cannot read content, and in an encrypted room there is no longer a history for
+  them to collect.
 - **A weak password can still be cracked offline.** Argon2id makes every guess
-  expensive, not impossible, and the same room name and password give the same
-  key everywhere.
+  expensive, not impossible. Someone who finds the password can impersonate that
+  session's key exchange and can open the voice. The real fix is a PAKE.
 - **The transport layer is unencrypted.** An active attacker cannot forge
   message content but can forge envelope packets.
 - **The distributed file is unsigned.**
@@ -77,10 +85,22 @@ closed: **[THREAT_MODEL.en.md](THREAT_MODEL.en.md)**
 
 ### What is next
 
+**Forward secrecy landed for text chat** (1.9.0, 2026-09-27). The key no longer
+comes from the password: ephemeral X25519 keys are exchanged every session and
+dropped when it ends, and the password's job is not to encrypt but to
+authenticate that the other side belongs to the room. The result: even if the
+password leaks months later, recorded text traffic cannot be opened. This was
+the biggest gap, and it is closed on the text side.
+
+The next job is **doing the same for voice**: the voice key is still derived
+from the password. After that, transport-layer encryption and message padding.
+The order and the reasoning are in section 8 of
+[THREAT_MODEL.en.md](THREAT_MODEL.en.md).
+
 **Voice chat now lives inside the application** (2026-09-25). The server
 relays audio without decrypting it, the client speaks over a separate UDP
 path, and the interface has join/leave, a participant list, mute and a noise
-gate. It was tried with two copies on one machine and the audio was heard;
+gate and a threshold control. It was tried with two copies on one machine and the audio was heard;
 two separate computers are still untried.
 
 Whether the connection quality is good enough was decided by measurements
