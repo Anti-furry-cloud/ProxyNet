@@ -120,6 +120,17 @@ Devlet ölçeğinde rakiplerin standart yöntemi tam olarak budur: *şimdi kayde
 sonra çöz*. Signal'in Double Ratchet'i bu senaryo için vardır. ProxyNet'te
 karşılığı yoktur.
 
+**İddia artık test halinde (2026-09-26).** `tests/test_crypto.py` →
+`ForwardSecrecyTests`. Bugünkü durumu doğrulayan test **geçiyor**: parolayı
+sonradan ele geçiren bir rakip, kaydettiği oturumun tamamını düz metne
+çeviriyor. Hedefi tanımlayan üç test ise `expectedFailure` ile **kırmızı
+duruyor** — kırmızı olmaları gerektiği için. Üçüncüsü ses tarafını kapsıyor:
+oturum tuzu her oturumda yeniden üretilse de `voice_peers` onu düz metin
+duyurduğu için ileri gizlilik sağlamıyor; tuz oturumları ayırmaya yarıyor,
+gelecekteki bir parola sızıntısına karşı değil. İleri gizlilik geldiği gün o üç
+test "beklenmedik başarı" olarak bildirilir; yani bu bölüm güncellenmeden test
+takımı yeşile dönmez.
+
 ### 5.2 Geçmiş, kimlik doğrulaması olmadan dağıtılıyor — varsayılan kapatıldı (1.7.0)
 
 Geçmiş açıkken sunucu, odaya katılan **herkese** son 100 mesaja kadar gönderir

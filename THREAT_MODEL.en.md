@@ -125,6 +125,17 @@ This is precisely the standard method of state-level adversaries: *record now,
 decrypt later*. Signal's Double Ratchet exists for this scenario. ProxyNet has
 no equivalent.
 
+**The claim is now a test (2026-09-26).** `tests/test_crypto.py` →
+`ForwardSecrecyTests`. The test that confirms today's behaviour **passes**: an
+adversary who obtains the password later turns an entire recorded session into
+plaintext. The three that define the goal are **red** under `expectedFailure` —
+because they are supposed to be. The third covers voice: the session salt is
+regenerated for every session, but `voice_peers` announces it in the clear, so
+it gives no forward secrecy; the salt separates sessions from each other, not
+from a future password leak. The day forward secrecy lands, those three are
+reported as unexpected successes, so the suite will not go green again until
+this section is updated.
+
 ### 5.2 History is handed out without authentication — off by default (1.7.0)
 
 While history is on, the server sends up to the last 100 messages to **everyone** who
