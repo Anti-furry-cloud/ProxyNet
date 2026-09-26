@@ -2,14 +2,6 @@
 
 # ProxyNet — Threat Model
 
-> **Publication note (2026-09-16):** ProxyNet's source code is **not open yet**
-> and the software has had no independent security audit. There is no public
-> release either. **Nobody should rely on this software today.** This document
-> is published so that the design can be criticised before more is built on top
-> of it; if you find a mistake, I want to hear it. The file paths in the text
-> (such as `core/server.py`) are not visible yet — they were deliberately kept
-> so that, once the code opens, every claim here can be checked at its source.
-
 > **Scope:** This document defines the goal of **ProxyNull**
 > (`apps/proxynull/`). ProxyChat (`apps/proxychat/`) is optimised for everyday
 > use and makes **no claim** of protection against the T5 adversary; for it,
@@ -37,7 +29,7 @@ its principles is rejected, however useful it may be.
 | Priority | Asset | Today's status |
 | --- | --- | --- |
 | 1 | Message content | End-to-end encrypted |
-| 2 | Confidentiality of past messages (if the password later leaks) | **Not protected** |
+| 2 | Confidentiality of past messages (if the password later leaks) | **Protected** for text (1.9.0); not for voice |
 | 3 | Who talks to whom (metadata) | **Not protected** |
 | 4 | Usernames, room names | **Not protected** |
 | 5 | When someone is online | **Not protected** |
@@ -52,10 +44,10 @@ its principles is rejected, however useful it may be.
 | T2 | The person running the server (host) | Sees everything passing through the server | **Good** — never sees plaintext |
 | T3 | Passive on-path observer (ISP, VPN provider) | Records traffic | **Partial** — content safe, metadata exposed |
 | T4 | Active network attacker | Injects, drops, alters packets | **Weak** — messages cannot be forged, but envelope packets (errors, user lists) can be |
-| T5 | State-level adversary | Stores traffic for years, seizes devices, applies legal compulsion | **Not met** — no forward secrecy |
+| T5 | State-level adversary | Stores traffic for years, seizes devices, applies legal compulsion | **Not met** — forward secrecy for text (1.9.0) but not voice; the transport is still in the clear |
 
-**T5 is the reason this document exists, and it is not currently met.** I write
-this knowingly; the project has not reached its goal.
+**T5 is the reason this document exists, and it is not currently met.** We
+write this knowingly; the project has not reached its goal.
 
 ---
 
@@ -114,27 +106,63 @@ limits stay there):
 These are known and accepted gaps. Until they are closed, it **must not** be
 said that ProxyNet is at a "the state cannot read it" level.
 
-### 5.1 No forward secrecy — the largest gap
+### 5.1 Forward secrecy — closed for text (1.9.0), open for voice
 
-The key is derived deterministically from the (room name + password) pair and
-never changes. Consequence: encrypted traffic recorded today can be **fully
-decrypted retroactively** if the password is obtained by any means in the
-future.
+**Before:** the key was derived deterministically from the (room name +
+password) pair and never changed. Recorded encrypted traffic could be **fully
+decrypted retroactively** if the password was obtained by any means in the
+future. This is precisely the standard method of state-level adversaries:
+*record now, decrypt later*.
 
-This is precisely the standard method of state-level adversaries: *record now,
-decrypt later*. Signal's Double Ratchet exists for this scenario. ProxyNet has
-no equivalent.
+**Closed for text chat (1.9.0).** The encryption key no longer comes from the
+password: every session generates an ephemeral X25519 key pair, the public keys
+are exchanged between the endpoints, and the private keys are dropped when the
+session ends. The password's new job is not to encrypt but to **authenticate**
+the other side: an HMAC derived from it travels next to the public key, and the
+room name goes into that signature too. Groups use the sender-key pattern — each
+participant generates one broadcast key per session and sends it to every peer
+wrapped under the pairwise key, exactly as Signal and WhatsApp do for group chat.
 
-**The claim is now a test (2026-09-26).** `tests/test_crypto.py` →
-`ForwardSecrecyTests`. The test that confirms today's behaviour **passes**: an
-adversary who obtains the password later turns an entire recorded session into
-plaintext. The three that define the goal are **red** under `expectedFailure` —
-because they are supposed to be. The third covers voice: the session salt is
-regenerated for every session, but `voice_peers` announces it in the clear, so
-it gives no forward secrecy; the salt separates sessions from each other, not
-from a future password leak. The day forward secrecy lands, those three are
-reported as unexpected successes, so the suite will not go green again until
-this section is updated.
+The result: even if the password leaks months later, recorded **text** traffic
+cannot be opened. The server only carries these packets and never looks inside;
+because all of the Diffie-Hellman happens at the endpoints, the server **has no
+ability** to compute the shared secret, and the rule that the server chain does
+not import `cryptography` is unbroken (a test locks that down with the AST).
+
+Code: `core/key_agreement.py`, `core/room_session.py`. Tests:
+`tests/test_key_agreement.py`, `tests/test_room_session.py`,
+`tests/test_forward_secrecy.py`, `tests/test_crypto.py` → `ForwardSecrecyTests`.
+
+**Still open — voice.** The voice session key is still derived from the password.
+The session salt is regenerated for every session, but `voice_peers` announces it
+in the clear, so an adversary keeping a recording has the salt as well; if the
+password leaks later, the voice can be opened. The salt separates sessions from
+one another, not from a future password leak. The test that marks this is **red**
+under `expectedFailure`; the day it closes, it will be reported as an unexpected
+success, and the suite will not go green again until this section is updated. The
+fix is known: derive the voice key from the room session's sender key too. The
+text-side work was the rehearsal for it.
+
+**Still open — weak passwords.** Anyone who sees the offer's HMAC can mount an
+offline dictionary attack; if they find the password they can impersonate that
+session's exchange. This is not a regression (the same attack was available
+against the ciphertext) but it is not an improvement either. The real fix is a
+PAKE (see section 3 of `apps/proxynull/PROTOCOL.en.md`).
+
+**Still open — an active man in the middle who knows the password.** Because the
+password is a shared secret, anyone holding it can produce a valid HMAC and
+therefore get in between. Joining the room is free anyway (5.5). ProxyNull solves
+this with a short verification code compared on every session; ProxyChat does not.
+
+**Still open — memory.** In Python `bytes` are immutable and cannot be zeroed
+reliably. The mathematics gives perfect forward secrecy, the runtime does not:
+protection against seizure of the device's memory is **partial**.
+
+**Absent by choice — self-healing.** Signal's Double Ratchet adds
+post-compromise security on top of forward secrecy: even after a device is
+compromised once, later messages recover. ProxyNet has no equivalent, and in
+group chat sender keys do not provide it anyway. It is not required for the
+"record now, decrypt later" threat, which is why it is deferred — not hidden.
 
 ### 5.2 History is handed out without authentication — off by default (1.7.0)
 
@@ -158,6 +186,14 @@ room (at most 200 per room; not written to disk, dropped when the session
 ends). This creates no new recipient: the same messages were already on that
 device's screen, and compromise of the endpoint is out of scope (section 3).
 Tests: `tests/test_proxychat_ui.py` → `RoomMemoryTests`.
+
+**Closed completely for encrypted rooms (1.9.0).** With forward secrecy,
+encrypted messages are **never written** to history: a later joiner — even the
+message's own author — cannot decrypt them anyway, while keeping them would leave
+the door open for someone without the password to enter the room, collect 100
+ciphertexts and take them offline. History keeps working unchanged in rooms
+without a password; there is nothing to hide there. Decided 2026-09-27, the
+product owner's choice. Test: `tests/test_forward_secrecy.py`.
 
 Remaining limit: if the host **deliberately turns history on**, the gap is
 exactly as before. The only way to close it is to send history only to clients
@@ -246,7 +282,7 @@ networks", let another program listen on `127.0.0.1:<port>` and take over
 Host's own connection.
 
 Remaining limit: the choice is tied to an IP address, not to a network adapter.
-If that address disappears from the computer (for example, the VPN is turned
+If that address disappears from the computer (for example, Hamachi is turned
 off), Host has to be started again.
 
 ### 5.7 Message length leaks
@@ -326,7 +362,7 @@ A decision record, so the same ideas are not re-litigated.
 | Per-room security mode within a single product | **Rejected** | Two separate products preferred. Fewer features is itself a security property; a separate product guarantees ProxyChat's feature pressure does not contaminate ProxyNull |
 | Copying the security code into both products | **Rejected** | In copied code a flaw gets fixed on one side and forgotten on the other. `core/` is shared; ProxyNull shrinks its attack surface by importing less of it |
 | Relaying voice through the server (SFU, without decrypting) | **Accepted (2026-09-16)** | Relay from the start; the "only for rooms larger than 4 people" condition was dropped. The alternative, mesh, would have handed every participant's IP to everyone in the room (Principle 3); with a relay the host keeps seeing the IPs it already sees. Content stays encrypted, so Principle 1 is not violated. The relay's own unsolved problems (sender id assignment, authentication towards the host) are in section 9 of the voice chat plan |
-| A separate CLI program that only carries voice | **Deferred** | A suggestion from outside (2026-09-17): a separate program that runs from the command line and carries nothing but audio; easy to understand and use, with a small attack surface (no interface, room list, history or notifications). For: the voice chat prototype already works this way. Against: the password and the other side's address still have to be shared outside the program, two programs mean two maintenance burdens, and being in the same room as the text chat is lost. To be decided once the networking side of voice chat works |
+| A separate CLI program that only carries voice | **Deferred** | The tester's suggestion (2026-09-17): a separate program that runs from the command line like the prototype and carries nothing but audio; easy to understand and use, with a small attack surface (no Qt interface, room list, history or notifications). For: the prototype already works this way and worked well; it also fits ProxyNull's "fewer features is security" principle. Against: the password and the other side's address still have to be shared outside the program, two programs mean two maintenance burdens, and being in the same room as the text chat is lost. To be decided after Phase 1b, once real use has been seen |
 
 ---
 
@@ -339,7 +375,7 @@ A decision record, so the same ideas are not re-litigated.
 | 3 | ~~Remove `content_length` from the event log (5.3)~~ **Done (1.5.0; capability removed in 1.7.0)** | Low | Small |
 | 4 | ~~Move to Argon2id (5.8)~~ **Done (1.7.0)** | Medium | Medium |
 | 5 | Transport-layer encryption / authentication (5.4) | High | Medium |
-| 6 | **Forward secrecy: key ratcheting (5.1)** | **Highest** | **Large** — protocol change |
+| 6 | ~~**Forward secrecy (5.1)**~~ **Done for text (1.9.0)**; still open for voice | **Highest** | Large — protocol change |
 | 7 | Message padding (5.7) | Low | Small |
 | 8 | Signed / reproducible builds (5.9) | Medium | Medium |
 
@@ -369,7 +405,7 @@ protection** on this axis — not by choice, it simply was never addressed.
 The first packet a client sends is this:
 
 ```
-{"type":"join","room":"general","user":"alice"}
+{"type":"join","room":"general","user":"ayse"}
 ```
 
 Plaintext, fixed field names, fixed order. Recognising it with deep packet

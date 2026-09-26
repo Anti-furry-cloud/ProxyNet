@@ -2,14 +2,6 @@
 
 # ProxyNet — Tehdit Modeli
 
-> **Yayın notu (2026-09-16):** ProxyNet'in kaynak kodu **henüz açık değil** ve
-> yazılım hiçbir bağımsız güvenlik denetiminden geçmedi. Herkese açık bir
-> sürüm de yok. **Şu an hiç kimse bu yazılıma güvenmemeli.** Bu belge, üzerine
-> daha fazlası inşa edilmeden önce tasarımın eleştirilebilmesi için
-> yayınlanıyor; hata bulursanız duymak isterim. Metindeki dosya yolları
-> (`core/server.py` gibi) şu an görünmüyor — kod açıldığında buradaki her
-> iddianın nereden doğrulanacağını göstermek için bilerek bırakıldı.
-
 > **Kapsam:** Bu belge **ProxyNull**'ın (`apps/proxynull/`) hedefini tanımlar.
 > ProxyChat (`apps/proxychat/`) günlük kullanım için optimize edilmiştir ve
 > T5 rakibine karşı koruma **iddia etmez**; onun için 4. bölümdeki güvenceler
@@ -36,7 +28,7 @@ Her yeni özellik bu belgeye karşı ölçülür. Belgedeki ilkeleri ihlal eden 
 | Öncelik | Varlık | Bugünkü durum |
 | --- | --- | --- |
 | 1 | Mesaj içeriği | Uçtan uca şifreli |
-| 2 | Geçmiş mesajların gizliliği (parola sonradan ele geçerse) | **Korunmuyor** |
+| 2 | Geçmiş mesajların gizliliği (parola sonradan ele geçerse) | Metinde **korunuyor** (1.9.0); seste korunmuyor |
 | 3 | Kiminle konuşulduğu (metadata) | **Korunmuyor** |
 | 4 | Kullanıcı adları, oda adları | **Korunmuyor** |
 | 5 | Ne zaman çevrimiçi olunduğu | **Korunmuyor** |
@@ -51,9 +43,9 @@ Her yeni özellik bu belgeye karşı ölçülür. Belgedeki ilkeleri ihlal eden 
 | T2 | Sunucuyu işleten kişi (host) | Sunucudan geçen her şeyi görür | **İyi** — düz metni asla görmez |
 | T3 | Yol üzerindeki pasif dinleyici (ISP, VPN sağlayıcısı) | Trafiği kaydeder | **Kısmi** — içerik güvenli, metadata açık |
 | T4 | Aktif ağ saldırganı | Paket enjekte eder, düşürür, değiştirir | **Zayıf** — mesajlar sahte üretilemez ama zarf paketleri (hata, kullanıcı listesi) sahtelenebilir |
-| T5 | Devlet ölçeğinde rakip | Trafiği yıllarca saklar, cihaza el koyar, hukuki zorlama uygular | **Karşılamıyor** — ileri gizlilik yok |
+| T5 | Devlet ölçeğinde rakip | Trafiği yıllarca saklar, cihaza el koyar, hukuki zorlama uygular | **Karşılamıyor** — metinde ileri gizlilik var (1.9.0), seste yok; taşıma katmanı açık |
 
-**T5 belgenin varlık sebebidir ve şu an karşılanmıyor.** Bunu bilerek yazıyorum;
+**T5 belgenin varlık sebebidir ve şu an karşılanmıyor.** Bunu bilerek yazıyoruz;
 proje amacına ulaşmış sayılmaz.
 
 ---
@@ -110,26 +102,62 @@ Kapanan açıklar (ayrıntısı ve kalan sınırları 5. bölümde duruyor):
 Bunlar bilinen ve kabul edilmiş açıklardır. Kapanana kadar ProxyNet'in
 "devlet okuyamaz" seviyesinde olduğu **söylenmemelidir.**
 
-### 5.1 İleri gizlilik (forward secrecy) yok — en büyük açık
+### 5.1 İleri gizlilik (forward secrecy) — metinde kapandı (1.9.0), seste açık
 
-Anahtar, (oda adı + parola) ikilisinden deterministik türetilir ve hiç değişmez.
-Sonuç: bugün kaydedilen şifreli trafik, parola gelecekte herhangi bir yolla ele
-geçerse **geriye dönük olarak tamamen okunur**.
+**Eskiden:** anahtar (oda adı + parola) ikilisinden deterministik türetiliyor ve
+hiç değişmiyordu. Kaydedilen şifreli trafik, parola gelecekte herhangi bir yolla
+ele geçerse **geriye dönük olarak tamamen** okunuyordu. Devlet ölçeğinde
+rakiplerin standart yöntemi tam olarak budur: *şimdi kaydet, sonra çöz*.
 
-Devlet ölçeğinde rakiplerin standart yöntemi tam olarak budur: *şimdi kaydet,
-sonra çöz*. Signal'in Double Ratchet'i bu senaryo için vardır. ProxyNet'te
-karşılığı yoktur.
+**Metin sohbetinde kapatıldı (1.9.0).** Şifreleme anahtarı artık paroladan
+türemiyor: her oturumda geçici bir X25519 anahtar çifti üretiliyor, açık
+anahtarlar uçlar arasında takas ediliyor ve oturum kapanınca gizli anahtarlar
+bırakılıyor. Parolanın yeni işi şifrelemek değil, karşı tarafın odaya ait
+olduğunu **doğrulamak**: açık anahtarın yanında paroladan türetilmiş bir HMAC
+gidiyor, oda adı da imzaya giriyor. Grup için gönderen anahtarı deseni
+kullanılıyor — her katılımcı oturum başına bir yayın anahtarı üretip her eşine
+ikili anahtarla sarılı gönderiyor; Signal ve WhatsApp'ın grup sohbetinde
+yaptığının aynısı.
 
-**İddia artık test halinde (2026-09-26).** `tests/test_crypto.py` →
-`ForwardSecrecyTests`. Bugünkü durumu doğrulayan test **geçiyor**: parolayı
-sonradan ele geçiren bir rakip, kaydettiği oturumun tamamını düz metne
-çeviriyor. Hedefi tanımlayan üç test ise `expectedFailure` ile **kırmızı
-duruyor** — kırmızı olmaları gerektiği için. Üçüncüsü ses tarafını kapsıyor:
-oturum tuzu her oturumda yeniden üretilse de `voice_peers` onu düz metin
-duyurduğu için ileri gizlilik sağlamıyor; tuz oturumları ayırmaya yarıyor,
-gelecekteki bir parola sızıntısına karşı değil. İleri gizlilik geldiği gün o üç
-test "beklenmedik başarı" olarak bildirilir; yani bu bölüm güncellenmeden test
-takımı yeşile dönmez.
+Sonuç: parola aylar sonra sızsa bile kaydedilmiş **metin** trafiği açılamaz.
+Sunucu bu paketleri yalnızca taşır, içine bakmaz; Diffie-Hellman'ın tamamı
+uçlarda olduğu için sunucunun ortak sırrı hesaplama yeteneği **yoktur** ve
+sunucu zincirinin `cryptography` import etmeme kuralı bozulmamıştır (bir test
+bunu AST ile kilitliyor).
+
+Kod: `core/key_agreement.py`, `core/room_session.py`. Testler:
+`tests/test_key_agreement.py`, `tests/test_room_session.py`,
+`tests/test_forward_secrecy.py`, `tests/test_crypto.py` → `ForwardSecrecyTests`.
+
+**Kalan açık — ses.** Ses oturum anahtarı hâlâ paroladan türüyor. Oturum tuzu
+her oturumda yeniden üretiliyor ama `voice_peers` ile düz metin duyuruluyor,
+yani kaydı tutan rakip tuzu da kaydetmiş olur; parola sonradan sızarsa ses
+açılır. Tuz oturumları birbirinden ayırmaya yarıyor, gelecekteki bir parola
+sızıntısına karşı değil. Bunu işaretleyen test `expectedFailure` ile **kırmızı
+duruyor**; kapandığı gün "beklenmedik başarı" olarak bildirilecek ve bu bölüm
+güncellenmeden test takımı yeşile dönmeyecek. Çözümü belli: ses anahtarı da oda
+oturumunun gönderen anahtarından türetilecek. Metin tarafında yapılan iş bunun
+provasıydı.
+
+**Kalan açık — zayıf parola.** Teklifin HMAC'ini gören biri çevrimdışı sözlük
+saldırısı yapabilir; parolayı bulursa o oturumun takasını taklit edebilir.
+Öncesine göre gerileme değil (şifreli metinden aynı saldırı yapılıyordu) ama
+düzelme de değil. Asıl çözüm bir PAKE'tir (bkz. `apps/proxynull/PROTOKOL.md` 3).
+
+**Kalan açık — parolayı bilen aktif ortadaki adam.** Parola paylaşılan bir sır
+olduğu için onu bilen biri geçerli HMAC üretir, yani araya girebilir. Odaya
+girmesi de zaten serbest (5.5). ProxyNull bunu her oturumda karşılaştırılan
+kısa doğrulama koduyla çözüyor; ProxyChat çözmüyor.
+
+**Kalan açık — bellek.** Python'da `bytes` değişmez ve güvenilir şekilde
+sıfırlanamaz. Matematik mükemmel ileri gizlilik veriyor, çalışma zamanı
+vermiyor: cihazın belleğine el konmasına karşı koruma **kısmi**.
+
+**Bilerek yok — kendi kendine iyileşme.** Signal'in Double Ratchet'i ileri
+gizliliğin üstüne post-compromise security koyar: cihaz bir kez ele geçse bile
+sonraki mesajların iyileşmesi. ProxyNet'te karşılığı yok ve grup sohbetinde
+gönderen anahtarları bunu zaten vermiyor. "Şimdi kaydet, sonra çöz" tehdidi
+için gerekli değil; bu yüzden ertelendi — gizlenmiyor.
 
 ### 5.2 Geçmiş, kimlik doğrulaması olmadan dağıtılıyor — varsayılan kapatıldı (1.7.0)
 
@@ -151,6 +179,13 @@ mesajları odaya geri döndüğünde gösterebilmek için yalnızca bellekte tut
 alıcı yaratmaz: aynı mesajlar zaten o cihazın ekranındaydı ve uç cihazın ele
 geçirilmesi kapsam dışı (3. bölüm). Testler: `tests/test_proxychat_ui.py` →
 `RoomMemoryTests`.
+
+**Şifreli odalarda tamamen kapandı (1.9.0).** İleri gizlilikle birlikte şifreli
+mesajlar geçmişe **hiç yazılmıyor**: sonradan bağlanan — mesajın sahibi bile —
+onu zaten çözemez, saklamak ise parolayı bilmeyen birinin odaya girip 100
+şifreli mesajı toplayıp çevrimdışı saldırıya almasına kapı açardı. Parolasız
+odalarda geçmiş aynen çalışmaya devam ediyor; orada gizlenecek bir şey yok.
+Karar 2026-09-27, proje sahibinin tercihi. Test: `tests/test_forward_secrecy.py`.
 
 Kalan sınır: Host geçmişi **bilerek açarsa** açık aynen sürer. Kapatmanın tek
 yolu geçmişi yalnızca oda parolasını bildiğini kanıtlayan istemcilere
@@ -236,7 +271,7 @@ programın `127.0.0.1:<port>`'u dinleyip Host'un kendi bağlantısını üzerine
 almasına izin veriyordu.
 
 Kalan sınır: seçim bir IP adresine bağlıdır, ağ bağdaştırıcısına değil. O adres
-bilgisayardan kalkarsa (örneğin VPN kapatılırsa) Host yeniden
+bilgisayardan kalkarsa (örneğin Hamachi kapatılırsa) Host yeniden
 başlatılmalıdır.
 
 ### 5.7 Mesaj uzunluğu sızar
@@ -312,7 +347,7 @@ Karar kaydı — aynı fikirlerin tekrar gündeme gelmemesi için.
 | Tek üründe oda başına güvenlik modu | **Reddedildi** | İki ayrı ürün tercih edildi. Az özellik güvenlikte başlı başına bir özelliktir; ayrı ürün, ProxyChat'in özellik baskısının ProxyNull'ı kirletmemesini garanti eder |
 | Güvenlik kodunun iki ürüne kopyalanması | **Reddedildi** | Kopyalanan kodda açık bir tarafta düzeltilip diğerinde unutulur. `core/` ortaktır; ProxyNull saldırı yüzeyini daha az import ederek küçültür |
 | Ses için sunucu üzerinden aktarma (SFU, çözmeden) | **Kabul edildi (2026-09-16)** | Baştan aktarma; "yalnızca 4 kişiyi aşan odalar için" koşulu kaldırıldı. Alternatifi olan mesh, odadaki herkesin IP'sini herkese dağıtacaktı (İlke 3); aktarmada Host zaten gördüğü IP'leri görmeye devam eder. İçerik şifreli kaldığı için İlke 1 ihlal edilmiyor. Aktarmanın kendi çözülmemiş sorunları (gönderen kimliği ataması, Host'a kimlik doğrulaması) sesli sohbet planının 9. bölümünde |
-| Yalnızca sesli konuşma yapan ayrı CLI programı | **Ertelendi** | Dışarıdan gelen bir öneri (2026-09-17): komut satırından çalışan, yalnızca sesi taşıyan ayrı bir program; anlaması ve kullanması kolay, saldırı yüzeyi küçük (arayüz, oda listesi, geçmiş, bildirim yok). Lehinde: sesli sohbet prototipi zaten bu şekilde çalışıyor. Aleyhinde: parola ve karşı tarafın adresi hâlâ program dışından paylaşılmak zorunda, iki ayrı program iki ayrı bakım yükü demek ve metin sohbetiyle aynı odada olmak avantajı kaybedilir. Sesli sohbetin ağ tarafı çalıştıktan sonra karara bağlanacak |
+| Yalnızca sesli konuşma yapan ayrı CLI programı | **Ertelendi** | Tester'ın önerisi (2026-09-17): prototip gibi komut satırından çalışan, yalnızca sesi taşıyan ayrı bir program; anlaması ve kullanması kolay, saldırı yüzeyi küçük (Qt arayüzü, oda listesi, geçmiş, bildirim yok). Lehinde: prototip zaten bu şekilde çalışıyor ve iyi çalıştı; ProxyNull'ın "az özellik güvenliktir" ilkesiyle de uyumlu. Aleyhinde: parola ve karşı tarafın adresi hâlâ program dışından paylaşılmak zorunda, iki ayrı program iki ayrı bakım yükü demek ve metin sohbetiyle aynı odada olmak avantajı kaybedilir. Faz 1b'den sonra, gerçek kullanım görüldüğünde karara bağlanacak |
 
 ---
 
@@ -325,7 +360,7 @@ Karar kaydı — aynı fikirlerin tekrar gündeme gelmemesi için.
 | 3 | ~~Olay kayıtlarından `content_length`'i çıkarmak (5.3)~~ **Yapıldı (1.5.0; yetenek 1.7.0'da kaldırıldı)** | Düşük | Küçük |
 | 4 | ~~Argon2id'ye geçiş (5.8)~~ **Yapıldı (1.7.0)** | Orta | Orta |
 | 5 | Taşıma katmanı şifrelemesi / kimlik doğrulama (5.4) | Yüksek | Orta |
-| 6 | **İleri gizlilik: anahtar ilerletme (5.1)** | **En yüksek** | **Büyük** — protokol değişikliği |
+| 6 | ~~**İleri gizlilik (5.1)**~~ **Metinde yapıldı (1.9.0)**; seste sürüyor | **En yüksek** | Büyük — protokol değişikliği |
 | 7 | Mesaj dolgusu (5.7) | Düşük | Küçük |
 | 8 | İmzalı / yeniden üretilebilir derleme (5.9) | Orta | Orta |
 
