@@ -355,7 +355,13 @@ oda adı normalleştirmesini bilinen bir cevap vektörü kilitliyor
 Argon2id'nin **işi 1.9.0'da değişti**: türettiği anahtar artık mesajları
 şifrelemiyor, karşı tarafın odaya ait olduğunu doğrulayan imzanın anahtarı oluyor
 (ve ses anahtarı ondan türüyor, 5.1). Metin sohbetinin şema etiketi bu yüzden
-`aesgcm-x25519-v1`; `fernet-argon2id-v1` etiketi 1.8.0 ve öncesine ait.
+`aesgcm-x25519-v1`; `fernet-argon2id-v1` etiketi 1.8.0 ve öncesine ait. O
+şemanın **kodu da 1.10.1'de silindi** (`RoomCipher`, `derive_room_key`,
+`make_cipher`): 1.9.0'dan beri hiçbir yerden çağrılmıyordu, dosyanın büyük
+kısmını kaplayıp "ProxyChat hâlâ paroladan türetilen sabit anahtarla şifreliyor"
+izlenimi veriyordu, ve kullanılmayan bir şifreleme yolu bir gün yanlışlıkla
+yeniden bağlanabilecek bir yoldur. Temiz kırılma yüzünden eski paketler zaten
+açılamıyordu, yani kaybedilen bir yetenek yok.
 
 Daha yüksek bellek bilerek seçilmedi: tuz deterministik olduğu için
 parametreleri değiştirmek yine uyumluluğu bozar, ve ileride başka bir

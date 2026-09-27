@@ -372,7 +372,12 @@ Argon2id's **job changed in 1.9.0**: the key it derives no longer encrypts
 messages, it is the key of the signature that proves the other side belongs to
 the room (and the voice key is derived from it, 5.1). That is why text chat's
 scheme label is now `aesgcm-x25519-v1`; the label `fernet-argon2id-v1` belongs to
-1.8.0 and earlier.
+1.8.0 and earlier. **That scheme's code was deleted in 1.10.1** as well
+(`RoomCipher`, `derive_room_key`, `make_cipher`): nothing had called it since
+1.9.0, it took up most of the file and left the impression that ProxyChat still
+encrypts with a fixed password-derived key, and an unused encryption path is a
+path that can be wired back in by accident one day. The clean break meant old
+packets could not be opened anyway, so no capability was lost.
 
 Higher memory was deliberately not chosen: because the salt is deterministic,
 changing the parameters breaks compatibility again, and a future client on
