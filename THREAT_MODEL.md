@@ -76,7 +76,8 @@ Bunların hepsi test edilmiştir (`tests/test_crypto.py`, `tests/test_hardening.
   Sunucu zincirinde (`core/server.py`, `core/hub.py`, `core/transport.py`,
   `core/protocol.py`, `core/server_state.py`) `cryptography` bile import edilmez — sunucunun çözme
   yeteneği yoktur, olmaması tasarım gereğidir.
-- **Sunucu belleğindeki geçmiş şifrelidir.**
+- **Şifreli odada sunucu geçmiş tutmuyor** (1.9.0). Parolasız odada geçmiş
+  yalnızca bellekte tutulur, diske yazılmaz.
 - **Yanlış parolayla içerik açılamaz**; kullanıcı düz metin yerine yer tutucu görür.
 - **Değiştirilmiş şifreli metin reddedilir.** Metin sohbeti 1.9.0'dan beri
   AES-256-GCM kullanıyor (öncesinde Fernet, yani AES-128-CBC + HMAC-SHA256);
@@ -89,6 +90,14 @@ Bunların hepsi test edilmiştir (`tests/test_crypto.py`, `tests/test_hardening.
 
 Kapanan açıklar (ayrıntısı ve kalan sınırları 5. bölümde duruyor):
 
+- **İleri gizlilik: anahtar her oturumda yeniden doğuyor** (5.1; metin 1.9.0,
+  ses 1.10.0) — `tests/test_key_agreement.py`, `tests/test_room_session.py`,
+  `tests/test_forward_secrecy.py`, `tests/test_voice_forward_secrecy.py`,
+  `tests/test_crypto.py` → `ForwardSecrecyTests`.
+- **Üye listesi kanıtla doğrulanıyor; sunucunun iddiasına güvenilmiyor**
+  (5.4-B, 1.9.0) — `tests/test_verified_users.py`.
+- **Şifreli odada geçmiş hiç tutulmuyor** (5.2, 1.9.0) —
+  `tests/test_forward_secrecy.py`.
 - **Oda geçmişi varsayılan olarak kapalı** (5.2, 1.7.0) —
   `tests/test_settings.py` → `HistoryDefaultTests`.
 - **Anahtar Argon2id ile türetiliyor** (5.8, 1.7.0) —

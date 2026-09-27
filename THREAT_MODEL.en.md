@@ -79,7 +79,8 @@ All of these are tested (`tests/test_crypto.py`, `tests/test_hardening.py`):
   `core/transport.py`, `core/protocol.py`, `core/server_state.py`) does not even
   import `cryptography` — the server has no ability to decrypt, and that
   absence is by design.
-- **History held in server memory is encrypted.**
+- **The server keeps no history in an encrypted room** (1.9.0). In a room
+  without a password, history lives in memory only and never on disk.
 - **Content cannot be opened with the wrong password**; the user sees a
   placeholder instead of plaintext.
 - **Tampered ciphertext is rejected.** Since 1.9.0 text chat uses AES-256-GCM
@@ -93,6 +94,14 @@ All of these are tested (`tests/test_crypto.py`, `tests/test_hardening.py`):
 Gaps from section 5 that have been closed (the detail and the remaining
 limits stay there):
 
+- **Forward secrecy: the key is born again every session** (5.1; text 1.9.0,
+  voice 1.10.0) — `tests/test_key_agreement.py`, `tests/test_room_session.py`,
+  `tests/test_forward_secrecy.py`, `tests/test_voice_forward_secrecy.py`,
+  `tests/test_crypto.py` → `ForwardSecrecyTests`.
+- **The user list is verified by proof; the server's claim is not trusted**
+  (5.4-B, 1.9.0) — `tests/test_verified_users.py`.
+- **No history is kept at all in an encrypted room** (5.2, 1.9.0) —
+  `tests/test_forward_secrecy.py`.
 - **Room history is off by default** (5.2, 1.7.0) —
   `tests/test_settings.py` → `HistoryDefaultTests`.
 - **The key is derived with Argon2id** (5.8, 1.7.0) —

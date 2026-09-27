@@ -862,7 +862,10 @@ could not decrypt the audio, but the conversation would be cut. The fix:
 
 Remaining limits: the password can be guessed offline, there is no forward
 secrecy, and the handshake packets give away that the traffic is this
-prototype. Those are for the protocol design, not the prototype.
+prototype. Those are for the protocol design, not the prototype — and one of
+them is now closed on that side: the product has forward secrecy (text 1.9.0,
+voice 1.10.0). It was not carried over to the prototype, which stays a
+measurement tool: it is not distributed and is not used for real chat.
 
 **A window for the prototype (2026-09-24).** The prototype can now be used
 without the console: a form for role, network, room, password and port;

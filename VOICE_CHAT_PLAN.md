@@ -816,7 +816,10 @@ doğrulanmıyordu. Porta ulaşabilen herkes tek bir paketle konuşmayı kendine
 
 Kalan sınırlar: parola çevrimdışı denenebilir, ileri gizlilik yok ve el
 sıkışma paketleri trafiğin bu prototip olduğunu belli eder. Bunlar
-prototipin değil, protokol tasarımının işi.
+prototipin değil, protokol tasarımının işi — ve ikisinden biri o tarafta
+kapandı: üründe ileri gizlilik var (metin 1.9.0, ses 1.10.0). Prototip ölçüm
+aracı olarak kaldığı için oraya taşınmadı; dağıtılmıyor ve gerçek sohbet
+için kullanılmıyor.
 
 **Prototipin penceresi (2026-09-24).** Prototip artık konsol olmadan da
 kullanılabiliyor: rol, ağ, oda, parola ve port için form; başlat/durdur;
