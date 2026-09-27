@@ -254,11 +254,46 @@ This was accepted deliberately: separate "left/joined" lines made someone
 switching rooms look as if they kept dropping and reconnecting. Tests:
 `tests/test_hardening.py` → `RoomMoveSnapshotTests`.
 
-### 5.4 The transport layer is unencrypted
+### 5.4 The transport layer is unencrypted — two separate problems
 
 The packet envelope (`type`, `room`, `user`, `ts`, `enc`) travels in the clear.
-An active attacker cannot forge message content but can inject a fake user list
-or error packet, and can drop packets.
+Inside that sit **two** problems with different fixes, different costs and
+different adversaries; as long as they were written as one item, both were
+mispriced.
+
+**A — Confidentiality: the envelope is readable on the path.** The room name,
+usernames and timestamps are visible to a passive listener on the path (T3) and
+to someone on the same local network (T1). The only way to close this is an
+encrypted channel between client and server. **Deferred**, for the reasons in
+section 8: a channel forces the server to do cryptography, which costs two
+concrete guarantees from section 4 (the server chain imports no `cryptography`;
+there is no third-party dependency on the server side). And part of its benefit
+is already covered by the intended deployment: when the connection runs inside a
+VPN, a listener on the path sees encrypted VPN traffic rather than plain JSON.
+**Even with a channel the host still sees everything** — the metadata gap (5.3)
+is independent of this.
+
+**B — Integrity: the envelope can be forged.** An active attacker cannot forge
+message content (content is protected by authenticated encryption) but can
+inject a fake user list or error packet, and can drop packets. And the real
+source of those packets is the server anyway: "what if the server lies" is not
+closed by a channel, which only keeps the network out.
+
+The more important half of B was closed in 1.9.0 **without touching the
+server.** A username is now bound to that person's ephemeral public key: if a
+name shows as verified, that person produced a valid signature derived from the
+password **and** demonstrated they hold the private key matching the public key
+in it (by sending their wrapped sender key in a form that opens). A name the
+server invents, or one injected into the network, cannot do that and appears as
+unverified in the interface. The proof comes from the key exchange, not from the
+server — the server no longer has **the last word** on who is in the room.
+Code: `core/client.py` → `verified_users`, `core/room_session.py` →
+`keyed_peers`. Tests: `tests/test_verified_users.py`.
+
+Remaining limit: the server can still drop packets, and a forged
+`room_snapshot` can push clients into dropping their keys. That is denial of
+service, not a leak, and it heals itself: the same packet also triggers a fresh
+key announcement, so the exchange is re-established immediately.
 
 ### 5.5 Room entry is open
 
@@ -382,14 +417,48 @@ A decision record, so the same ideas are not re-litigated.
 
 | Order | Work | Impact | Size |
 | --- | --- | --- | --- |
-| 1 | ~~Remove history / turn it off by default (5.2)~~ **Off by default (1.7.0)**; the gap remains if the host turns it on | High | Small |
-| 2 | ~~Make the host's listening interface selectable (5.6)~~ **Done (1.6.2)** | Medium | Small |
-| 3 | ~~Remove `content_length` from the event log (5.3)~~ **Done (1.5.0; capability removed in 1.7.0)** | Low | Small |
+| 1 | ~~Remove history / turn it off by default (5.2)~~ **Off by default (1.7.0)**; removed entirely in encrypted rooms (1.9.0) | High | Small |
+| 2 | ~~Make the interface the host listens on selectable (5.6)~~ **Done (1.6.2)** | Medium | Small |
+| 3 | ~~Remove `content_length` from the event log (5.3)~~ **Done (1.5.0; the capability removed in 1.7.0)** | Low | Small |
 | 4 | ~~Move to Argon2id (5.8)~~ **Done (1.7.0)** | Medium | Medium |
-| 5 | Transport-layer encryption / authentication (5.4) | High | Medium |
-| 6 | ~~**Forward secrecy (5.1)**~~ **Done for text (1.9.0)**; still open for voice | **Highest** | Large — protocol change |
-| 7 | Message padding (5.7) | Low | Small |
-| 8 | Signed / reproducible builds (5.9) | Medium | Medium |
+| 5 | ~~Forward secrecy for text (5.1)~~ **Done (1.9.0)** | **Highest** | Large — a protocol change |
+| 6 | ~~Stop trusting the server's user list (5.4-B)~~ **Done (1.9.0)** | Medium | Small |
+| 7 | **Forward secrecy for voice (5.1)** — the next job | **Highest** | Medium — the text side was the rehearsal |
+| 8 | Message padding (5.7) | Medium | Small |
+| 9 | Signed / reproducible builds (5.9) | Medium | Medium |
+| 10 | Transport-layer encryption (5.4-A) — **deferred** | Low–Medium | Large |
+
+**Why 5.4-A dropped to the bottom.** It used to be 5th and marked "high
+impact"; both were wrong. Three reasons:
+
+1. **The important half of its benefit has already been taken.** The real harm
+   in 5.4 was on the integrity side (B), and that was closed without giving the
+   server any cryptography.
+2. **The remaining half has little impact in the intended deployment.** The
+   connection runs inside a VPN, so a listener on the path already sees
+   encrypted traffic. What genuinely remains exposed is someone on the same
+   local network (T1) — and the host, which a channel does not cover at all.
+3. **Its cost is the two most concrete guarantees the server gives today.** A
+   channel forces the server to do cryptography: the server chain that imports
+   no `cryptography` and the zero third-party dependencies both end. A small,
+   auditable server was a security feature in its own right.
+
+The answer to A lies **outside the program** instead: run the connection
+through a tunnel (WireGuard, an SSH tunnel, Tor). This is also consistent with
+section 9, where the protocol's plaintext fingerprint (9.2) and the cost of
+covering it (9.5) are already written down, and where that table says covering
+overlaps with envelope encryption. Deferring both together beats doing each of
+them halfway. ProxyNet already assumes you
+bring your own network, and delegating this to tools built precisely for it is
+stronger than writing our own transport layer. The product that has an
+end-to-end encrypted channel in its design from the start is ProxyNull: there is
+**no server at all** there, the Noise handshake is written into its protocol and
+the connection runs over a Tor onion service (`apps/proxynull/PROTOCOL.en.md`).
+Having ProxyChat imitate that would be a second half-implementation.
+
+Decided 2026-09-27. Condition for revisiting: if the server moves to a publicly
+reachable address (see 5.5), A rises again, because the VPN assumption falls
+away there.
 
 ---
 
@@ -452,6 +521,7 @@ aimed at VPNs would hit us too.
 | Abandon the fixed port | 9.1/3 partly | Small |
 | Wrap or disguise the protocol inside TLS | 9.1/3 | Large — overlaps with envelope encryption |
 | Multiply distribution, signed binaries | 9.1/2 | Medium — overlaps with 5.9 |
+| Run the connection through a tunnel (WireGuard, SSH, Tor) | 9.1/3 partly | Small — the program does not change; it needs documenting and testing |
 | Remove the dependence on central coordination | 9.1/1 | Very large; every peer-to-peer system needs a rendezvous point |
 
 ---

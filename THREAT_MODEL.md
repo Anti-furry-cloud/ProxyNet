@@ -243,11 +243,44 @@ odadakiler, ayrılan kişinin bağlantıyı kesmediğini ve sunucuda kaldığın
 satırları oda değiştiren birini sürekli bağlanıp kopuyor gibi gösteriyordu.
 Testler: `tests/test_hardening.py` → `RoomMoveSnapshotTests`.
 
-### 5.4 Taşıma katmanı şifresiz
+### 5.4 Taşıma katmanı şifresiz — iki ayrı problem
 
-Paket zarfı (`type`, `room`, `user`, `ts`, `enc`) ağda açık gider. Aktif bir
-saldırgan mesaj içeriğini sahteleyemez ama sahte kullanıcı listesi veya hata
-paketi enjekte edebilir, paket düşürebilir.
+Paket zarfı (`type`, `room`, `user`, `ts`, `enc`) ağda açık gider. Bunun içinde
+çözümü, maliyeti ve kimden koruduğu farklı **iki** problem var; tek madde olarak
+yazıldığı sürece ikisi de yanlış fiyatlanıyordu.
+
+**A — Gizlilik: zarf yolda okunuyor.** Oda adı, kullanıcı adları ve zamanlar
+yol üzerindeki pasif dinleyiciye (T3) ve aynı yerel ağdaki birine (T1) görünür.
+Kapatmanın tek yolu istemci ile sunucu arasında şifreli bir kanaldır.
+**Ertelendi**, gerekçesi 8. bölümde: kanal sunucunun kriptografi yapmasını
+zorunlu kılıyor, yani 4. bölümdeki iki somut güvence (sunucu zincirinde
+`cryptography` import edilmez; sunucu tarafında üçüncü parti bağımlılık yok)
+gider. Kazancının bir kısmını ise hedeflenen senaryo zaten kapatıyor: bağlantı
+bir VPN'in içinden geçtiğinde yol üzerindeki dinleyici düz JSON değil şifreli
+VPN trafiği görür. **Kanal kurulsa bile Host her şeyi görmeye devam eder** —
+üstveri açığı (5.3) bundan bağımsızdır.
+
+**B — Bütünlük: zarf sahtelenebilir.** Aktif bir saldırgan mesaj içeriğini
+sahteleyemez (içerik kimlik doğrulamalı şifrelemeyle korunuyor) ama sahte
+kullanıcı listesi ya da hata paketi enjekte edebilir, paket düşürebilir. Ve bu
+paketlerin asıl kaynağı zaten sunucudur; yani "sunucu yalan söylerse" durumu
+kanalla kapanmaz, kanal yalnızca ağı dışarıda bırakır.
+
+B'nin en önemli yarısı 1.9.0'da **sunucuya hiç dokunmadan kapatıldı.** Artık
+kullanıcı adı, o kişinin geçici açık anahtarına bağlı: bir isim yanında
+"doğrulandı" görünüyorsa o kişi paroladan türetilmiş geçerli bir imza üretmiş
+**ve** o imzadaki açık anahtara karşılık gelen gizli anahtarı elinde tuttuğunu
+göstermiştir (sarılı gönderen anahtarını açılabilir halde göndererek). Sunucunun
+uydurduğu ya da ağa enjekte edilen bir isim bunu yapamaz ve arayüzde
+"doğrulanmadı" diye görünür. Kanıt sunucudan değil anahtar takasından geliyor;
+yani sunucu artık kimin odada olduğu konusunda **son söz sahibi değil.**
+Kod: `core/client.py` → `verified_users`, `core/room_session.py` →
+`keyed_peers`. Testler: `tests/test_verified_users.py`.
+
+Kalan sınır: sunucu hâlâ paket düşürebilir ve sahte bir `room_snapshot` ile
+istemcileri anahtarlarını bırakmaya zorlayabilir. Bu bir hizmet engellemedir,
+sızıntı değil, ve kendini onarıyor: aynı paket yeni bir anahtar duyurusunu da
+tetiklediği için takas hemen yeniden kuruluyor.
 
 ### 5.5 Odaya giriş serbest
 
@@ -367,14 +400,45 @@ Karar kaydı — aynı fikirlerin tekrar gündeme gelmemesi için.
 
 | Sıra | İş | Etki | Büyüklük |
 | --- | --- | --- | --- |
-| 1 | ~~Geçmişi kaldırmak / varsayılan kapatmak (5.2)~~ **Varsayılan kapatıldı (1.7.0)**; Host açarsa açık sürüyor | Yüksek | Küçük |
+| 1 | ~~Geçmişi kaldırmak / varsayılan kapatmak (5.2)~~ **Varsayılan kapatıldı (1.7.0)**; şifreli odalarda tamamen kaldırıldı (1.9.0) | Yüksek | Küçük |
 | 2 | ~~Host'un dinlediği arayüzü seçilebilir yapmak (5.6)~~ **Yapıldı (1.6.2)** | Orta | Küçük |
 | 3 | ~~Olay kayıtlarından `content_length`'i çıkarmak (5.3)~~ **Yapıldı (1.5.0; yetenek 1.7.0'da kaldırıldı)** | Düşük | Küçük |
 | 4 | ~~Argon2id'ye geçiş (5.8)~~ **Yapıldı (1.7.0)** | Orta | Orta |
-| 5 | Taşıma katmanı şifrelemesi / kimlik doğrulama (5.4) | Yüksek | Orta |
-| 6 | ~~**İleri gizlilik (5.1)**~~ **Metinde yapıldı (1.9.0)**; seste sürüyor | **En yüksek** | Büyük — protokol değişikliği |
-| 7 | Mesaj dolgusu (5.7) | Düşük | Küçük |
-| 8 | İmzalı / yeniden üretilebilir derleme (5.9) | Orta | Orta |
+| 5 | ~~Metinde ileri gizlilik (5.1)~~ **Yapıldı (1.9.0)** | **En yüksek** | Büyük — protokol değişikliği |
+| 6 | ~~Sunucunun üye listesine güvenmeyi bırakmak (5.4-B)~~ **Yapıldı (1.9.0)** | Orta | Küçük |
+| 7 | **Seste ileri gizlilik (5.1)** — sıradaki iş | **En yüksek** | Orta — metin tarafı prova oldu |
+| 8 | Mesaj dolgusu (5.7) | Orta | Küçük |
+| 9 | İmzalı / yeniden üretilebilir derleme (5.9) | Orta | Orta |
+| 10 | Taşıma katmanı şifrelemesi (5.4-A) — **ertelendi** | Düşük–Orta | Büyük |
+
+**5.4-A neden en sona düştü.** Eskiden 5. sıradaydı ve "yüksek etki" yazıyordu;
+ikisi de yanlıştı. Üç gerekçe:
+
+1. **Kazancının önemli yarısı zaten alındı.** 5.4'ün gerçek zararı bütünlük
+   tarafındaydı (B) ve o, sunucuya kriptografi vermeden kapatıldı.
+2. **Kalan yarısının etkisi hedeflenen senaryoda küçük.** Bağlantı bir VPN'in
+   içinden geçiyor; yol üzerindeki dinleyici zaten şifreli trafik görüyor.
+   Gerçekten açık kalan taraf aynı yerel ağdaki biri (T1) — ve Host, ki kanal
+   onu hiç kapatmıyor.
+3. **Bedeli, sunucunun bugün verdiği en somut iki güvence.** Kanal, sunucunun
+   kriptografi yapmasını zorunlu kılar: `cryptography` import etmeyen sunucu
+   zinciri ve sıfır üçüncü parti bağımlılık biter. Küçük ve denetlenebilir bir
+   sunucu güvenlikte başlı başına bir özellikti.
+
+Bunun yerine A'nın cevabı **programın dışında**: bağlantı bir tünelden
+(WireGuard, SSH tüneli, Tor) geçirilir. Bu karar 9. bölümle de tutarlı: orada
+protokolün düz metin parmak izi (9.2) ve onu örtmenin maliyeti (9.5) zaten
+yazılı, ve o tablo örtme işinin zarf şifrelemesiyle örtüştüğünü söylüyor.
+İkisini birlikte ertelemek, ikisini ayrı ayrı yarım yapmaktan iyidir. ProxyNet zaten "ağı sen getir"
+varsayımıyla çalışıyor ve bu işi, tam bu iş için yapılmış araçlara devretmek
+kendi taşıma katmanımızı yazmaktan güçlüdür. Uçtan uca şifreli bir kanalın
+tasarımdan itibaren içinde olduğu ürün ProxyNull'dır: orada sunucu **hiç yok**,
+Noise el sıkışması protokolünde yazılı ve bağlantı Tor onion servisinden
+geçiyor (`apps/proxynull/PROTOKOL.md`). ProxyChat'in aynı şeyi taklit etmesi
+ikinci bir yarım implementasyon olurdu.
+
+Karar 2026-09-27. Yeniden değerlendirme koşulu: sunucu halka açık bir adrese
+taşınırsa (bkz. 5.5) A tekrar yukarı çıkar, çünkü o durumda VPN varsayımı düşer.
 
 ---
 
@@ -437,6 +501,7 @@ bir engel bizi de vurur.
 | Sabit portu terk etmek | 9.1/3 kısmen | Küçük |
 | Protokolü TLS içine sarmak veya örtmek | 9.1/3 | Büyük — zarf şifreleme işiyle örtüşür |
 | Dağıtımı çoğaltmak, imzalı binary | 9.1/2 | Orta — 5.9 ile örtüşür |
+| Bağlantıyı bir tünelden geçirmek (WireGuard, SSH, Tor) | 9.1/3 kısmen | Küçük — program değişmez, belgelenmesi ve denenmesi gerekir |
 | Merkezî koordinasyondan kurtulmak | 9.1/1 | Çok büyük; her eşler-arası sistem bir buluşma noktası ister |
 
 ---
