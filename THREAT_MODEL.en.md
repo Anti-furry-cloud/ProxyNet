@@ -29,7 +29,7 @@ its principles is rejected, however useful it may be.
 | Priority | Asset | Today's status |
 | --- | --- | --- |
 | 1 | Message content | End-to-end encrypted |
-| 2 | Confidentiality of past messages (if the password later leaks) | **Protected** for text (1.9.0); not for voice |
+| 2 | Confidentiality of past messages (if the password later leaks) | **Protected** — text 1.9.0, voice 1.10.0 |
 | 3 | Who talks to whom (metadata) | **Not protected** |
 | 4 | Usernames, room names | **Not protected** |
 | 5 | When someone is online | **Not protected** |
@@ -44,7 +44,7 @@ its principles is rejected, however useful it may be.
 | T2 | The person running the server (host) | Sees everything passing through the server | **Good** — never sees plaintext |
 | T3 | Passive on-path observer (ISP, VPN provider) | Records traffic | **Partial** — content safe, metadata exposed |
 | T4 | Active network attacker | Injects, drops, alters packets | **Weak** — messages cannot be forged, but envelope packets (errors, user lists) can be |
-| T5 | State-level adversary | Stores traffic for years, seizes devices, applies legal compulsion | **Not met** — forward secrecy for text (1.9.0) but not voice; the transport is still in the clear |
+| T5 | State-level adversary | Stores traffic for years, seizes devices, applies legal compulsion | **Not met** — forward secrecy is in place (text 1.9.0, voice 1.10.0) but metadata and the transport are still exposed |
 
 **T5 is the reason this document exists, and it is not currently met.** We
 write this knowingly; the project has not reached its goal.
@@ -109,7 +109,7 @@ limits stay there):
 These are known and accepted gaps. Until they are closed, it **must not** be
 said that ProxyNet is at a "the state cannot read it" level.
 
-### 5.1 Forward secrecy — closed for text (1.9.0), open for voice
+### 5.1 Forward secrecy — closed (text 1.9.0, voice 1.10.0)
 
 **Before:** the key was derived deterministically from the (room name +
 password) pair and never changed. Recorded encrypted traffic could be **fully
@@ -136,15 +136,25 @@ Code: `core/key_agreement.py`, `core/room_session.py`. Tests:
 `tests/test_key_agreement.py`, `tests/test_room_session.py`,
 `tests/test_forward_secrecy.py`, `tests/test_crypto.py` → `ForwardSecrecyTests`.
 
-**Still open — voice.** The voice session key is still derived from the password.
-The session salt is regenerated for every session, but `voice_peers` announces it
-in the clear, so an adversary keeping a recording has the salt as well; if the
-password leaks later, the voice can be opened. The salt separates sessions from
-one another, not from a future password leak. The test that marks this is **red**
-under `expectedFailure`; the day it closes, it will be reported as an unexpected
-success, and the suite will not go green again until this section is updated. The
-fix is known: derive the voice key from the room session's sender key too. The
-text-side work was the rehearsal for it.
+**Closed for voice too (1.10.0).** The voice session key is now also derived
+from the room session's sender key rather than from the password. The text-side
+work was the rehearsal, and the same material is used — the only difference is
+HKDF's `info` field, so that the same key material does not yield the same key
+for text and for voice.
+
+Whose key a voice stream is derived from is matched **not by username** but by
+that person's ephemeral public key: the name is something the server says, the
+public key is something proved by a signature derived from the password. A
+public-key field was added to the `voice_join` and `voice_peers` packets for
+this; the server merely carries it and does not know what it means.
+
+The ordering problem is handled too: the text handshake can finish after the
+voice join. In that case the peer is skipped silently and the participant list
+is processed again once the key arrives — a missing key is a transient state,
+not an error. The scheme label is `aesgcm-x25519-v3`, deliberately incompatible
+with the old `aesgcm-hkdf-v2`. Code: `core/voice_crypto.py` →
+`derive_voice_session_key`, `ForwardSecretVoiceCipher`. Tests:
+`tests/test_voice_forward_secrecy.py`.
 
 **Still open — weak passwords.** Anyone who sees the offer's HMAC can mount an
 offline dictionary attack; if they find the password they can impersonate that
@@ -425,12 +435,11 @@ A decision record, so the same ideas are not re-litigated.
 | 2 | ~~Make the interface the host listens on selectable (5.6)~~ **Done (1.6.2)** | Medium | Small |
 | 3 | ~~Remove `content_length` from the event log (5.3)~~ **Done (1.5.0; the capability removed in 1.7.0)** | Low | Small |
 | 4 | ~~Move to Argon2id (5.8)~~ **Done (1.7.0)** | Medium | Medium |
-| 5 | ~~Forward secrecy for text (5.1)~~ **Done (1.9.0)** | **Highest** | Large — a protocol change |
+| 5 | ~~Forward secrecy (5.1)~~ **Done — text 1.9.0, voice 1.10.0** | **Highest** | Large — a protocol change |
 | 6 | ~~Stop trusting the server's user list (5.4-B)~~ **Done (1.9.0)** | Medium | Small |
-| 7 | **Forward secrecy for voice (5.1)** — the next job | **Highest** | Medium — the text side was the rehearsal |
-| 8 | Message padding (5.7) | Medium | Small |
-| 9 | Signed / reproducible builds (5.9) | Medium | Medium |
-| 10 | Transport-layer encryption (5.4-A) — **deferred** | Low–Medium | Large |
+| 7 | **Message padding (5.7)** — the next job | Medium | Small |
+| 8 | Signed / reproducible builds (5.9) | Medium | Medium |
+| 9 | Transport-layer encryption (5.4-A) — **deferred** | Low–Medium | Large |
 
 **Why 5.4-A dropped to the bottom.** It used to be 5th and marked "high
 impact"; both were wrong. Three reasons:

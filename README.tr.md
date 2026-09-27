@@ -50,9 +50,9 @@ kirletmemesi için ikisi bilerek ayrıldı.
 - Oda parolası ekranda gösterilmeden kopyalanabilir. Kopya Windows pano
   geçmişine girmez ve 30 saniye sonra panodan silinir.
 - Tanılama kaydı varsayılan olarak **kapalı.**
-- **Sesli sohbet** (1.8.0): aynı odadakiler konuşabilir. Ses hâlâ oda
-  parolasından türeyen anahtarla şifreleniyor — yani metinde olan ileri gizlilik
-  seste **yok**; sunucu onu çözmeden aktarıyor ve kimin konuştuğunu göremiyor. Konuşma yokken mikrofonu
+- **Sesli sohbet** (1.8.0): aynı odadakiler konuşabilir. Ses, oda oturumunun
+  anahtarından türeyen anahtarla şifreleniyor ve metin gibi **ileri gizliliği
+  var** (1.10.0); sunucu onu çözmeden aktarıyor ve kimin konuştuğunu göremiyor. Konuşma yokken mikrofonu
   sessizleştiren bir gürültü kapısı var. Henüz **varsayılan olarak
   sunulmuyor**: canlı kullanım testi geçilmeden öyle anlatılmayacak.
 - Türkçe ve İngilizce arayüz.
@@ -61,18 +61,15 @@ kirletmemesi için ikisi bilerek ayrıldı.
 
 Bunları saklamıyorum; saklarsam belge bir pazarlama metnine dönüşür:
 
-- **İleri gizlilik seste yok.** Metin sohbetinde 1.9.0'da geldi: anahtar her
-  oturumda yeniden doğuyor, yani parola gelecekte ele geçse bile kaydedilmiş
-  metin okunamıyor. Ses anahtarı ise hâlâ paroladan türüyor; kaydedilen ses,
-  parola sonradan sızarsa açılabilir. Sıradaki iş bu.
 - **Metadata tamamen açık.** Kim, kiminle, ne zaman, ne uzunlukta — hepsi
   görünüyor.
 - **Odaya girmek için parola gerekmiyor.** Sunucuya ulaşabilen herkes
   kullanıcı listesini ve trafiğin ritmini görür. Parolayı bilmediği için
   içeriği okuyamaz ve şifreli odada toplayacağı bir geçmiş de artık yok.
 - **Zayıf bir parola hâlâ çevrimdışı kırılabilir.** Argon2id her denemeyi
-  pahalı yapar, imkânsız yapmaz. Parolayı bulan biri o oturumun anahtar
-  takasını taklit edebilir ve sesi açabilir. Asıl çözüm bir PAKE.
+  pahalı yapar, imkânsız yapmaz. Parolayı bulan biri **canlı** bir oturumun
+  anahtar takasını taklit edip araya girebilir; kaydedilmiş trafiği açamaz,
+  ileri gizlilik onu kapatıyor. Asıl çözüm bir PAKE.
 - **Taşıma katmanı şifresiz.** Aktif bir saldırgan mesaj içeriğini
   sahteleyemez ama zarf paketlerini sahteleyebilir.
 - **Dağıtılan dosya imzasız.**
@@ -88,8 +85,9 @@ oturum kapanınca bırakılıyor; parolanın işi şifrelemek değil, karşı ta
 odaya ait olduğunu doğrulamak. Sonuç: parola aylar sonra sızsa bile kaydedilmiş
 metin trafiği açılamaz. En büyük açık buydu ve metin tarafında kapandı.
 
-Sıradaki iş **aynısını seste yapmak**: ses anahtarı hâlâ paroladan türüyor.
-Sonra taşıma katmanı şifrelemesi ve mesaj dolgusu. Sırası ve gerekçesi
+Ses de 1.10.0'da aynı yere geldi: ses oturum anahtarı da paroladan değil oda
+oturumundan türüyor. Sıradaki iş **mesaj dolgusu** — şifreli metnin uzunluğu
+düz metnin uzunluğunu ele veriyor. Sırası ve gerekçesi
 [THREAT_MODEL.md](THREAT_MODEL.md) 8. bölümde.
 
 **Sesli sohbet artık uygulamanın içinde** (2026-09-25). Sunucu sesi

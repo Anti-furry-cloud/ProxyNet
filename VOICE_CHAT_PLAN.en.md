@@ -18,8 +18,10 @@ over a separate UDP path, and the interface has join/leave, a participant list,
 mute, a noise gate and a threshold control. It was tried with two copies on one
 machine and the audio was heard; **it has not been tried with two separate
 computers yet.** **Phase 0's decision gate came out ACCEPTABLE on 2026-09-24.**
-Shipping voice chat as a **default** depends on the live-use test, and that test
-has not started (section 8).
+1.10.0 brought **forward secrecy** to voice: the session key now comes from the
+room session rather than from the password (sections 3 and 9). Shipping voice
+chat as a **default** depends on the live-use test, and that test has not
+started (section 8).
 
 Goal: letting a group of 2–5 friends talk over a virtual LAN (VPN) or a local
 network. Not replacing Discord.
@@ -139,10 +141,11 @@ tag).
 
 > **Note (1.9.0):** text chat no longer uses Fernet; it uses AES-256-GCM with
 > ephemeral per-session keys and **has forward secrecy** (THREAT_MODEL 5.1). The
-> comparison below describes 1.8.0 and earlier; the decision made for audio has
-> not changed. But it has a consequence: the voice key is still derived from the
-> password, so forward secrecy is **absent for voice.** It stands as an open
-> question in section 9.
+> comparison below describes 1.8.0 and earlier; the AES-GCM decision and the
+> wire format have not changed. **The one thing that changed is where the key
+> comes from:** since 1.10.0 the voice session key is derived from the room
+> session's sender key rather than from the password, so voice is forward
+> secret too (section 9).
 
 Audio must also be encrypted with a key derived from the room password;
 otherwise text would be encrypted while audio is in the clear, and the promise
@@ -946,17 +949,22 @@ did not answer and the versions may differ, so nobody is left staring at
 These are known, well-defined problems. They are written down here to prevent
 anyone treating them as solved.
 
-- **There is no forward secrecy for voice.** Text chat got it in 1.9.0: the key
-  is born again every session and the password only authenticates. The voice key
-  is still derived from the password. The session salt is regenerated every
-  session but `voice_peers` announces it **in the clear**, so an adversary
-  keeping a recording has the salt too; if the password leaks later, the voice
-  can be opened. The salt separates sessions from one another, not from a future
-  password leak. The fix is known: derive the voice session key from the room
-  session's sender key. The test that marks this is red under
-  `expectedFailure`, so the day it closes cannot go unnoticed.
+There is no open security question right now. A new one gets written here.
 
 Closed questions:
+
+- ~~There is no forward secrecy for voice.~~ → **Done (1.10.0).** The voice
+  session key now comes from the room session's sender key rather than from the
+  password; because that key is born again every session and dropped when the
+  session ends, recorded audio cannot be opened even if the password leaks
+  later. Whose key is used is matched **not by username** but by the ephemeral
+  public key — the name is something the server says, the public key is proved
+  by a signature derived from the password; a public-key field was added to the
+  `voice_join` and `voice_peers` packets for this, and the server merely carries
+  it. If the text handshake finishes after the voice join, the peer is skipped
+  silently and the participant list is processed again once the key arrives. The
+  scheme label is `aesgcm-x25519-v3`, deliberately incompatible with the old
+  `aesgcm-hkdf-v2`.
 
 - ~~How will `sender_id` be assigned?~~ → **The host assigns it and never gives
   the same id twice within a session** (Phase 1b, 2026-09-24). The id is not

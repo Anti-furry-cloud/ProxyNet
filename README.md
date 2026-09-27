@@ -49,10 +49,10 @@ contaminates ProxyNull.
 - The room password can be copied without showing it on screen. The copy is
   kept out of Windows clipboard history and cleared after 30 seconds.
 - Diagnostic logging is **off** by default.
-- **Voice chat** (1.8.0): people in the same room can talk. The audio is still
-  encrypted with a key derived from the room password — so the forward secrecy
-  text now has is **absent** for voice; the server relays it without decrypting
-  and cannot tell who is speaking. A noise
+- **Voice chat** (1.8.0): people in the same room can talk. The audio is
+  encrypted with a key derived from the room session and, like text, **has
+  forward secrecy** (1.10.0); the server relays it without decrypting and cannot
+  tell who is speaking. A noise
   gate silences the microphone while nobody speaks. It is **not offered
   as a default** yet: it will not be described that way until the
   live-use test passes.
@@ -63,10 +63,6 @@ contaminates ProxyNull.
 I am not hiding these; hiding them would turn this document into marketing
 copy:
 
-- **No forward secrecy for voice.** Text chat got it in 1.9.0: the key is born
-  again every session, so recorded text cannot be read even if the password is
-  compromised later. The voice key is still derived from the password, so
-  recorded audio can be opened if the password leaks. This is the next job.
 - **Metadata is fully exposed.** Who, with whom, when, at what length — all
   visible.
 - **No password is needed to enter a room.** Anyone who can reach the server
@@ -74,8 +70,9 @@ copy:
   cannot read content, and in an encrypted room there is no longer a history for
   them to collect.
 - **A weak password can still be cracked offline.** Argon2id makes every guess
-  expensive, not impossible. Someone who finds the password can impersonate that
-  session's key exchange and can open the voice. The real fix is a PAKE.
+  expensive, not impossible. Someone who finds the password can impersonate the
+  key exchange of a **live** session and get in between; they cannot open
+  recorded traffic, which forward secrecy closes. The real fix is a PAKE.
 - **The transport layer is unencrypted.** An active attacker cannot forge
   message content but can forge envelope packets.
 - **The distributed file is unsigned.**
@@ -92,9 +89,10 @@ authenticate that the other side belongs to the room. The result: even if the
 password leaks months later, recorded text traffic cannot be opened. This was
 the biggest gap, and it is closed on the text side.
 
-The next job is **doing the same for voice**: the voice key is still derived
-from the password. After that, transport-layer encryption and message padding.
-The order and the reasoning are in section 8 of
+Voice reached the same place in 1.10.0: the voice session key comes from the
+room session rather than from the password. The next job is **message
+padding** — the length of the ciphertext still gives away the length of the
+plaintext. The order and the reasoning are in section 8 of
 [THREAT_MODEL.en.md](THREAT_MODEL.en.md).
 
 **Voice chat now lives inside the application** (2026-09-25). The server

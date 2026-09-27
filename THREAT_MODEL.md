@@ -28,7 +28,7 @@ Her yeni özellik bu belgeye karşı ölçülür. Belgedeki ilkeleri ihlal eden 
 | Öncelik | Varlık | Bugünkü durum |
 | --- | --- | --- |
 | 1 | Mesaj içeriği | Uçtan uca şifreli |
-| 2 | Geçmiş mesajların gizliliği (parola sonradan ele geçerse) | Metinde **korunuyor** (1.9.0); seste korunmuyor |
+| 2 | Geçmiş mesajların gizliliği (parola sonradan ele geçerse) | **Korunuyor** — metin 1.9.0, ses 1.10.0 |
 | 3 | Kiminle konuşulduğu (metadata) | **Korunmuyor** |
 | 4 | Kullanıcı adları, oda adları | **Korunmuyor** |
 | 5 | Ne zaman çevrimiçi olunduğu | **Korunmuyor** |
@@ -43,7 +43,7 @@ Her yeni özellik bu belgeye karşı ölçülür. Belgedeki ilkeleri ihlal eden 
 | T2 | Sunucuyu işleten kişi (host) | Sunucudan geçen her şeyi görür | **İyi** — düz metni asla görmez |
 | T3 | Yol üzerindeki pasif dinleyici (ISP, VPN sağlayıcısı) | Trafiği kaydeder | **Kısmi** — içerik güvenli, metadata açık |
 | T4 | Aktif ağ saldırganı | Paket enjekte eder, düşürür, değiştirir | **Zayıf** — mesajlar sahte üretilemez ama zarf paketleri (hata, kullanıcı listesi) sahtelenebilir |
-| T5 | Devlet ölçeğinde rakip | Trafiği yıllarca saklar, cihaza el koyar, hukuki zorlama uygular | **Karşılamıyor** — metinde ileri gizlilik var (1.9.0), seste yok; taşıma katmanı açık |
+| T5 | Devlet ölçeğinde rakip | Trafiği yıllarca saklar, cihaza el koyar, hukuki zorlama uygular | **Karşılamıyor** — ileri gizlilik var (metin 1.9.0, ses 1.10.0) ama üstveri ve taşıma katmanı açık |
 
 **T5 belgenin varlık sebebidir ve şu an karşılanmıyor.** Bunu bilerek yazıyoruz;
 proje amacına ulaşmış sayılmaz.
@@ -105,7 +105,7 @@ Kapanan açıklar (ayrıntısı ve kalan sınırları 5. bölümde duruyor):
 Bunlar bilinen ve kabul edilmiş açıklardır. Kapanana kadar ProxyNet'in
 "devlet okuyamaz" seviyesinde olduğu **söylenmemelidir.**
 
-### 5.1 İleri gizlilik (forward secrecy) — metinde kapandı (1.9.0), seste açık
+### 5.1 İleri gizlilik (forward secrecy) — kapandı (metin 1.9.0, ses 1.10.0)
 
 **Eskiden:** anahtar (oda adı + parola) ikilisinden deterministik türetiliyor ve
 hiç değişmiyordu. Kaydedilen şifreli trafik, parola gelecekte herhangi bir yolla
@@ -132,15 +132,23 @@ Kod: `core/key_agreement.py`, `core/room_session.py`. Testler:
 `tests/test_key_agreement.py`, `tests/test_room_session.py`,
 `tests/test_forward_secrecy.py`, `tests/test_crypto.py` → `ForwardSecrecyTests`.
 
-**Kalan açık — ses.** Ses oturum anahtarı hâlâ paroladan türüyor. Oturum tuzu
-her oturumda yeniden üretiliyor ama `voice_peers` ile düz metin duyuruluyor,
-yani kaydı tutan rakip tuzu da kaydetmiş olur; parola sonradan sızarsa ses
-açılır. Tuz oturumları birbirinden ayırmaya yarıyor, gelecekteki bir parola
-sızıntısına karşı değil. Bunu işaretleyen test `expectedFailure` ile **kırmızı
-duruyor**; kapandığı gün "beklenmedik başarı" olarak bildirilecek ve bu bölüm
-güncellenmeden test takımı yeşile dönmeyecek. Çözümü belli: ses anahtarı da oda
-oturumunun gönderen anahtarından türetilecek. Metin tarafında yapılan iş bunun
-provasıydı.
+**Seste de kapatıldı (1.10.0).** Ses oturum anahtarı da artık oda oturumunun
+gönderen anahtarından türüyor; paroladan değil. Metin tarafında yapılan iş
+bunun provasıydı ve aynı malzeme kullanıldı — tek fark HKDF'nin `info` alanı,
+ki aynı anahtardan metin ve ses için aynı şey çıkmasın.
+
+Ses anahtarının kimden türetileceği **kullanıcı adıyla değil** o kişinin geçici
+açık anahtarıyla eşleşiyor: ad sunucunun söylediği bir şey, açık anahtar ise
+paroladan türetilmiş imzayla doğrulanmış bir şey. Bunun için `voice_join` ve
+`voice_peers` paketlerine açık anahtar alanı eklendi; sunucu onu yalnızca
+taşıyor, anlamını bilmiyor.
+
+Sıra sorunu da çözüldü: metin el sıkışması ses katılımından sonra bitebiliyor.
+O durumda eş sessizce atlanıyor ve anahtar gelince katılımcı listesi yeniden
+işleniyor — eksik anahtar bir hata değil, geçici bir durum. Şema etiketi
+`aesgcm-x25519-v3`; eski `aesgcm-hkdf-v2` ile bilerek uyumsuz. Kod:
+`core/voice_crypto.py` → `derive_voice_session_key`, `ForwardSecretVoiceCipher`.
+Testler: `tests/test_voice_forward_secrecy.py`.
 
 **Kalan açık — zayıf parola.** Teklifin HMAC'ini gören biri çevrimdışı sözlük
 saldırısı yapabilir; parolayı bulursa o oturumun takasını taklit edebilir.
@@ -407,12 +415,11 @@ Karar kaydı — aynı fikirlerin tekrar gündeme gelmemesi için.
 | 2 | ~~Host'un dinlediği arayüzü seçilebilir yapmak (5.6)~~ **Yapıldı (1.6.2)** | Orta | Küçük |
 | 3 | ~~Olay kayıtlarından `content_length`'i çıkarmak (5.3)~~ **Yapıldı (1.5.0; yetenek 1.7.0'da kaldırıldı)** | Düşük | Küçük |
 | 4 | ~~Argon2id'ye geçiş (5.8)~~ **Yapıldı (1.7.0)** | Orta | Orta |
-| 5 | ~~Metinde ileri gizlilik (5.1)~~ **Yapıldı (1.9.0)** | **En yüksek** | Büyük — protokol değişikliği |
+| 5 | ~~İleri gizlilik (5.1)~~ **Yapıldı — metin 1.9.0, ses 1.10.0** | **En yüksek** | Büyük — protokol değişikliği |
 | 6 | ~~Sunucunun üye listesine güvenmeyi bırakmak (5.4-B)~~ **Yapıldı (1.9.0)** | Orta | Küçük |
-| 7 | **Seste ileri gizlilik (5.1)** — sıradaki iş | **En yüksek** | Orta — metin tarafı prova oldu |
-| 8 | Mesaj dolgusu (5.7) | Orta | Küçük |
-| 9 | İmzalı / yeniden üretilebilir derleme (5.9) | Orta | Orta |
-| 10 | Taşıma katmanı şifrelemesi (5.4-A) — **ertelendi** | Düşük–Orta | Büyük |
+| 7 | **Mesaj dolgusu (5.7)** — sıradaki iş | Orta | Küçük |
+| 8 | İmzalı / yeniden üretilebilir derleme (5.9) | Orta | Orta |
+| 9 | Taşıma katmanı şifrelemesi (5.4-A) — **ertelendi** | Düşük–Orta | Büyük |
 
 **5.4-A neden en sona düştü.** Eskiden 5. sıradaydı ve "yüksek etki" yazıyordu;
 ikisi de yanlıştı. Üç gerekçe:

@@ -17,8 +17,10 @@ Durum: **Faz 1b bitti; sesli sohbet ProxyChat'in içinde** (1.8.0,
 konuşuyor, arayüzde katıl/ayrıl, katılımcı listesi, sustur, gürültü kapısı ve
 eşik ayarı var. Aynı makinede iki kopyayla denendi ve ses duyuldu; **iki ayrı
 bilgisayarla henüz denenmedi.** **Faz 0'ın karar kapısı 2026-09-24'te KABUL
-EDİLEBİLİR çıktı.** Sesli sohbetin ürüne **varsayılan** olarak girmesi canlı
-kullanım testine bağlı ve o test henüz başlamadı (8. bölüm).
+EDİLEBİLİR çıktı.** 1.10.0da sesin **ileri gizliliği** geldi: oturum anahtarı
+artık paroladan değil oda oturumundan türüyor (3. ve 9. bölüm). Sesli sohbetin
+ürüne **varsayılan** olarak girmesi canlı kullanım testine bağlı ve o test henüz
+başlamadı (8. bölüm).
 
 Hedef: sanal LAN (VPN) ya da yerel ağ üzerinde 2–5 kişilik bir arkadaş
 grubunun konuşabilmesi. Discord'un yerini almak değil.
@@ -136,9 +138,10 @@ Toplam şifreleme yükü çerçeve başına 16 bayt (yalnızca GCM etiketi).
 > **Not (1.9.0):** metin sohbeti artık Fernet kullanmıyor; oturum başına
 > üretilen geçici anahtarlarla AES-256-GCM kullanıyor ve **ileri gizliliği
 > var** (THREAT_MODEL 5.1). Aşağıdaki karşılaştırma 1.8.0 ve öncesinin
-> durumudur; ses için verilen karar değişmedi. Ama bir sonuç doğdu: ses
-> anahtarı hâlâ paroladan türüyor, yani ileri gizlilik **seste yok.** 9.
-> bölümde açık soru olarak duruyor.
+> durumudur; AES-GCM kararı ve tel biçimi değişmedi. **Değişen tek şey
+> anahtarın kaynağı:** 1.10.0'dan itibaren ses oturum anahtarı da paroladan
+> değil oda oturumunun gönderen anahtarından türüyor, yani ses de ileri
+> gizli (9. bölüm).
 
 Ses de oda parolasından türetilen anahtarla şifrelenmeli, yoksa metin şifreli
 ses açık olur ve vaat tutarsız hale gelir.
@@ -897,17 +900,21 @@ kalmıyor.
 Bunlar bilinen ve tanımlı problemler. Buraya yazılmalarının sebebi,
 çözülmüş gibi davranılmasını engellemek.
 
-- **Ses tarafında ileri gizlilik yok.** Metin sohbetinde 1.9.0'da geldi: anahtar
-  her oturumda yeniden doğuyor ve parola yalnızca doğrulama yapıyor. Ses
-  anahtarı ise hâlâ paroladan türüyor. Oturum tuzu her oturumda yeniden
-  üretiliyor ama `voice_peers` ile **düz metin** duyuruluyor, yani kaydı tutan
-  rakip tuzu da kaydetmiş olur; parola sonradan sızarsa ses açılır. Tuz
-  oturumları birbirinden ayırmaya yarıyor, gelecekteki bir parola sızıntısına
-  karşı değil. Çözümü belli: ses oturum anahtarı, oda oturumunun gönderen
-  anahtarından türetilecek. Bunu işaretleyen test `expectedFailure` ile kırmızı
-  duruyor, yani kapandığı gün fark edilmesi zorunlu.
+Şu an açık bir güvenlik sorusu yok. Yenisi çıkarsa buraya yazılacak.
 
 Kapanan sorular:
+
+- ~~Ses tarafında ileri gizlilik yok.~~ → **Yapıldı (1.10.0).** Ses oturum
+  anahtarı artık paroladan değil, oda oturumunun gönderen anahtarından
+  türüyor; o anahtar her oturumda yeniden doğduğu ve oturum bitince
+  bırakıldığı için kaydedilen ses, parola sonradan sızsa bile açılamıyor.
+  Kimin anahtarının kullanılacağı **kullanıcı adıyla değil** geçici açık
+  anahtarla eşleşiyor — ad sunucunun söylediği bir şey, açık anahtar
+  paroladan türetilmiş imzayla doğrulanmış bir şey; bunun için `voice_join`
+  ve `voice_peers` paketlerine açık anahtar alanı eklendi ve sunucu onu
+  yalnızca taşıyor. Metin el sıkışması ses katılımından sonra biterse eş
+  sessizce atlanıyor ve anahtar gelince katılımcı listesi yeniden işleniyor.
+  Şema etiketi `aesgcm-x25519-v3`; eski `aesgcm-hkdf-v2` ile bilerek uyumsuz.
 
 - ~~`sender_id` nasıl atanacak?~~ → **Host atıyor ve bir oturum içinde aynı
   kimliği iki kez vermiyor** (Faz 1b, 2026-09-24). Kimlik istemcinin
