@@ -275,7 +275,10 @@ uydurduğu ya da ağa enjekte edilen bir isim bunu yapamaz ve arayüzde
 "doğrulanmadı" diye görünür. Kanıt sunucudan değil anahtar takasından geliyor;
 yani sunucu artık kimin odada olduğu konusunda **son söz sahibi değil.**
 Kod: `core/client.py` → `verified_users`, `core/room_session.py` →
-`keyed_peers`. Testler: `tests/test_verified_users.py`.
+`keyed_peers`. Testler: `tests/test_verified_users.py`. Testlerin yaninda
+**elle de denendi** (2026-09-27, iki pencere): ayni parolali eslerde isaret
+cikmiyor, farkli/eksik parolali este "dogrulanmadi" cikiyor ve cozulemeyen
+mesaj beklemeden yer tutucuyla geliyor.
 
 Kalan sınır: sunucu hâlâ paket düşürebilir ve sahte bir `room_snapshot` ile
 istemcileri anahtarlarını bırakmaya zorlayabilir. Bu bir hizmet engellemedir,

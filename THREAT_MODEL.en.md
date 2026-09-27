@@ -288,7 +288,11 @@ server invents, or one injected into the network, cannot do that and appears as
 unverified in the interface. The proof comes from the key exchange, not from the
 server — the server no longer has **the last word** on who is in the room.
 Code: `core/client.py` → `verified_users`, `core/room_session.py` →
-`keyed_peers`. Tests: `tests/test_verified_users.py`.
+`keyed_peers`. Tests: `tests/test_verified_users.py`. Beyond the tests it was
+also **checked by hand** (2026-09-27, two windows): peers with the same
+password carry no marker, a peer with a different or missing password shows as
+unverified, and an undecryptable message arrives as a placeholder without any
+wait.
 
 Remaining limit: the server can still drop packets, and a forged
 `room_snapshot` can push clients into dropping their keys. That is denial of
