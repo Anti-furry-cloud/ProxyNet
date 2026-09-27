@@ -289,13 +289,23 @@ kullanıcı adı, o kişinin geçici açık anahtarına bağlı: bir isim yanın
 **ve** o imzadaki açık anahtara karşılık gelen gizli anahtarı elinde tuttuğunu
 göstermiştir (sarılı gönderen anahtarını açılabilir halde göndererek). Sunucunun
 uydurduğu ya da ağa enjekte edilen bir isim bunu yapamaz ve arayüzde
-"doğrulanmadı" diye görünür. Kanıt sunucudan değil anahtar takasından geliyor;
+arayüzde **adıyla hiç görünmez.** Kanıt sunucudan değil anahtar takasından geliyor;
 yani sunucu artık kimin odada olduğu konusunda **son söz sahibi değil.**
+Doğrulanmayanlar kullanıcı listesinde tek tek yazılmıyor, tek bir sayaç
+satırında toplanıyor ("Doğrulanmayan kullanıcılar: 3"; satıra tıklanınca adlar
+açılıyor). Sayı 100'ü aşarsa ">100" yazılıyor ve açık listede de en fazla 100 ad
+çiziliyor. Sebebi kozmetik değil: odaya girmek parola gerektirmediği için (5.5)
+biri binlerce sahte ad sokabilir, ve o durumda hem liste hem sohbet
+kullanılamaz hale gelirdi. Aynı sebeple doğrulanmayan birinin odaya girmesi ya
+da çıkması sohbet akışında **hiç duyurulmuyor**; duyuru ancak kanıt geldiğinde
+yapılıyor.
+
 Kod: `core/client.py` → `verified_users`, `core/room_session.py` →
-`keyed_peers`. Testler: `tests/test_verified_users.py`. Testlerin yaninda
+`keyed_peers`, `apps/proxychat/ui.py` → `unverified_label`. Testler:
+`tests/test_verified_users.py`. Testlerin yaninda
 **elle de denendi** (2026-09-27, iki pencere): ayni parolali eslerde isaret
-cikmiyor, farkli/eksik parolali este "dogrulanmadi" cikiyor ve cozulemeyen
-mesaj beklemeden yer tutucuyla geliyor.
+cikmiyor, farkli/eksik parolali es listede adiyla gorunmuyor (sayac satirina
+dusuyor) ve cozulemeyen mesaj beklemeden yer tutucuyla geliyor.
 
 Kalan sınır: sunucu hâlâ paket düşürebilir ve sahte bir `room_snapshot` ile
 istemcileri anahtarlarını bırakmaya zorlayabilir. Bu bir hizmet engellemedir,

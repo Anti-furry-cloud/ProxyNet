@@ -304,14 +304,23 @@ name shows as verified, that person produced a valid signature derived from the
 password **and** demonstrated they hold the private key matching the public key
 in it (by sending their wrapped sender key in a form that opens). A name the
 server invents, or one injected into the network, cannot do that and appears as
-unverified in the interface. The proof comes from the key exchange, not from the
+not appear **by name at all** in the interface. The proof comes from the key exchange, not from the
 server — the server no longer has **the last word** on who is in the room.
+Unverified people are not listed one by one; they collapse into a single
+counter row ("Unverified users: 3"; clicking it opens the names). Above 100 the
+row reads ">100", and even when expanded at most 100 names are drawn. The reason
+is not cosmetic: entering a room needs no password (5.5), so someone can inject
+thousands of fake names, and both the list and the chat would become unusable.
+For the same reason an unverified person joining or leaving is **never
+announced** in the chat; the announcement happens only once the proof arrives.
+
 Code: `core/client.py` → `verified_users`, `core/room_session.py` →
-`keyed_peers`. Tests: `tests/test_verified_users.py`. Beyond the tests it was
+`keyed_peers`, `apps/proxychat/ui.py` → `unverified_label`. Tests:
+`tests/test_verified_users.py`. Beyond the tests it was
 also **checked by hand** (2026-09-27, two windows): peers with the same
 password carry no marker, a peer with a different or missing password shows as
-unverified, and an undecryptable message arrives as a placeholder without any
-wait.
+unverified (they fall into the counter row instead of being named), and an
+undecryptable message arrives as a placeholder without any wait.
 
 Remaining limit: the server can still drop packets, and a forged
 `room_snapshot` can push clients into dropping their keys. That is denial of
