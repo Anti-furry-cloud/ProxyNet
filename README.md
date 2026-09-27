@@ -82,18 +82,21 @@ closed: **[THREAT_MODEL.en.md](THREAT_MODEL.en.md)**
 
 ### What is next
 
-**Forward secrecy landed for text chat** (1.9.0, 2026-09-27). The key no longer
-comes from the password: ephemeral X25519 keys are exchanged every session and
-dropped when it ends, and the password's job is not to encrypt but to
-authenticate that the other side belongs to the room. The result: even if the
-password leaks months later, recorded text traffic cannot be opened. This was
-the biggest gap, and it is closed on the text side.
+**The next job is message padding.** The length of the ciphertext gives away the
+length of the plaintext, and since the move to AES-GCM it does so byte for byte.
+After that, signed and reproducible builds. The order and the reasoning are in
+section 8 of [THREAT_MODEL.en.md](THREAT_MODEL.en.md).
 
-Voice reached the same place in 1.10.0: the voice session key comes from the
-room session rather than from the password. The next job is **message
-padding** — the length of the ciphertext still gives away the length of the
-plaintext. The order and the reasoning are in section 8 of
-[THREAT_MODEL.en.md](THREAT_MODEL.en.md).
+The other thing still pending is the **live-use test**: offering voice chat as a
+default depends on it, and that test has not started.
+
+#### Recently closed
+
+**Forward secrecy** (text 1.9.0, voice 1.10.0). The key no longer comes from the
+password: ephemeral X25519 keys are exchanged every session and dropped when it
+ends, and the password's job is not to encrypt but to authenticate that the
+other side belongs to the room. The result: even if the password leaks months
+later, recorded traffic cannot be opened. This was the biggest gap.
 
 **Voice chat now lives inside the application** (2026-09-25). The server
 relays audio without decrypting it, the client speaks over a separate UDP
@@ -103,9 +106,7 @@ two separate computers are still untried.
 
 Whether the connection quality is good enough was decided by measurements
 whose rules were published before the measuring started; on 2026-09-24 the
-result came out **acceptable**. Offering voice chat **by default** depends on
-a live-use test whose rules were likewise written in advance; that test has
-not started yet.
+result came out **acceptable**.
 
 The design — the topology decision, the binary packet format, the AES-GCM
 scheme, identity and address checks, and the **security questions that are

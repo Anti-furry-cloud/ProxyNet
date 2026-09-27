@@ -79,16 +79,21 @@ Hepsinin ayrıntısı, neden böyle olduğu ve kapatılma sırası burada:
 
 ### Sırada ne var
 
-**Metin sohbetinde ileri gizlilik geldi** (1.9.0, 2026-09-27). Anahtar artık
-paroladan türemiyor: her oturumda geçici X25519 anahtarları takas ediliyor ve
-oturum kapanınca bırakılıyor; parolanın işi şifrelemek değil, karşı tarafın
-odaya ait olduğunu doğrulamak. Sonuç: parola aylar sonra sızsa bile kaydedilmiş
-metin trafiği açılamaz. En büyük açık buydu ve metin tarafında kapandı.
-
-Ses de 1.10.0'da aynı yere geldi: ses oturum anahtarı da paroladan değil oda
-oturumundan türüyor. Sıradaki iş **mesaj dolgusu** — şifreli metnin uzunluğu
-düz metnin uzunluğunu ele veriyor. Sırası ve gerekçesi
+**Sıradaki iş: mesaj dolgusu.** Şifreli metnin uzunluğu düz metnin uzunluğunu
+ele veriyor ve AES-GCM'e geçtiğimizden beri bunu bayt bayt yapıyor. Ondan
+sonra imzalı/yeniden üretilebilir derleme. Sırası ve gerekçesi
 [THREAT_MODEL.md](THREAT_MODEL.md) 8. bölümde.
+
+Bekleyen diğer şey **canlı kullanım testi**: sesli sohbetin varsayılan olarak
+sunulması ona bağlı ve o test henüz başlamadı.
+
+#### Son kapananlar
+
+**İleri gizlilik** (metin 1.9.0, ses 1.10.0). Anahtar artık paroladan
+türemiyor: her oturumda geçici X25519 anahtarları takas ediliyor ve oturum
+kapanınca bırakılıyor; parolanın işi şifrelemek değil, karşı tarafın odaya ait
+olduğunu doğrulamak. Sonuç: parola aylar sonra sızsa bile kaydedilmiş trafik
+açılamaz. En büyük açık buydu.
 
 **Sesli sohbet artık uygulamanın içinde** (2026-09-25). Sunucu sesi
 çözmeden aktarıyor, istemci ayrı bir UDP yolundan konuşuyor, arayüzde
@@ -98,8 +103,7 @@ denenmedi.
 
 Bağlantı kalitesinin yeterli olup olmadığına, kuralları ölçüm yapılmadan
 önce yayınlanmış ölçümlerle karar verildi: 2026-09-24'te sonuç **kabul
-edilebilir** çıktı. Sesli sohbetin **varsayılan** olarak sunulması, kuralları
-yine önceden yazılmış canlı kullanım testine bağlı; o test henüz başlamadı.
+edilebilir** çıktı.
 
 Tasarımı — topoloji kararı, ikili paket biçimi, AES-GCM şeması, kimlik ve
 adres doğrulaması ve **henüz çözülmemiş güvenlik soruları** — ölçümlerin
