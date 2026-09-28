@@ -158,7 +158,7 @@ However, the **Fernet used on the text side is the wrong tool for audio**:
 - Fernet carries a timestamp and leaves replay protection to the caller.
 
 Decision: **AES-GCM, with a separate key for every sender in every voice
-session.** Written: `core/voice_crypto.py`, scheme label `aesgcm-hkdf-v2`.
+session.** Written: `core/voice_crypto.py`, scheme label `aesgcm-hkdf-v2`. **That label is no longer current:** since 1.10.0 the product's voice scheme is `aesgcm-x25519-v3` (section 9), and `aesgcm-hkdf-v2` remains only as the prototype's path.
 
 ```
 room password ──Argon2id──▶ master key ──HKDF──▶ voice key
@@ -216,7 +216,7 @@ unique within a session" did not protect across sessions.
   from a frame of the earlier session was recovered with the help of a silent
   frame from the later session. After the fix the same script produces
   meaningless bytes.
-- **Impact:** the voice code does not yet run connected to a network anywhere;
+- **Impact:** at that point the voice code ran nowhere connected to a network;
   no real traffic was affected. But the design had been published in this
   document.
 - **Fix:** the session salt above. Nonce reuse now requires two sessions to draw
@@ -290,6 +290,13 @@ proposed decisions, not final ones.
   the same size. DTX stays off for the same reason: not sending packets
   during silence tells the network who speaks when. The cost is that
   everyone uses bandwidth all the time, speaking or not (§2.1).
+- **Both settings were pinned by a test in 1.12.0.** The reason: the test that
+  actually measures packet size being content-independent is skipped when
+  libopus is missing, so on a machine without the library nothing stopped the
+  setting from changing. VBR and DTX being written as zero is now verified
+  without the DLL by faking the ctypes layer (`tests/test_voice_opus.py` →
+  `SabitBitHiziTests`). µ-law carries no such risk: at one byte per sample the
+  size is fixed by construction.
 - **FEC works.** A lost frame can be rebuilt from the copy carried in the
   next packet; for that the buffer has to stay at least one frame ahead.
 - **Correction (2026-09-24):** FEC does not work at every setting. At
@@ -328,7 +335,11 @@ measurements behind that are in the prototype section.
 - Target buffer **60 ms**. The adaptive version does not exist yet.
 - Reordering by sequence number.
 - Packets that fall behind the buffer are dropped.
-- Missing frames are replaced with silence. The faded repeat does not exist yet.
+- **Missing frames are concealed.** With Opus the codec does it itself, and the
+  decoder **must** be called once per frame or its internal state falls behind
+  the stream. With µ-law the last frame is repeated with a fade (75%, 50%,
+  25%), falling back to silence after three consecutive frames
+  (`core/voice_session.py`).
 - **If the buffer empties completely, it goes back to filling.** Continuing to
   consume an empty buffer would run the sequence counter ahead, and every frame
   would be counted as "late" once the other side started speaking again.
@@ -460,7 +471,7 @@ needs audio hardware should run in CI.
 | **1a. Core** ✅ | Packet format, AES-GCM + HKDF, jitter buffer, tests | A tested core that works without audio hardware |
 | **1b. Skeleton** ✅ | Signalling packets, UDP socket, relaying on the host | `core/voice_relay.py`, `core/voice_net.py`; covered by tests |
 | **2. Two-way** ✅ | The audio device layer, Qt integration, several people | Voices mix; not yet tried on a real line |
-| **3. Usability** | Opus, push-to-talk, speaking indicator, mute | Four people can use it |
+| **3. Usability** | Opus ✅ and mute ✅ are done; the **speaking indicator was dropped from the design on 2026-09-19** (2.2 — so the server does not learn who spoke when); what is left is push-to-talk | Four people can use it |
 | **4. Packaging** | Qt's audio modules are back and the size was **measured** (below); left: the Opus library decision, the UDP firewall rule, documentation | A distributable release |
 
 Phase 1a did not wait for Phase 0 because none of the three modules written

@@ -70,13 +70,18 @@ başarısızlık gibi görünmesin — cevabı tasarımın içinde.
 
 ## ProxyChat ile ilişkisi
 
-**Kod paylaşılmaz.** ProxyNull ayrı bir dilde (Rust) yazılacak ve protokolü
-de kasten ayrışacak — ileri gizlilik, zarf şifreleme, geçmişsizlik. Dolayısıyla
-`core/` paketi ProxyChat'e aittir, buradan kullanılmaz.
+**Kod paylaşılmaz.** ProxyNull ayrı bir dilde (Rust) yazılacak ve protokolü de
+kasten ayrışacak. Ayrışmanın nerede olduğu 1.9.0'dan beri daraldı: ileri
+gizlilik ve şifreli odada geçmişsizlik **ProxyChat'e de girdi**, dolayısıyla
+artık ayıran şeyler değiller. Geriye kalan gerçek ayrımlar **zarf
+şifreleme** (oda ve kullanıcı adı da şifrelinin içinde), **sunucunun hiç
+olmaması**, Tor onion servisi ve paroladan PAKE'ye geçiş. Dolayısıyla `core/`
+paketi ProxyChat'e aittir, buradan kullanılmaz.
 
 Bunun kaçınılmaz bedeli iki bağımsız implementasyondur. Divergence'ı önleyen
-şey ortak kod değil, **ortak yazılı referanslardır**: `THREAT_MODEL.md` ve
-`docs/` altındaki tasarım belgeleri. Protokol yazılmaya başlandığında
+şey ortak kod değil, **ortak yazılı referanslardır**:
+[THREAT_MODEL.md](../../THREAT_MODEL.md) ve
+[VOICE_CHAT_PLAN.md](../../VOICE_CHAT_PLAN.md). Protokol yazılmaya başlandığında
 normatif bir spesifikasyon belgesi de buraya eklenmelidir.
 
 İki ürünün kullanıcıları birbiriyle **konuşamaz**; bu, ayrımın kabul edilmiş

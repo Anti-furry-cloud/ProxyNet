@@ -73,13 +73,18 @@ never looks like a failure later — the answer is inside the design.
 ## Relationship with ProxyChat
 
 **No code is shared.** ProxyNull will be written in a different language (Rust)
-and its protocol will deliberately diverge — forward secrecy, envelope
-encryption, no history. The `core/` package therefore belongs to ProxyChat and
-is not used from here.
+and its protocol will deliberately diverge. Where that divergence sits has
+narrowed since 1.9.0: forward secrecy and the absence of history in encrypted
+rooms **landed in ProxyChat too**, so they no longer separate the two. The real
+remaining differences are **envelope encryption** (the room and username are
+inside the ciphertext as well), **having no server at all**, the Tor onion
+service, and moving from a password to a PAKE. The `core/` package therefore
+belongs to ProxyChat and is not used from here.
 
 The unavoidable cost of this is two independent implementations. What prevents
 divergence is not shared code but **shared written references**:
-`THREAT_MODEL.md` and the design documents under `docs/`. When protocol work
+[THREAT_MODEL.en.md](../../THREAT_MODEL.en.md) and
+[VOICE_CHAT_PLAN.en.md](../../VOICE_CHAT_PLAN.en.md). When protocol work
 begins, a normative specification document should be added here as well.
 
 Users of the two products **cannot talk to each other**; this is the accepted

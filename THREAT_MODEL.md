@@ -29,9 +29,10 @@ Her yeni özellik bu belgeye karşı ölçülür. Belgedeki ilkeleri ihlal eden 
 | --- | --- | --- |
 | 1 | Mesaj içeriği | Uçtan uca şifreli |
 | 2 | Geçmiş mesajların gizliliği (parola sonradan ele geçerse) | **Korunuyor** — metin 1.9.0, ses 1.10.0 |
-| 3 | Kiminle konuşulduğu (metadata) | **Korunmuyor** |
-| 4 | Kullanıcı adları, oda adları | **Korunmuyor** |
-| 5 | Ne zaman çevrimiçi olunduğu | **Korunmuyor** |
+| 3 | Mesaj uzunluğu | **Kovaya yuvarlanıyor** — 1.12.0 (bkz. 5.7) |
+| 4 | Kiminle konuşulduğu (metadata) | **Korunmuyor** |
+| 5 | Kullanıcı adları, oda adları | **Korunmuyor** |
+| 6 | Ne zaman çevrimiçi olunduğu | **Korunmuyor** |
 
 ---
 
@@ -104,6 +105,9 @@ Kapanan açıklar (ayrıntısı ve kalan sınırları 5. bölümde duruyor):
   `tests/test_crypto.py` → `Argon2idTests`.
 - **Host'un dinlediği ağ her başlatışta elle seçiliyor** (5.6, 1.6.2) —
   `tests/test_listen_address.py`.
+- **Mesaj uzunluğu dolguyla gizleniyor** (5.7, 1.12.0) — `tests/test_padding.py`.
+- **Ses çerçeveleri içerikten bağımsız boyda** (5.3/5.7, 1.12.0) —
+  `tests/test_voice_opus.py` → `SabitBitHiziTests`.
 - **Olay kaydı mesaj uzunluğunu yazmıyor** (5.3, 1.5.0) —
   `tests/test_logging_and_scroll.py`.
 
@@ -213,8 +217,8 @@ göndermek; bu da odaya giriş için kimlik doğrulaması gerektirir (5.4, 5.5).
 
 ### 5.3 Metadata tamamen açık
 
-Kullanıcı adları, oda adları, zaman damgaları, mesaj boyutları ve kimin ne zaman
-çevrimiçi olduğu düz metin taşınır. Bu ölçekte bir rakip için metadata çoğu zaman
+Kullanıcı adları, oda adları, zaman damgaları ve kimin ne zaman çevrimiçi
+olduğu düz metin taşınır. Bu ölçekte bir rakip için metadata çoğu zaman
 içerikten değerlidir.
 
 ~~Ayrıca sunucunun olay kayıtları şifreli metnin **uzunluğunu** yazar.~~
@@ -224,7 +228,8 @@ vermiyor; gerçek bir oturumun logunda uzunluk olmadığını doğrulayan test:
 aracının kendisi içerik verilirse uzunluğu yazma yeteneğini 1.7.0'a kadar
 koruyordu; o da kaldırıldı ki bir çağrı yeniden içerik verdiğinde sızıntı geri
 gelmesin (`tests/test_core.py` → `test_anonymous_logger_masks_user_identity`).
-Ağdaki paket boyutları ise hâlâ açık (5.7).
+Ağdaki paket boyutları 1.12.0'dan beri dolguyla kovaya yuvarlanıyor, yani
+uzunluk değil basamak görünüyor (5.7).
 
 **Sesli sohbet üstverisi (Faz 1b, 2026-09-24).** Sunucu artık kimin sesli
 sohbete katıldığını ve ne zaman ayrıldığını biliyor; bunu odadakilere
@@ -340,14 +345,68 @@ Kalan sınır: seçim bir IP adresine bağlıdır, ağ bağdaştırıcısına de
 bilgisayardan kalkarsa (örneğin Hamachi kapatılırsa) Host yeniden
 başlatılmalıdır.
 
-### 5.7 Mesaj uzunluğu sızar
+### 5.7 Mesaj uzunluğu sızıyordu — kapandı (1.12.0)
 
-Şifreli metnin uzunluğu düz metnin uzunluğuyla korelasyonludur. 1.9.0'dan beri
-ilişki **bayt hassasiyetinde**: AES-GCM bir akış kipi, yani uzunluğu birebir
-taşıyor. Öncesinde Fernet'in 16 baytlık blok hassasiyeti vardı, yani bu açık bir
-miktar **büyüdü** — ileri gizlilik kazanırken ödenen küçük bir bedel, ve
-kapatılması dolguya bağlı olduğu için ayrıca kapanacak. Dolgu (padding)
-uygulanmıyor. Ses tarafında bu sorun yok: çerçeveler sabit boyda gidiyor.
+AES-GCM bir akış kipi: şifreli metin düz metinle **birebir aynı uzunlukta**
+olur. Sunucu içeriği okuyamıyordu ama `content` alanına bakıp "bu üç
+karakterlik bir cevap, bu dört yüz karakterlik bir paragraf" diyebiliyordu.
+1.9.0'dan beri ilişki bayt hassasiyetindeydi; öncesinde Fernet'in 16 baytlık
+blok hassasiyeti vardı, yani ileri gizliliğe geçerken bu açık bir miktar
+**büyümüştü** ve kapanması dolguya kalmıştı.
+
+1.12.0'dan itibaren şifrelenen şey düz metnin kendisi değil, sabit bir **kova
+merdivenine** yuvarlanmış yük (`core/padding.py`):
+
+| Basamak (bayt) | 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096 | 6112 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+
+En alt basamak **taban** olarak çalışıyor: 30 baytın altındaki her mesaj —
+"ok", "hayır", "geliyorum", "tamam 5 dakika sonra" — telde tıpatıp aynı boyda
+gidiyor. Sunucunun gördüğü şey artık uzunluk değil, dokuz basamaktan biri;
+geriye kalan sızıntı en fazla log2(9) ≈ 3,2 bit, ve gerçek dağılım çarpık
+olduğu için (sohbetin neredeyse tamamı ilk basamakta) pratikte bundan az.
+
+**Neden kova merdiveni, neden Padmé değil.** Literatürdeki yaygın cevap Padmé
+(PURB makalesi): sızıntıyı O(log log M) bite indirir ve en fazla %12 fazlalık
+yapar. Boyut dağılımı geniş olduğunda doğru araç, ama sohbete uymuyor — çünkü
+kısa girdide **hiç dolgu yapmıyor**: 2 → 2, 20 → 20, 100 → 104. "ok" ile
+"hayır"ı ayırt edilebilir bırakan bir dolgu, tam olarak kapatmak istediğimiz
+şeyi kapatmıyor. Sohbet mesajlarının ezici çoğunluğu Padmé'nin dolgu yapmaya
+başladığı eşiğin altında kalıyor.
+
+**Biçim.** Gerçek uzunluk iki baytlık bir ön ek olarak yükün başına, yani
+şifreli metnin **içine** yazılıyor: telden görünmüyor ve AES-GCM etiketinin
+altında olduğu için kurcalanamıyor. Başta olmasının sebebi çözmenin O(1)
+kalması — sondaki işaretçiyi aramak ya da sıfırları saymak gerekmiyor, ve düz
+metnin kendisi sıfırla bitiyorsa sayma yöntemi zaten yanıltır. Dolgu rastgele
+değil sıfır: dolgu şifrelenen verinin içinde kalıyor ve AES-GCM'in çıkışı
+rastgeleden ayırt edilemez, rastgele dolgu hiçbir şey eklemez yalnızca bedel
+olurdu.
+
+**Ödenen bedel.** En kötü durum bir basamağın hemen üstüne düşmek: 31 baytlık
+bir mesaj 64 bayta çıkıyor — oransal olarak büyük, mutlak olarak 33 bayt,
+sohbet boyutlarında önemsiz. En uzun mesaj 6112 baytken 6110 bayta indi;
+sunucunun `content` sınırı değişmedi, iki baytı uzunluk alanı aldı. En üst
+basamak, dolu bir mesajın token'ı o sınırı **tam olarak** doldursun diye
+seçildi.
+
+**Pazarlık yok.** Şema etiketi `aesgcm-x25519-v1`'den `aesgcm-x25519-v2`'ye
+geçti. Dolgu anlayan bir istemcinin dolgu anlamayan biriyle konuşabilmesi
+dolguyu anlamsız kılardı, o yüzden geriye uyumluluk denenmedi: 1.11.0 ve
+öncesiyle mesaj alışverişi yok, iki taraf da "farklı sürüm" görüyor. Aynı
+temiz kırılma kuralı 5.1 ve 5.8'de de uygulandı.
+
+**Ses tarafında bu sorun yok:** çerçeveler sabit boyda gidiyor — µ-law yapısı
+gereği (örnek başına bir bayt, 320 bayt), Opus ise **ayarla**: VBR ve DTX
+kapalı (`core/voice_opus.py`). 1.12.0'da o ayar ayrıca teste bağlandı.
+Gerekçesi şu: içerik bağımsızlığını gerçekten ölçen test libopus yokken
+atlanıyor, yani bu makinede ve CI'da ayarın değişmesini hiçbir şey
+engellemiyordu. VBR açılırsa paket boyu sese göre değişir ve konuşmanın ritmi
+telden okunur; DTX açılırsa sessizlikte paket hiç gitmez, yani kimin ne zaman
+konuştuğu doğrudan görünür. İkisi de 5.3'ün kapalı tutmayı vaat ettiği şey.
+
+Kod: `core/padding.py`. Testler: `tests/test_padding.py`,
+`tests/test_voice_opus.py` → `SabitBitHiziTests`.
 
 ### 5.8 PBKDF2, Argon2id değil — kapatıldı (1.7.0)
 
@@ -365,7 +424,8 @@ oda adı normalleştirmesini bilinen bir cevap vektörü kilitliyor
 Argon2id'nin **işi 1.9.0'da değişti**: türettiği anahtar artık mesajları
 şifrelemiyor, karşı tarafın odaya ait olduğunu doğrulayan imzanın anahtarı oluyor
 (ve ses anahtarı ondan türüyor, 5.1). Metin sohbetinin şema etiketi bu yüzden
-`aesgcm-x25519-v1`; `fernet-argon2id-v1` etiketi 1.8.0 ve öncesine ait. O
+`aesgcm-x25519-v2` (1.12.0'da dolguyla birlikte v1'den yükseldi, 5.7);
+`fernet-argon2id-v1` etiketi 1.8.0 ve öncesine ait. O
 şemanın **kodu da 1.10.1'de silindi** (`RoomCipher`, `derive_room_key`,
 `make_cipher`): 1.9.0'dan beri hiçbir yerden çağrılmıyordu, dosyanın büyük
 kısmını kaplayıp "ProxyChat hâlâ paroladan türetilen sabit anahtarla şifreliyor"
@@ -428,7 +488,8 @@ Karar kaydı — aynı fikirlerin tekrar gündeme gelmemesi için.
 | Tek üründe oda başına güvenlik modu | **Reddedildi** | İki ayrı ürün tercih edildi. Az özellik güvenlikte başlı başına bir özelliktir; ayrı ürün, ProxyChat'in özellik baskısının ProxyNull'ı kirletmemesini garanti eder |
 | Güvenlik kodunun iki ürüne kopyalanması | **Reddedildi** | Kopyalanan kodda açık bir tarafta düzeltilip diğerinde unutulur. `core/` ortaktır; ProxyNull saldırı yüzeyini daha az import ederek küçültür |
 | Ses için sunucu üzerinden aktarma (SFU, çözmeden) | **Kabul edildi (2026-09-16)** | Baştan aktarma; "yalnızca 4 kişiyi aşan odalar için" koşulu kaldırıldı. Alternatifi olan mesh, odadaki herkesin IP'sini herkese dağıtacaktı (İlke 3); aktarmada Host zaten gördüğü IP'leri görmeye devam eder. İçerik şifreli kaldığı için İlke 1 ihlal edilmiyor. Aktarmanın kendi çözülmemiş sorunları (gönderen kimliği ataması, Host'a kimlik doğrulaması) sesli sohbet planının 9. bölümünde |
-| Yalnızca sesli konuşma yapan ayrı CLI programı | **Ertelendi** | Tester'ın önerisi (2026-09-17): prototip gibi komut satırından çalışan, yalnızca sesi taşıyan ayrı bir program; anlaması ve kullanması kolay, saldırı yüzeyi küçük (Qt arayüzü, oda listesi, geçmiş, bildirim yok). Lehinde: prototip zaten bu şekilde çalışıyor ve iyi çalıştı; ProxyNull'ın "az özellik güvenliktir" ilkesiyle de uyumlu. Aleyhinde: parola ve karşı tarafın adresi hâlâ program dışından paylaşılmak zorunda, iki ayrı program iki ayrı bakım yükü demek ve metin sohbetiyle aynı odada olmak avantajı kaybedilir. Faz 1b'den sonra, gerçek kullanım görüldüğünde karara bağlanacak |
+| Kendi sanal ağımızı (Hamachi benzeri) yazmak | **Reddedildi (2026-09-29)** | Hamachi üç ayrı şeyden oluşuyor: sanal ağ adaptörü, eşleri buluşturan aracı sunucu, ve delik açma tutmadığında devreye giren aktarma. Adaptör artık asıl engel değil — Wintun (WireGuard projesinden) Microsoft tarafından imzalanmış durumda, yani kernel sürücüsü yazmak ve EV sertifikası almak gerekmiyor; karşılığında adaptör kurmak yönetici hakkı istiyor ve "indir çalıştır" deneyimi bozuluyor. Asıl maliyet **aracı sunucu**: sabit adresli, kimin kiminle ne zaman buluştuğunu gören, kapatılabilen ve sürekli para ile bakım isteyen tek bir nokta. Bu doğrudan İlke 3'e çarpıyor, ve 9.1'de "en kolay engellenen şey" diye yazdığımızın ta kendisi — yani engellenme direncini artırmak için yapılacak iş, engellenmeyi kolaylaştıran şeyi kurmak olurdu. Üstelik ihtiyaç genel amaçlı bir sanal LAN değil, iki ProxyChat'in birbirine ulaşması; adaptör, kendi UDP paketimizi sanal bir ağ kartından geçirip yine kendi sürecimize sokmak olurdu. **Yerine uygulama içi NAT geçişi tercih edildi:** buluşma için Tor onion servisi ya da elden ele kısa kod (ikisinde de bizim işlettiğimiz bir sunucu yok), ses için delik açma; VPN varsayılan olmaktan çıkıp yedek olur. Bu iş tek başına yapılamaz: sunucu halka açık bir adrese çıkacağı için yanında oda girişine kimlik doğrulaması gelmek zorunda (5.5). İlk adım, yazmaya başlamadan önce NAT tipini ölçmek |
+| Yalnızca sesli konuşma yapan ayrı CLI programı | **Ertelendi** | Dışarıdan gelen bir öneri (2026-09-17): prototip gibi komut satırından çalışan, yalnızca sesi taşıyan ayrı bir program; anlaması ve kullanması kolay, saldırı yüzeyi küçük (Qt arayüzü, oda listesi, geçmiş, bildirim yok). Lehinde: prototip zaten bu şekilde çalışıyor ve iyi çalıştı; ProxyNull'ın "az özellik güvenliktir" ilkesiyle de uyumlu. Aleyhinde: parola ve karşı tarafın adresi hâlâ program dışından paylaşılmak zorunda, iki ayrı program iki ayrı bakım yükü demek ve metin sohbetiyle aynı odada olmak avantajı kaybedilir. Faz 1b'den sonra, gerçek kullanım görüldüğünde karara bağlanacak |
 
 ---
 
@@ -442,8 +503,8 @@ Karar kaydı — aynı fikirlerin tekrar gündeme gelmemesi için.
 | 4 | ~~Argon2id'ye geçiş (5.8)~~ **Yapıldı (1.7.0)** | Orta | Orta |
 | 5 | ~~İleri gizlilik (5.1)~~ **Yapıldı — metin 1.9.0, ses 1.10.0** | **En yüksek** | Büyük — protokol değişikliği |
 | 6 | ~~Sunucunun üye listesine güvenmeyi bırakmak (5.4-B)~~ **Yapıldı (1.9.0)** | Orta | Küçük |
-| 7 | **Mesaj dolgusu (5.7)** — sıradaki iş | Orta | Küçük |
-| 8 | İmzalı / yeniden üretilebilir derleme (5.9) | Orta | Orta |
+| 7 | ~~Mesaj dolgusu (5.7)~~ **Yapıldı (1.12.0)** | Orta | Orta — tel biçimi değişti |
+| 8 | **İmzalı / yeniden üretilebilir derleme (5.9)** — sıradaki iş | Orta | Orta |
 | 9 | Taşıma katmanı şifrelemesi (5.4-A) — **ertelendi** | Düşük–Orta | Büyük |
 
 **5.4-A neden en sona düştü.** Eskiden 5. sıradaydı ve "yüksek etki" yazıyordu;
@@ -510,6 +571,21 @@ düşür" kuralı yazmak neredeyse bedava.
 
 Şifreli sohbet araçlarının kendilerini TLS gibi göstermesinin sebebi tam
 olarak budur. Bizde böyle bir örtme yok.
+
+**Dolgunun buradaki bedeli (1.12.0).** Mesaj uzunluğunu gizlemek, uzunluk
+dağılımını **daha düzenli** hale getirdi: şifreli `content` alanı artık
+yalnızca dokuz farklı uzunlukta olabiliyor.
+
+```
+88 · 128 · 216 · 384 · 728 · 1408 · 2776 · 5504 · 8192 karakter
+```
+
+İçerik gizliliği açısından bu bir kazanç (5.7), parmak izi açısından
+**kayıp**: bu dokuz değer düz metin alan adlarıyla birlikte tanınması daha da
+kolay bir imza oluşturuyor. İki hedef burada gerçekten çatışıyor ve içerik
+gizliliği bilerek öne alındı. Gerekçe 9.5 ile aynı: örtme işi zarf
+şifrelemesiyle birlikte yapılacak, ve bir tünelin (WireGuard, Tor) içinden
+geçen trafikte bu uzunluklar dışarıdan zaten görünmüyor.
 
 ### 9.3 Engellenemeyecekler
 

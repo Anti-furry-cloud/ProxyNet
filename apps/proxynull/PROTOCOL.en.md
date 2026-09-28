@@ -192,8 +192,12 @@ encrypted; the type information lives inside the encrypted payload too.
 
 **Decided — padding.** Messages are padded into fixed buckets: **256, 512,
 1024, 2048, 4096 bytes.** A message larger than a bucket is split. The purpose
-is to stop the length from telling anything about the content (in ProxyChat
-this is an open gap, see THREAT_MODEL 5.7).
+is to stop the length from telling anything about the content. ProxyChat has
+done the same since 1.12.0 (see THREAT_MODEL 5.7), but its ladder starts at 32
+bytes: there the envelope is not encrypted, so the username and room name are
+already in the clear and keeping the floor small costs nothing. Here the
+envelope is encrypted too, so the floor is 256 bytes: what gets padded is the
+message together with who wrote to which room.
 
 **Decided — no typing indicator.** Keystroke timing tells something about the
 text being written and reveals who is active when.

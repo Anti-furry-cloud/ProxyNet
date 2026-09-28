@@ -22,7 +22,7 @@ different promises.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | For whom | Everyday use, a group of friends | Situations where encryption is the priority |
-| Status | Working. 1.11.0 is built and tested but not yet distributed; voice chat and forward secrecy (text 1.9.0, voice 1.10.0) landed in the app | No code yet; its [limits](apps/proxynull/README.en.md) and [protocol design](apps/proxynull/PROTOCOL.en.md) are written down |
+| Status | Working. 1.12.0 is built and tested but not yet distributed; voice chat and forward secrecy (text 1.9.0, voice 1.10.0) landed in the app | No code yet; its [limits](apps/proxynull/README.en.md) and [protocol design](apps/proxynull/PROTOCOL.en.md) are written down |
 | Goal | Be usable, protect content | Meet the T5 adversary in the threat model |
 
 The reason they are separate: fewer features is itself a security feature. They
@@ -63,8 +63,10 @@ contaminates ProxyNull.
 I am not hiding these; hiding them would turn this document into marketing
 copy:
 
-- **Metadata is fully exposed.** Who, with whom, when, at what length — all
-  visible.
+- **Metadata is exposed.** Who, with whom, when — all visible. Message
+  **length** has been the exception since 1.12.0: the payload is rounded to a
+  bucket, so every short message goes out at the same size on the wire and
+  what shows is one of nine steps rather than a length.
 - **No password is needed to enter a room.** Anyone who can reach the server
   sees the user list and the rhythm of the traffic. Without the password they
   cannot read content, and in an encrypted room there is no longer a history for
@@ -82,15 +84,27 @@ closed: **[THREAT_MODEL.en.md](THREAT_MODEL.en.md)**
 
 ### What is next
 
-**The next job is message padding.** The length of the ciphertext gives away the
-length of the plaintext, and since the move to AES-GCM it does so byte for byte.
-After that, signed and reproducible builds. The order and the reasoning are in
-section 8 of [THREAT_MODEL.en.md](THREAT_MODEL.en.md).
+**The next job is signed and reproducible builds.** The distributed program is
+unsigned; whoever downloads it has no way to verify that what they hold is what
+we built. The order and the reasoning are in section 8 of
+[THREAT_MODEL.en.md](THREAT_MODEL.en.md).
 
 The other thing still pending is the **live-use test**: offering voice chat as a
 default depends on it, and that test has not started.
 
 #### Recently closed
+
+**Message padding** (1.12.0). The length of the ciphertext gave away the length
+of the plaintext exactly: the server could not read the content, but it could
+tell "this is a three-character reply, that is a four-hundred-character
+paragraph". What gets encrypted is now not the plaintext but a payload rounded
+up to a fixed bucket ladder starting at 32 bytes — "ok", "no", "on my way" all
+go out at exactly the same size on the wire. What is left to leak is one of
+nine steps. The common alternative, Padmé, was not chosen: it applies no
+padding at all to short inputs (2 → 2, 20 → 20), and the overwhelming majority
+of chat messages sit below that threshold. Voice needs no padding (frames are
+a fixed size), but the Opus setting that keeps them that way — VBR and DTX off
+— is now pinned by a test.
 
 **Forward secrecy** (text 1.9.0, voice 1.10.0). The key no longer comes from the
 password: ephemeral X25519 keys are exchanged every session and dropped when it
@@ -146,13 +160,14 @@ English. Where the two disagree, **the Turkish one is correct.**
 | File | Content |
 | --- | --- |
 | [THREAT_MODEL.en.md](THREAT_MODEL.en.md) | What it protects, what it does not, the adversary model, design principles, the order gaps get closed |
-| [THREAT_MODEL.md](THREAT_MODEL.md) | The Turkish original |
 | [VOICE_CHAT_PLAN.en.md](VOICE_CHAT_PLAN.en.md) | The voice chat design plan — topology, packet format, encryption scheme, open security questions |
-| [VOICE_CHAT_PLAN.md](VOICE_CHAT_PLAN.md) | The Turkish original |
 | [apps/proxynull/README.en.md](apps/proxynull/README.en.md) | ProxyNull's limits: what it must do, what it refuses, why it is separate from ProxyChat |
 | [apps/proxynull/PROTOCOL.en.md](apps/proxynull/PROTOCOL.en.md) | ProxyNull's protocol design — the rendezvous code, the Noise handshake, the verification code, padding; decided and undecided items marked apart |
 | [listening/](listening/LISTENING.md) | A blind listening test: how simulated network interruptions sound in speech |
 | [LICENSE](LICENSE) | The GNU GPL v3 text |
+
+Every document has a Turkish/English switcher at the top; the counterparts are
+not listed separately.
 
 The code will be added to this repository when it opens; the documents will
 stay where they are.

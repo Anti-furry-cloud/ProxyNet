@@ -22,7 +22,7 @@ paylaşıyor ama farklı sözler veriyor.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | Kime | Günlük kullanım, arkadaş grubu | Şifrelemenin öncelik olduğu durumlar |
-| Durum | Çalışıyor. 1.11.0 derlendi ve test edildi, henüz dağıtılmadı; sesli sohbet ve ileri gizlilik (metin 1.9.0, ses 1.10.0) uygulamaya girdi | Henüz kod yok; [sınırları](apps/proxynull/README.md) ve [protokol tasarımı](apps/proxynull/PROTOKOL.md) yazılı |
+| Durum | Çalışıyor. 1.12.0 derlendi ve test edildi, henüz dağıtılmadı; sesli sohbet ve ileri gizlilik (metin 1.9.0, ses 1.10.0) uygulamaya girdi | Henüz kod yok; [sınırları](apps/proxynull/README.md) ve [protokol tasarımı](apps/proxynull/PROTOKOL.md) yazılı |
 | Hedefi | Kullanışlı olmak, içeriği korumak | Tehdit modelindeki T5 rakibini karşılamak |
 
 Ayrı iki ürün olmasının sebebi şu: az özellik, güvenlikte başlı başına bir
@@ -61,8 +61,10 @@ kirletmemesi için ikisi bilerek ayrıldı.
 
 Bunları saklamıyorum; saklarsam belge bir pazarlama metnine dönüşür:
 
-- **Metadata tamamen açık.** Kim, kiminle, ne zaman, ne uzunlukta — hepsi
-  görünüyor.
+- **Metadata açık.** Kim, kiminle, ne zaman — hepsi görünüyor. Mesajın
+  **uzunluğu** 1.12.0'dan beri istisna: yük kovaya yuvarlandığı için kısa
+  mesajların hepsi telde aynı boyda gidiyor, uzunluk yerine dokuz basamaktan
+  biri görünüyor.
 - **Odaya girmek için parola gerekmiyor.** Sunucuya ulaşabilen herkes
   kullanıcı listesini ve trafiğin ritmini görür. Parolayı bilmediği için
   içeriği okuyamaz ve şifreli odada toplayacağı bir geçmiş de artık yok.
@@ -79,15 +81,26 @@ Hepsinin ayrıntısı, neden böyle olduğu ve kapatılma sırası burada:
 
 ### Sırada ne var
 
-**Sıradaki iş: mesaj dolgusu.** Şifreli metnin uzunluğu düz metnin uzunluğunu
-ele veriyor ve AES-GCM'e geçtiğimizden beri bunu bayt bayt yapıyor. Ondan
-sonra imzalı/yeniden üretilebilir derleme. Sırası ve gerekçesi
+**Sıradaki iş: imzalı ve yeniden üretilebilir derleme.** Dağıtılan program
+imzasız; indiren kişinin elindekinin bizim derlediğimiz şey olduğunu
+doğrulamasının bir yolu yok. Sırası ve gerekçesi
 [THREAT_MODEL.md](THREAT_MODEL.md) 8. bölümde.
 
 Bekleyen diğer şey **canlı kullanım testi**: sesli sohbetin varsayılan olarak
 sunulması ona bağlı ve o test henüz başlamadı.
 
 #### Son kapananlar
+
+**Mesaj dolgusu** (1.12.0). Şifreli metnin uzunluğu düz metnin uzunluğunu
+birebir ele veriyordu: sunucu içeriği okuyamıyor ama "bu üç karakterlik bir
+cevap, bu dört yüz karakterlik bir paragraf" diyebiliyordu. Artık şifrelenen
+şey düz metin değil, 32 bayttan başlayan sabit bir kova merdivenine
+yuvarlanmış yük — "ok", "hayır", "geliyorum" telde tıpatıp aynı boyda gidiyor.
+Kalan sızıntı en fazla dokuz basamaktan biri. Yaygın alternatif Padmé
+seçilmedi, çünkü kısa girdide hiç dolgu yapmıyor (2 → 2, 20 → 20) ve sohbet
+mesajlarının ezici çoğunluğu o eşiğin altında. Ses tarafında dolguya gerek
+yok (çerçeveler sabit boyda) ama o sabitliği koruyan Opus ayarı — VBR ve DTX
+kapalı — artık teste bağlı.
 
 **İleri gizlilik** (metin 1.9.0, ses 1.10.0). Anahtar artık paroladan
 türemiyor: her oturumda geçici X25519 anahtarları takas ediliyor ve oturum
@@ -141,13 +154,13 @@ Geliştirme Türkçe yürüyor; belgelerin hepsi Türkçe ve İngilizce yayınla
 | Dosya | İçerik |
 | --- | --- |
 | [THREAT_MODEL.md](THREAT_MODEL.md) | Neyi koruduğu, neyi korumadığı, rakip modeli, tasarım ilkeleri, açıkların kapatılma sırası |
-| [THREAT_MODEL.en.md](THREAT_MODEL.en.md) | Aynısının İngilizcesi |
 | [VOICE_CHAT_PLAN.md](VOICE_CHAT_PLAN.md) | Sesli sohbetin tasarım planı — topoloji, paket biçimi, şifreleme şeması, açık güvenlik soruları |
-| [VOICE_CHAT_PLAN.en.md](VOICE_CHAT_PLAN.en.md) | Aynısının İngilizcesi |
 | [apps/proxynull/README.md](apps/proxynull/README.md) | ProxyNull'ın sınırları: zorunluluklar, yasaklar, ProxyChat'ten neden ayrı |
 | [apps/proxynull/PROTOKOL.md](apps/proxynull/PROTOKOL.md) | ProxyNull'ın protokol tasarımı — buluşma kodu, Noise el sıkışması, doğrulama kodu, dolgu; kararı verilmiş ve verilmemiş maddeler ayrı işaretli |
 | [listening/](listening/LISTENING.tr.md) | Kör dinleme testi: simüle ağ kesintileri konuşmada nasıl duyuluyor |
 | [LICENSE](LICENSE) | GNU GPL v3 metni |
+
+Her belgenin en üstünde Türkçe/English geçişi var; ayrıca listelenmedi.
 
 Kod açıldığında bu depoya eklenecek; belgeler yerinde kalacak.
 

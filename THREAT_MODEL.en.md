@@ -30,9 +30,10 @@ its principles is rejected, however useful it may be.
 | --- | --- | --- |
 | 1 | Message content | End-to-end encrypted |
 | 2 | Confidentiality of past messages (if the password later leaks) | **Protected** — text 1.9.0, voice 1.10.0 |
-| 3 | Who talks to whom (metadata) | **Not protected** |
-| 4 | Usernames, room names | **Not protected** |
-| 5 | When someone is online | **Not protected** |
+| 3 | Message length | **Rounded to a bucket** — 1.12.0 (see 5.7) |
+| 4 | Who talks to whom (metadata) | **Not protected** |
+| 5 | Usernames, room names | **Not protected** |
+| 6 | When someone is online | **Not protected** |
 
 ---
 
@@ -108,6 +109,9 @@ limits stay there):
   `tests/test_crypto.py` → `Argon2idTests`.
 - **The network the host listens on is picked by hand at every start**
   (5.6, 1.6.2) — `tests/test_listen_address.py`.
+- **Message length is hidden by padding** (5.7, 1.12.0) — `tests/test_padding.py`.
+- **Voice frames are a content-independent size** (5.3/5.7, 1.12.0) —
+  `tests/test_voice_opus.py` → `SabitBitHiziTests`.
 - **The event log does not record message length** (5.3, 1.5.0) —
   `tests/test_logging_and_scroll.py`.
 
@@ -224,7 +228,7 @@ entering a room (5.4, 5.5).
 
 ### 5.3 Metadata is fully exposed
 
-Usernames, room names, timestamps, message sizes and who is online at what time
+Usernames, room names, timestamps and who is online at what time
 travel in plaintext. For an adversary at this scale, metadata is often more
 valuable than content.
 
@@ -236,7 +240,7 @@ was not updated at the time. The logging helper itself kept the ability to
 write the length if given content until 1.7.0; that was removed too, so the
 leak cannot come back if a call passes content again
 (`tests/test_core.py` → `test_anonymous_logger_masks_user_identity`). Packet
-sizes on the wire are still exposed (5.7).
+sizes on the wire are padded to a bucket since 1.12.0 (5.7).
 
 **Voice chat metadata (Phase 1b, 2026-09-24).** The server now knows who
 joined voice chat and when they left, and announces it to the room with
@@ -355,14 +359,71 @@ Remaining limit: the choice is tied to an IP address, not to a network adapter.
 If that address disappears from the computer (for example, Hamachi is turned
 off), Host has to be started again.
 
-### 5.7 Message length leaks
+### 5.7 Message length leaked — closed (1.12.0)
 
-The length of the ciphertext correlates with the length of the plaintext. Since
-1.9.0 the relation is at **byte granularity**: AES-GCM is a stream mode, so it
-carries the length exactly. Before that, Fernet's 16-byte block granularity
-applied, which means this gap has in fact **grown** a little — a small price paid
-for forward secrecy, and one that closes separately, with padding. No padding is
-applied. Voice does not have this problem: frames go out at a fixed size.
+AES-GCM is a stream mode: the ciphertext is **exactly as long as** the
+plaintext. The server could not read the content, but it could look at the
+`content` field and tell "this is a three-character reply, that is a
+four-hundred-character paragraph". Since 1.9.0 the relation was at byte
+granularity; before that Fernet's 16-byte block granularity applied, so this
+gap had in fact **grown** a little on the way to forward secrecy, and closing
+it was left to padding.
+
+Since 1.12.0 what gets encrypted is not the plaintext itself but a payload
+rounded up to a fixed **bucket ladder** (`core/padding.py`):
+
+| Bucket (bytes) | 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096 | 6112 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+
+The lowest step acts as a **floor**: every message under 30 bytes — "ok",
+"no", "on my way", "give me five minutes" — goes out at exactly the same size.
+What the server sees is no longer a length but one of nine steps; the residual
+leak is at most log2(9) ≈ 3.2 bits, and less than that in practice because the
+real distribution is skewed (almost all of a chat sits in the first step).
+
+**Why a bucket ladder and not Padmé.** The usual answer in the literature is
+Padmé (the PURB paper): it cuts the leak to O(log log M) bits with at most 12%
+overhead. That is the right tool when the size distribution is wide, but it
+does not fit chat, because it applies **no padding at all** to short inputs:
+2 → 2, 20 → 20, 100 → 104. Padding that leaves "ok" distinguishable from "no"
+does not close the thing we are trying to close, and the overwhelming majority
+of chat messages sit below the threshold where Padmé starts padding.
+
+**Format.** The real length goes in as a two-byte prefix at the head of the
+payload — that is, **inside** the ciphertext: it is not visible on the wire
+and it sits under the AES-GCM tag, so it cannot be tampered with. It is at the
+head so that unpadding stays O(1): no trailing marker to search for and no
+zeros to count, which would in any case misread a plaintext that itself ends
+in zeros. The padding is zeros rather than random bytes: it stays inside the
+encrypted data and AES-GCM's output is indistinguishable from random, so
+random padding would add nothing and cost something.
+
+**The price paid.** The worst case is landing just above a step: a 31-byte
+message becomes 64 bytes — large in proportion, 33 bytes in absolute terms,
+negligible at chat sizes. The longest message went from 6112 to 6110 bytes;
+the server's `content` limit did not change, the length field took two bytes.
+The top step was chosen so that a full message's token fills that limit
+**exactly**.
+
+**No negotiation.** The scheme label moved from `aesgcm-x25519-v1` to
+`aesgcm-x25519-v2`. Letting a client that understands padding talk to one that
+does not would make the padding pointless, so backward compatibility was not
+attempted: there is no message exchange with 1.11.0 and earlier, and both
+sides see "different version". The same clean-break rule was applied in 5.1
+and 5.8.
+
+**Voice does not have this problem:** frames go out at a fixed size — µ-law by
+construction (one byte per sample, 320 bytes), Opus by **configuration**: VBR
+and DTX off (`core/voice_opus.py`). In 1.12.0 that configuration was also
+pinned by a test. The reason: the test that actually measures
+content-independence is skipped when libopus is absent, so on this machine and
+in CI nothing stopped the setting from changing. If VBR is turned on, packet
+size varies with the audio and the rhythm of speech can be read off the wire;
+if DTX is turned on, no packet is sent during silence, so who spoke when
+becomes directly visible. Both are things 5.3 promises to keep closed.
+
+Code: `core/padding.py`. Tests: `tests/test_padding.py`,
+`tests/test_voice_opus.py` → `SabitBitHiziTests`.
 
 ### 5.8 PBKDF2, not Argon2id — closed (1.7.0)
 
@@ -380,7 +441,8 @@ normalisation (`tests/test_crypto.py` → `Argon2idTests`).
 Argon2id's **job changed in 1.9.0**: the key it derives no longer encrypts
 messages, it is the key of the signature that proves the other side belongs to
 the room (and the voice key is derived from it, 5.1). That is why text chat's
-scheme label is now `aesgcm-x25519-v1`; the label `fernet-argon2id-v1` belongs to
+scheme label is now `aesgcm-x25519-v2` (raised from v1 in 1.12.0 together with
+padding, 5.7); the label `fernet-argon2id-v1` belongs to
 1.8.0 and earlier. **That scheme's code was deleted in 1.10.1** as well
 (`RoomCipher`, `derive_room_key`, `make_cipher`): nothing had called it since
 1.9.0, it took up most of the file and left the impression that ProxyChat still
@@ -446,7 +508,8 @@ A decision record, so the same ideas are not re-litigated.
 | Per-room security mode within a single product | **Rejected** | Two separate products preferred. Fewer features is itself a security property; a separate product guarantees ProxyChat's feature pressure does not contaminate ProxyNull |
 | Copying the security code into both products | **Rejected** | In copied code a flaw gets fixed on one side and forgotten on the other. `core/` is shared; ProxyNull shrinks its attack surface by importing less of it |
 | Relaying voice through the server (SFU, without decrypting) | **Accepted (2026-09-16)** | Relay from the start; the "only for rooms larger than 4 people" condition was dropped. The alternative, mesh, would have handed every participant's IP to everyone in the room (Principle 3); with a relay the host keeps seeing the IPs it already sees. Content stays encrypted, so Principle 1 is not violated. The relay's own unsolved problems (sender id assignment, authentication towards the host) are in section 9 of the voice chat plan |
-| A separate CLI program that only carries voice | **Deferred** | The tester's suggestion (2026-09-17): a separate program that runs from the command line like the prototype and carries nothing but audio; easy to understand and use, with a small attack surface (no Qt interface, room list, history or notifications). For: the prototype already works this way and worked well; it also fits ProxyNull's "fewer features is security" principle. Against: the password and the other side's address still have to be shared outside the program, two programs mean two maintenance burdens, and being in the same room as the text chat is lost. To be decided after Phase 1b, once real use has been seen |
+| Writing our own virtual network (a Hamachi of our own) | **Rejected (2026-09-29)** | Hamachi is three separate things: a virtual network adapter, a mediation server that introduces peers to each other, and a relay for when hole punching fails. The adapter is no longer the real obstacle — Wintun (from the WireGuard project) is signed by Microsoft, so there is no kernel driver to write and no EV certificate to buy; in exchange, installing an adapter needs administrator rights and the "download and run" experience is gone. The real cost is the **mediation server**: a single point with a stable address that sees who meets whom and when, that can be taken down, and that wants money and maintenance forever. That runs straight into Principle 3, and it is exactly what 9.1 calls the easiest thing to block — so work done to improve censorship resistance would consist of building the thing that makes blocking easy. On top of that, what is needed is not a general-purpose virtual LAN but two ProxyChat instances reaching each other; an adapter would mean routing our own UDP through a virtual network card and back into our own process. **In-app NAT traversal was chosen instead:** a Tor onion service or a short code passed by hand for rendezvous (neither is a server we run), and hole punching for voice; the VPN stops being the default and becomes the fallback. This cannot be done on its own: because the server would move to a public address, room-entry authentication has to come with it (5.5). The first step is to measure the NAT type before writing anything |
+| A separate CLI program that only carries voice | **Deferred** | A suggestion from outside (2026-09-17): a separate program that runs from the command line like the prototype and carries nothing but audio; easy to understand and use, with a small attack surface (no Qt interface, room list, history or notifications). For: the prototype already works this way and worked well; it also fits ProxyNull's "fewer features is security" principle. Against: the password and the other side's address still have to be shared outside the program, two programs mean two maintenance burdens, and being in the same room as the text chat is lost. To be decided after Phase 1b, once real use has been seen |
 
 ---
 
@@ -460,8 +523,8 @@ A decision record, so the same ideas are not re-litigated.
 | 4 | ~~Move to Argon2id (5.8)~~ **Done (1.7.0)** | Medium | Medium |
 | 5 | ~~Forward secrecy (5.1)~~ **Done — text 1.9.0, voice 1.10.0** | **Highest** | Large — a protocol change |
 | 6 | ~~Stop trusting the server's user list (5.4-B)~~ **Done (1.9.0)** | Medium | Small |
-| 7 | **Message padding (5.7)** — the next job | Medium | Small |
-| 8 | Signed / reproducible builds (5.9) | Medium | Medium |
+| 7 | ~~Message padding (5.7)~~ **Done (1.12.0)** | Medium | Medium — wire format changed |
+| 8 | **Signed / reproducible builds (5.9)** — the next job | Medium | Medium |
 | 9 | Transport-layer encryption (5.4-A) — **deferred** | Low–Medium | Large |
 
 **Why 5.4-A dropped to the bottom.** It used to be 5th and marked "high
@@ -531,6 +594,22 @@ inspection (DPI) takes minutes. The default port is fixed too (5555). Writing a
 
 This is exactly why encrypted chat tools disguise themselves as TLS. We have no
 such camouflage.
+
+**What padding costs here (1.12.0).** Hiding message length made the length
+distribution **more regular**: the encrypted `content` field can now take only
+nine different lengths.
+
+```
+88 · 128 · 216 · 384 · 728 · 1408 · 2776 · 5504 · 8192 characters
+```
+
+That is a gain for content confidentiality (5.7) and a **loss** for
+fingerprinting: together with the plaintext field names, those nine values make
+an even easier signature to recognise. The two goals genuinely conflict here,
+and content confidentiality was deliberately put first. The reasoning is the
+same as in 9.5: the camouflage work will be done together with envelope
+encryption, and inside a tunnel (WireGuard, Tor) those lengths are not visible
+from outside anyway.
 
 ### 9.3 What cannot be blocked
 

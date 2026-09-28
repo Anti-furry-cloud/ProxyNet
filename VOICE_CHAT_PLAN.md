@@ -17,7 +17,7 @@ Durum: **Faz 1b bitti; sesli sohbet ProxyChat'in içinde** (1.8.0,
 konuşuyor, arayüzde katıl/ayrıl, katılımcı listesi, sustur, gürültü kapısı ve
 eşik ayarı var. Aynı makinede iki kopyayla denendi ve ses duyuldu; **iki ayrı
 bilgisayarla henüz denenmedi.** **Faz 0'ın karar kapısı 2026-09-24'te KABUL
-EDİLEBİLİR çıktı.** 1.10.0da sesin **ileri gizliliği** geldi: oturum anahtarı
+EDİLEBİLİR çıktı.** 1.10.0'da sesin **ileri gizliliği** geldi: oturum anahtarı
 artık paroladan değil oda oturumundan türüyor (3. ve 9. bölüm). Sesli sohbetin
 ürüne **varsayılan** olarak girmesi canlı kullanım testine bağlı ve o test henüz
 başlamadı (8. bölüm).
@@ -153,7 +153,7 @@ Ancak metin tarafında kullanılan **Fernet ses için yanlış araç**:
 - Fernet zaman damgası taşır ve yeniden oynatma korumasını çağırana bırakır.
 
 Karar: **AES-GCM, ve her gönderenin her ses oturumu için ayrı bir anahtar.**
-Yazıldı: `core/voice_crypto.py`, şema etiketi `aesgcm-hkdf-v2`.
+Yazıldı: `core/voice_crypto.py`, şema etiketi `aesgcm-hkdf-v2`. **Bu etiket artık güncel değil:** 1.10.0'dan beri ürünün ses şeması `aesgcm-x25519-v3` (9. bölüm), `aesgcm-hkdf-v2` yalnızca prototipin yolu olarak kaldı.
 
 ```
 oda parolası ──Argon2id──▶ ana anahtar ──HKDF──▶ ses anahtarı
@@ -207,8 +207,8 @@ arasını korumuyordu.
 - **Doğrulama:** düzeltmeden önce senaryo bir betikle denendi. Önceki oturumun
   bir çerçevesindeki metin, sonraki oturumun sessizlik çerçevesi yardımıyla
   geri çıkarıldı. Düzeltmeden sonra aynı betik anlamsız bayt çıkarıyor.
-- **Etkisi:** ses kodu henüz hiçbir yerde ağa bağlı çalışmıyor; gerçek bir
-  trafik etkilenmedi. Ama tasarım bu belgede yayınlanmıştı.
+- **Etkisi:** o sırada ses kodu hiçbir yerde ağa bağlı çalışmıyordu; gerçek
+  bir trafik etkilenmedi. Ama tasarım bu belgede yayınlanmıştı.
 - **Düzeltme:** yukarıdaki oturum tuzu. Nonce tekrarı için artık iki oturumun
   aynı 128 bitlik tuzu çekmesi gerekir. Gizlilik gönderen kimliğinin
   benzersizliğine bağlı değil ve önceki bir oturumdan kaydedilmiş paket yeni
@@ -279,6 +279,13 @@ hattan değil, rastgele üretildi. Aşağıdakiler karar önerisi, kesinleşmedi
   her paket aynı boyda çıktı. DTX aynı sebeple kapalı: sessizlikte paket
   göndermemek kimin ne zaman konuştuğunu ağa söyler. Bedeli, herkesin
   konuşmasa da sürekli bant kullanması (§2.1).
+- **Bu iki ayar 1.12.0'da teste bağlandı.** Sebebi şu: paket boyunun içerikten
+  bağımsız olduğunu gerçekten ölçen test libopus yoksa atlanıyor, yani
+  kütüphanenin bulunmadığı bir makinede ayarın değişmesini hiçbir şey
+  engellemiyordu. Artık ctypes katmanı taklit edilerek VBR ve DTX'in sıfır
+  yazıldığı DLL'siz de doğrulanıyor (`tests/test_voice_opus.py` →
+  `SabitBitHiziTests`). µ-law tarafında böyle bir risk yok: örnek başına bir
+  bayt olduğu için boyut yapısı gereği sabit.
 - **FEC çalışıyor.** Kayıp çerçeve bir sonraki paketin içindeki yedekten
   kurulabiliyor; bunun için tampon en az bir çerçeve önde durmalı.
 - **Düzeltme (2026-09-24):** FEC her ayarda çalışmıyor. 24 kbit/s sabit bit
@@ -315,7 +322,11 @@ kartı belirliyor; gerekçesi prototip bölümünde ölçüldü.
 - Hedef tampon **60 ms**. Uyarlanabilir hâli henüz yok.
 - Sıra numarasına göre yeniden sıralama.
 - Tamponun gerisinde kalan paket atılır.
-- Kayıp çerçeve yerine sessizlik. Sönümlenmiş tekrar henüz yok.
+- **Kayıp çerçeve gizleniyor.** Opus'ta gizlemeyi kodeğin kendisi yapıyor ve
+  çözücü her çerçeve için bir kez çağrılmak **zorunda**, yoksa iç durumu akışın
+  gerisinde kalıyor. µ-law'da son çerçeve sönümlenerek tekrar ediliyor
+  (%75, %50, %25); üst üste üç çerçeveden sonra sessizliğe düşülüyor
+  (`core/voice_session.py`).
 - **Tampon tamamen boşalırsa baştan doldurmaya döner.** Boş tamponu tüketmeye
   devam etmek sıra sayacını ileri kaçırır ve karşı taraf yeniden konuşmaya
   başladığında her çerçeve "geç kalmış" sayılırdı.
@@ -441,7 +452,7 @@ CI'da çalışmamalı.
 | **1a. Çekirdek** ✅ | Paket biçimi, AES-GCM + HKDF, jitter tamponu, testler | Ses donanımı olmadan çalışan, test edilmiş çekirdek |
 | **1b. İskelet** ✅ | Sinyalleşme paketleri, UDP soketi, Host'ta aktarma | `core/voice_relay.py`, `core/voice_net.py`; testlerle doğrulandı |
 | **2. Çift yönlü** ✅ | Ses cihazı katmanı, Qt entegrasyonu, çok kişi | Sesler karışıyor; gerçek hatta henüz denenmedi |
-| **3. Kullanılabilirlik** | Opus, bas-konuş, konuşma göstergesi, sustur | 4 kişi kullanabilir |
+| **3. Kullanılabilirlik** | Opus ✅ ve sustur ✅ yapıldı; **konuşma göstergesi 2026-09-19'da tasarımdan çıkarıldı** (2.2 — sunucu kimin ne zaman konuştuğunu öğrenmesin diye); kalan iş bas-konuş | 4 kişi kullanabilir |
 | **4. Paketleme** | Qt ses modülleri geri alındı ve boyut **ölçüldü** (aşağıda); kalan: Opus kütüphanesi kararı, UDP güvenlik duvarı kuralı, belgeler | Dağıtılabilir sürüm |
 
 Faz 1a'nın Faz 0'ı beklememesinin sebebi: yazılan üç modülün hiçbiri ağ

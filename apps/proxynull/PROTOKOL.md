@@ -184,8 +184,12 @@ bilgisi de şifreli yükün içinde.
 
 **Karar — dolgu.** Mesajlar sabit boyut kovalarına doldurulur: **256, 512,
 1024, 2048, 4096 bayt.** Kovadan büyük mesaj parçalanır. Amaç, mesaj
-uzunluğunun içerik hakkında bilgi vermesini engellemek (ProxyChat'te bu açık,
-bkz. THREAT_MODEL 5.7).
+uzunluğunun içerik hakkında bilgi vermesini engellemek. ProxyChat aynı işi
+1.12.0'dan beri yapıyor (bkz. THREAT_MODEL 5.7) ama merdiveni 32 bayttan
+başlıyor: orada zarf şifrelenmediği için kullanıcı ve oda adı zaten açık,
+dolayısıyla taban mesajı kısa tutmanın maliyeti yok. Burada zarf da şifreli
+olduğu için taban 256 bayt: dolgulanan şey mesajla birlikte kimin hangi odaya
+yazdığı.
 
 **Karar — yazıyor göstergesi yok.** Tuş vuruşu zamanlaması yazılan metin
 hakkında bilgi verir ve kimin ne zaman aktif olduğunu ele verir.

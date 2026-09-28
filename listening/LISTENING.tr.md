@@ -2,9 +2,11 @@
 
 # Dinleme testi: ağ kesintileri nasıl duyuluyor?
 
-ProxyChat'te henüz sesli sohbet yok. Yapmadan önce, insanların bir konuşmada ne
-kadar kesintiye katlanacağını öğrenmek istiyorum. Bu klasördeki kayıtlar
-**simülasyon, gerçek görüşme değil.** Ne düşündüğünüzü duymak isterim.
+Bu sayfa, ProxyChat'e sesli sohbet girmeden önce yazıldı (2026-09-17). Ses o
+tarihten sonra uygulamaya girdi (1.8.0) ama **varsayılan olarak sunulmuyor** ve
+buradaki soru hâlâ açık: insanlar bir konuşmada ne kadar kesintiye katlanır?
+Bu klasördeki kayıtlar **simülasyon, gerçek görüşme değil.** Ne düşündüğünüzü
+duymak isterim.
 
 ## Klasörde ne var
 
@@ -51,7 +53,7 @@ yazabilirsiniz. İngilizce de yazabilirsiniz.
 
 - **Faz 0 v2 kararını değiştirmez.** O kurallar hiçbir v2 ölçümünden önce
   yazıldı ve yayınlandı; görüşleri gördükten sonra değiştirmek amacını boşa
-  çıkarırdı. Bkz. `VOICE_CHAT_PLAN.md`.
+  çıkarırdı. Bkz. [VOICE_CHAT_PLAN.md](../VOICE_CHAT_PLAN.md).
 - Sonraki tasarım kararlarına yön verir: alan taraf kesintiyle gecikme arasında
   nasıl bir denge kurmalı.
 - Dinleyenler az sayıda ve kendiliğinden gelen kişiler. Cevapları istatistik

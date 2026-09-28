@@ -2,10 +2,11 @@
 
 # Listening test: how do network interruptions sound?
 
-ProxyChat does not have voice chat yet. Before building it, I want to know how
-much interruption people will put up with in a conversation. The recordings in
-this folder are **simulations, not real calls.** I would like to hear what you
-think of them.
+This page was written before voice chat existed in ProxyChat (2026-09-17).
+Voice has landed in the app since then (1.8.0), but it is **not offered as a
+default**, and the question here is still open: how much interruption will
+people put up with in a conversation? The recordings in this folder are
+**simulations, not real calls.** I would like to hear what you think of them.
 
 ## What is in the folder
 
@@ -51,7 +52,7 @@ Answering in Turkish is fine too.
 
 - **They will not change the Phase 0 v2 decision.** Those rules were written and
   published before any v2 measurement; changing them after seeing opinions
-  would defeat the purpose. See `VOICE_CHAT_PLAN.en.md`.
+  would defeat the purpose. See [VOICE_CHAT_PLAN.en.md](../VOICE_CHAT_PLAN.en.md).
 - They will inform later design choices: how the receiving side should trade
   interruptions against delay.
 - This is a small, self-selected group of listeners. I will read the answers as
