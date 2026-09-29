@@ -59,6 +59,19 @@ These threats cannot be solved by ProxyNet and must not be pretended otherwise:
 - **Compromise of the endpoint.** Keyloggers, screenshots, memory dumps, the
   person looking over your friend's shoulder. Encryption protects the message
   on the network, not on the screen.
+- **The operating system's default behaviour.** The item above describes an
+  *attack*; this is separate from it and the two should not be conflated. When a
+  feature periodically records the screen (Recall on Windows), a setting syncs
+  the clipboard history to the cloud, or a reputation service sends the hash of
+  a downloaded file to its vendor (SmartScreen), the user has **not been
+  compromised** — they are simply using that operating system. The outcome is
+  the same all the same: the message becomes readable on the screen and
+  encryption cannot prevent it. The reason for writing it separately: "you are
+  safe unless the endpoint is compromised" is misleading on a platform where
+  this is the default. The one narrow area we could close is the copied room
+  password, which is kept out of the clipboard history, the cloud clipboard and
+  clipboard monitors (`apps/proxychat/ui.py`). That was for one field, not a
+  general guarantee.
 - **The channel used to share the room password.** If you send the password
   over WhatsApp, the chain breaks there. It should be shared face to face or
   through a separate secure channel.

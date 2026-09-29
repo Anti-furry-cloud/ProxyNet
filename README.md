@@ -24,6 +24,7 @@ different promises.
 | For whom | Everyday use, a group of friends | Situations where encryption is the priority |
 | Status | Working. 1.12.0 is built and tested but not yet distributed; voice chat and forward secrecy (text 1.9.0, voice 1.10.0) landed in the app | No code yet; its [limits](apps/proxynull/README.en.md) and [protocol design](apps/proxynull/PROTOCOL.en.md) are written down |
 | Goal | Be usable, protect content | Meet the T5 adversary in the threat model |
+| Platform | **Windows 10/11 (64-bit)** | Platform-neutral by design (Rust, command line) |
 
 The reason they are separate: fewer features is itself a security feature. They
 were split deliberately so that ProxyChat's "let's add this too" pressure never
@@ -57,6 +58,15 @@ contaminates ProxyNull.
   as a default** yet: it will not be described that way until the
   live-use test passes.
 - Turkish and English interface.
+- **Windows 10/11 (64-bit) only.** The core — encryption, protocol, transport,
+  voice — is platform-neutral Python; what ties the product to Windows is three
+  OS integration points: reserving the port exclusively for the server
+  (`SO_EXCLUSIVEADDRUSE`, THREAT_MODEL.en.md 5.6), storing the password with
+  DPAPI, and keeping the copied password out of the clipboard history. All
+  three are **security** features rather than conveniences, so porting is not a
+  packaging job: each one needs a written account of how that guarantee changes
+  on the other platform. Platform-independent use where encryption is the
+  priority is ProxyNull's job.
 
 ### What ProxyChat does not do today
 

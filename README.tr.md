@@ -24,6 +24,7 @@ paylaşıyor ama farklı sözler veriyor.
 | Kime | Günlük kullanım, arkadaş grubu | Şifrelemenin öncelik olduğu durumlar |
 | Durum | Çalışıyor. 1.12.0 derlendi ve test edildi, henüz dağıtılmadı; sesli sohbet ve ileri gizlilik (metin 1.9.0, ses 1.10.0) uygulamaya girdi | Henüz kod yok; [sınırları](apps/proxynull/README.md) ve [protokol tasarımı](apps/proxynull/PROTOKOL.md) yazılı |
 | Hedefi | Kullanışlı olmak, içeriği korumak | Tehdit modelindeki T5 rakibini karşılamak |
+| Platform | **Windows 10/11 (64-bit)** | Baştan platform-nötr (Rust, komut satırı) |
 
 Ayrı iki ürün olmasının sebebi şu: az özellik, güvenlikte başlı başına bir
 özelliktir. ProxyChat'in "şunu da ekleyelim" baskısının ProxyNull'ı
@@ -56,6 +57,14 @@ kirletmemesi için ikisi bilerek ayrıldı.
   sessizleştiren bir gürültü kapısı var. Henüz **varsayılan olarak
   sunulmuyor**: canlı kullanım testi geçilmeden öyle anlatılmayacak.
 - Türkçe ve İngilizce arayüz.
+- **Yalnızca Windows 10/11 (64-bit).** Çekirdek — şifreleme, protokol, taşıma,
+  ses — platform-nötr Python'dur; ürünü Windows'a bağlayan şey üç işletim
+  sistemi bağlantısıdır: portun sunucuya özel ayrılması (`SO_EXCLUSIVEADDRUSE`,
+  THREAT_MODEL.md 5.6), parolanın DPAPI ile saklanması, ve kopyalanan parolanın
+  pano geçmişinden hariç tutulması. Üçü de kolaylık değil **güvenlik**
+  özelliği, o yüzden başka bir platforma taşımak bir paketleme işi değil:
+  her biri için "o platformda bu güvence şöyle değişiyor" yazmak gerekir.
+  Şifrelemenin öncelik olduğu, platform bağımsız kullanım ProxyNull'ın işidir.
 
 ### ProxyChat bugün ne yapmıyor
 

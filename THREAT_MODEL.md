@@ -58,6 +58,18 @@ Bu tehditler ProxyNet tarafından çözülemez ve çözülüyormuş gibi davran�
 - **Uç cihazın ele geçirilmesi.** Keylogger, ekran görüntüsü, bellek dökümü,
   arkadaşınızın omzunun üstünden bakan kişi. Şifreleme mesajı ağda korur,
   ekranda değil.
+- **İşletim sisteminin varsayılan davranışı.** Bir üstteki madde bir
+  *saldırıyı* anlatıyor; bu ondan ayrı ve karıştırılmamalı. Ekranı periyodik
+  olarak kaydeden bir özellik (Windows'ta Recall), pano geçmişini buluta
+  eşitleyen bir ayar, ya da indirilen dosyanın özetini üreticisine gönderen bir
+  itibar servisi (SmartScreen) çalışırken kullanıcı **ele geçirilmiş olmuyor**
+  — yalnızca o işletim sistemini kullanıyor. Sonuç yine aynı: mesaj ekranda
+  okunabilir hâle gelir ve şifreleme bunu engelleyemez. Ayrı yazılmasının
+  sebebi şu: "uç cihaz ele geçirilmezse güvendesiniz" cümlesi, varsayılanı bu
+  olan bir platformda yanıltıcı olur. Kapatabildiğimiz tek dar alan
+  kopyalanan oda parolası oldu; o, pano geçmişinden, bulut panosundan ve pano
+  izleyicilerden hariç tutuluyor (`apps/proxychat/ui.py`). Bu tek bir alan
+  içindi, genel bir güvence değil.
 - **Oda parolasının paylaşım kanalı.** Parolayı WhatsApp'tan gönderirseniz
   zincir orada kırılır. Parola yüz yüze veya ayrı bir güvenli kanaldan
   paylaşılmalıdır.
