@@ -169,6 +169,7 @@ English. Where the two disagree, **the Turkish one is correct.**
 
 | File | Content |
 | --- | --- |
+| [CHANGELOG.en.md](CHANGELOG.en.md) | What was wrong and what changed, version by version |
 | [THREAT_MODEL.en.md](THREAT_MODEL.en.md) | What it protects, what it does not, the adversary model, design principles, the order gaps get closed |
 | [VOICE_CHAT_PLAN.en.md](VOICE_CHAT_PLAN.en.md) | The voice chat design plan — topology, packet format, encryption scheme, open security questions |
 | [apps/proxynull/README.en.md](apps/proxynull/README.en.md) | ProxyNull's limits: what it must do, what it refuses, why it is separate from ProxyChat |
