@@ -16,6 +16,24 @@ Henüz herkese açık bir sürüm dağıtılmadı.
 
 ---
 
+## 1.12.3
+
+- **Ses kodeği başka bir projenin derlediği ikiliydi.** `libopus.dll`, PyAV
+  paketinin içinden çıkarılmıştı; yani onu dağıtmak o projenin derleme hattına
+  güvenmek demekti — ve 1.12.2'de kodek exe'nin içine girdiği için o ikili
+  artık özetini yayınladığımız dosyanın parçasıydı. Artık Xiph'in yayımladığı
+  kaynak arşivinden derleniyor. Arşivin özeti, bu projenin belgelerine
+  **2026-09-18'de** yazılmış değere karşı doğrulandı.
+- Derlerken çıkan tuzak: varsayılan ayarlarla üretilen DLL
+  `VCRUNTIME140.dll`'e bağımlı oluyor ve Visual C++ yeniden dağıtılabilir
+  paketi kurulu olmayan makinede yüklenemeyip sesi **sessizce** µ-law'a
+  düşürürdü. Statik çalışma zamanıyla derlenen dosya yalnızca `KERNEL32.dll`
+  istiyor.
+- Üçüncü parti lisans dosyasında eksik duran **telif sahipleri satırı**
+  yazıldı. Kaynak arşivinin `COPYING` dosyasından birebir alındı; ezberden
+  yazılsaydı yanlış olacaktı (satır 2023'e kadar uzanıyor ve listede Mozilla
+  ile Amazon da var).
+
 ## 1.12.2
 
 - **Ses kodeği (`libopus.dll`) ayrı bir dosyaydı ve exe'nin yanında durmak

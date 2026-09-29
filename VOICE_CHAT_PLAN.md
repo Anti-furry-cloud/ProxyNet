@@ -291,9 +291,15 @@ hattan değil, rastgele üretildi. Aşağıdakiler karar önerisi, kesinleşmedi
 - **Düzeltme (2026-09-24):** FEC her ayarda çalışmıyor. 24 kbit/s sabit bit
   hızında yedek çerçeve ancak kayıp beklentisi %10 ve üstündeyken konuyor;
   16 kbit/s'de hiç konmuyor, yani o bit hızı FEC'ten vazgeçmek demek.
-- **Tedarik zinciri.** Dağıtılacak kütüphane, Xiph'in yayımladığı kaynak
-  arşivinden kendimiz derlenmeli; başka bir projenin derlediği ikiliyi
-  dağıtmak, o projenin derleme hattına güvenmek demek.
+- **Tedarik zinciri — kapandı (1.12.3).** Kütüphane artık Xiph'in yayımladığı
+  kaynak arşivinden derleniyor; öncesinde başka bir projenin (PyAV) derlediği
+  ikili kullanılıyordu, yani o projenin derleme hattına güveniliyordu.
+  İndirilen arşiv, bu belgede **2026-09-18'den beri** duran özete karşı
+  doğrulandı. Derleme ayrıntıları ve lisans metni THIRD-PARTY.md içinde.
+  Çıkan bir tuzak: varsayılan ayarlarla üretilen DLL `VCRUNTIME140.dll`'e
+  bağımlı oluyor ve o paket olmayan makinede yüklenemeyip sesi sessizce
+  µ-law'a düşürürdü; statik çalışma zamanıyla yalnızca `KERNEL32.dll`
+  isteniyor.
 
 | Kodek | Çerçeve (20 ms) | Datagram (başlık + GCM etiketi dahil) |
 | --- | --- | --- |

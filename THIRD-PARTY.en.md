@@ -24,32 +24,50 @@ not.
 | Source | https://opus-codec.org |
 | Code | `core/voice_opus.py` (bound directly with ctypes, no wrapper package) |
 
-**The file we ship.** The `libopus.dll` currently in hand:
+**The file we ship — built from source (1.12.3).**
 
 ```
-SHA-256  4369edc456631a3cc933d7918747e5d2d111056dbc8a85b01330b5a53c062d44
-size     482,816 bytes
+SHA-256  1d5fcc90b31e982a066db1e1e3128d8673fce5c5adaab11d1cd808d54a3ee66c
+size     625,664 bytes
 ```
 
-**The provenance of this binary has not been verified.** It was taken out of
-the PyAV package; it is not a file we built from the source archive Xiph
-publishes. THREAT_MODEL.en.md 5.9 and `docs/sesli-sohbet-plani.en.md` carry
-this as an open item: a real release must build it from source. As a loose
-file handed over by hand this mattered less; once the DLL is packed into the
-executable, a binary of unverified origin travels **inside** the artifact
-whose checksum we publish.
+Before this, the file had been taken out of the PyAV package and its
+provenance was unverified. It is now built from the source archive Xiph
+publishes:
 
-**What is missing.** BSD 3-clause requires a binary distribution to reproduce
-"the above copyright notice" as well. The conditions below are reproduced
-verbatim from opus-codec.org, but **the line naming the copyright holders is
-not written here yet**: the authoritative version of it lives in the `COPYING`
-file of the source archive and could not be verified when this was written.
-Rather than write it from memory, it was left out. When the DLL is built from
-source (the open item above) `COPYING` comes with it and the line will be
-copied from there **verbatim**. The two are one job; no release should be
-distributed before it is done.
+| | |
+| --- | --- |
+| Source archive | `opus-1.6.1.tar.gz` |
+| SHA-256 of the archive | `6ffcb593207be92584df15b32466ed64bbec99109f007c82205f0194572411a1` |
+| Compiler | MSVC 14.51.36231 (Visual Studio 2026), x64 |
+| Configuration | CMake 4.4.3, `Visual Studio 18 2026` generator |
+| Options | `BUILD_SHARED_LIBS=ON`, `OPUS_BUILD_SHARED_LIBRARY=ON`, `OPUS_STATIC_RUNTIME=ON`, `OPUS_BUILD_TESTING=OFF`, `OPUS_BUILD_PROGRAMS=OFF` |
+
+The archive's checksum was written into `docs/sesli-sohbet-plani.en.md` on
+**2026-09-18**; the downloaded file was verified against that value, so
+against something recorded months ago rather than something produced today.
+
+**`OPUS_STATIC_RUNTIME=ON` is deliberate.** Without it the DLL comes out
+depending on `VCRUNTIME140.dll`; on a machine without the Visual C++
+redistributable it would fail to load and voice would silently fall back to
+µ-law. The static build needs only `KERNEL32.dll` — cleaner even than the file
+from PyAV, which also wanted `msvcrt.dll`. The cost is about 150 KB.
+
+Verification: all 19 tests in `tests/test_voice_opus.py` run against this DLL
+(11 of them were skipped when libopus was absent). Among them is the one that
+measures packet size not varying with the audio.
 
 ### Licence text
+
+The copyright notice and conditions below are reproduced verbatim from the
+`COPYING` file of the source archive.
+
+```
+Copyright 2001-2023 Xiph.Org, Skype Limited, Octasic,
+                    Jean-Marc Valin, Timothy B. Terriberry,
+                    CSIRO, Gregory Maxwell, Mark Borgerding,
+                    Erik de Castro Lopo, Mozilla, Amazon
+```
 
 > Redistribution and use in source and binary forms, with or without
 > modification, are permitted provided that the following conditions are met:

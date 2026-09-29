@@ -23,31 +23,49 @@ kendisi) listelenmiyor.
 | Kaynak | https://opus-codec.org |
 | Kod | `core/voice_opus.py` (ctypes ile doğrudan bağlanıyor, sarmalayıcı paket yok) |
 
-**Dağıtılan dosya.** Şu an elimizdeki `libopus.dll`:
+**Dağıtılan dosya — kaynaktan derlendi (1.12.3).**
 
 ```
-SHA-256  4369edc456631a3cc933d7918747e5d2d111056dbc8a85b01330b5a53c062d44
-boyut    482.816 bayt
+SHA-256  1d5fcc90b31e982a066db1e1e3128d8673fce5c5adaab11d1cd808d54a3ee66c
+boyut    625.664 bayt
 ```
 
-**Bu ikilinin kaynağı doğrulanmadı.** PyAV paketinin içinden çıkarıldı;
-Xiph'in yayımladığı kaynak arşivinden bizim derlediğimiz bir dosya değil.
-THREAT_MODEL.md 5.9 ve `docs/sesli-sohbet-plani.md` bunu açık bir madde olarak
-taşıyor: gerçek bir sürümde kaynaktan derlenmeli. Ayrı bir dosya olarak elden
-verilirken bu daha küçük bir sorundu; DLL pakete gömüldükten sonra, özetini
-yayınladığımız exe'nin **içinde** kaynağı doğrulanmamış bir ikili taşınıyor
-demektir.
+Öncesinde bu dosya PyAV paketinin içinden çıkarılmıştı ve kaynağı
+doğrulanmamıştı. Artık Xiph'in yayımladığı kaynak arşivinden derleniyor:
 
-**Eksik olan şey.** BSD 3 madde, ikili dağıtımın "yukarıdaki telif
-bildirimini" de yeniden üretmesini şart koşuyor. Aşağıdaki koşul metni
-opus-codec.org'dan birebir alındı, ama **telif sahipleri satırı buraya henüz
-yazılmadı**: o satırın doğrusu kaynak arşivinin `COPYING` dosyasındadır ve
-bu yazıldığı sırada doğrulanamadı. Ezberden yazmak yerine boş bırakıldı.
-DLL kaynaktan derlendiğinde (yukarıdaki açık madde) `COPYING` elimize
-geçecek ve satır oradan **birebir kopyalanacak.** İkisi tek iştir; biri
-yapılmadan sürüm dağıtılmamalı.
+| | |
+| --- | --- |
+| Kaynak arşivi | `opus-1.6.1.tar.gz` |
+| Arşivin SHA-256'sı | `6ffcb593207be92584df15b32466ed64bbec99109f007c82205f0194572411a1` |
+| Derleyici | MSVC 14.51.36231 (Visual Studio 2026), x64 |
+| Yapılandırma | CMake 4.4.3, `Visual Studio 18 2026` üreteci |
+| Seçenekler | `BUILD_SHARED_LIBS=ON`, `OPUS_BUILD_SHARED_LIBRARY=ON`, `OPUS_STATIC_RUNTIME=ON`, `OPUS_BUILD_TESTING=OFF`, `OPUS_BUILD_PROGRAMS=OFF` |
+
+Arşivin özeti **2026-09-18'de** `docs/sesli-sohbet-plani.md` içine yazılmıştı;
+indirilen dosya o değere karşı doğrulandı, yani bugün üretilmiş bir değere
+değil, aylar önce kayda geçmiş bir değere karşı.
+
+**`OPUS_STATIC_RUNTIME=ON` bilinçli.** Onsuz derlenen DLL `VCRUNTIME140.dll`'e
+bağımlı çıkıyor; Visual C++ yeniden dağıtılabilir paketi kurulu olmayan bir
+makinede yüklenemez ve ses sessizce µ-law'a düşerdi. Statik hâli yalnızca
+`KERNEL32.dll` istiyor — PyAV'den gelen dosyadan bile temiz (o `msvcrt.dll`
+de istiyordu). Bedeli ~150 KB.
+
+Doğrulama: `tests/test_voice_opus.py` içindeki 19 testin tamamı bu DLL ile
+çalışıyor (libopus yokken 11'i atlanıyordu). Aralarında paket boyunun sese
+göre değişmediğini ölçen test de var.
 
 ### Lisans metni
+
+Aşağıdaki telif bildirimi ve koşullar, kaynak arşivinin `COPYING` dosyasından
+birebir alındı.
+
+```
+Copyright 2001-2023 Xiph.Org, Skype Limited, Octasic,
+                    Jean-Marc Valin, Timothy B. Terriberry,
+                    CSIRO, Gregory Maxwell, Mark Borgerding,
+                    Erik de Castro Lopo, Mozilla, Amazon
+```
 
 > Redistribution and use in source and binary forms, with or without
 > modification, are permitted provided that the following conditions are met:

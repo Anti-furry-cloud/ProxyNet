@@ -303,9 +303,15 @@ proposed decisions, not final ones.
   24 kbit/s constant bitrate the redundant frame is only added when the
   expected loss is set to 10% or more; at 16 kbit/s it is never added, so
   that bitrate means giving up FEC.
-- **Supply chain.** The library that gets distributed should be built by us
-  from the source archive Xiph publishes; distributing a binary another
-  project built means trusting that project's build pipeline.
+- **Supply chain — closed (1.12.3).** The library is now built from the source
+  archive Xiph publishes; before that, a binary built by another project
+  (PyAV) was used, which meant trusting that project's build pipeline. The
+  downloaded archive was verified against the checksum this document has
+  carried since **2026-09-18**. Build details and the licence text are in
+  THIRD-PARTY.en.md. One trap turned up: with default settings the DLL comes
+  out depending on `VCRUNTIME140.dll`, and on a machine without that package
+  it would fail to load and silently drop voice to µ-law; with a static
+  runtime it needs only `KERNEL32.dll`.
 
 | Codec | Frame (20 ms) | Datagram (header + GCM tag included) |
 | --- | --- | --- |

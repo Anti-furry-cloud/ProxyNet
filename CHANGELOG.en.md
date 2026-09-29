@@ -17,6 +17,24 @@ No public release has been distributed yet.
 
 ---
 
+## 1.12.3
+
+- **The audio codec was a binary built by another project.** `libopus.dll` had
+  been taken out of the PyAV package, so distributing it meant trusting that
+  project's build pipeline — and since 1.12.2 packed the codec inside the
+  executable, that binary was part of the file whose checksum we publish. It is
+  now built from the source archive Xiph publishes. The archive's checksum was
+  verified against a value written into this project's documents on
+  **2026-09-18**.
+- A trap found while building: with default settings the DLL comes out
+  depending on `VCRUNTIME140.dll`, so on a machine without the Visual C++
+  redistributable it would fail to load and drop voice to µ-law **silently**.
+  Built with a static runtime it needs only `KERNEL32.dll`.
+- The **copyright holders line** missing from the third-party licence file was
+  filled in, copied verbatim from the source archive's `COPYING`. Written from
+  memory it would have been wrong (the line runs to 2023 and lists Mozilla and
+  Amazon as well).
+
 ## 1.12.2
 
 - **The audio codec (`libopus.dll`) was a separate file that had to sit next
