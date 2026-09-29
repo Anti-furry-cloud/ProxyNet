@@ -17,6 +17,16 @@ No public release has been distributed yet.
 
 ---
 
+## 1.12.1
+
+- **The "Generate" button sat next to the password field in Join mode as
+  well.** In Join the password comes from whoever created the room; pressing
+  that button replaced theirs with one of your own invention, and the result
+  was "could not decrypt — the room password is different". The button now
+  appears only in Host and Demo, and what you typed survives a change of mode.
+- Generating a password in Host mode and then switching to Join left the
+  "password generated" notice on screen, where it no longer meant anything.
+
 ## 1.12.0 — ⚠ wire break
 
 - **The length of an encrypted message was exactly the length of the

@@ -16,6 +16,16 @@ Henüz herkese açık bir sürüm dağıtılmadı.
 
 ---
 
+## 1.12.1
+
+- **Join modunda parola alanının yanında "Üret" düğmesi duruyordu.** Join'de
+  parola odayı kuran taraftan geliyor; oradaki düğmeye basmak karşı tarafın
+  parolasını kendi uydurduğunla değiştirmek demekti ve sonuç "çözülemedi —
+  oda parolası farklı" oluyordu. Düğme artık yalnızca Host ve Demo'da
+  görünüyor; alana yazdığın parola mod değiştirince silinmiyor.
+- Host'ta parola üretip Join'e geçince "parola üretildi" notu ekranda
+  kalıyordu — oradan kalma bir bilgi.
+
 ## 1.12.0 — ⚠ tel kırılması
 
 - **Şifreli bir mesajın uzunluğu, düz metnin uzunluğuyla birebir aynıydı.**
