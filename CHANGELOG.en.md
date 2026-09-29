@@ -17,6 +17,18 @@ No public release has been distributed yet.
 
 ---
 
+## 1.12.2
+
+- **The audio codec (`libopus.dll`) was a separate file that had to sit next
+  to the executable.** Without it the sound silently fell back to µ-law: 320
+  bytes per frame instead of 60, roughly four times as much on the wire. Worse,
+  if someone with Opus entered the room first, a copy without the DLL could not
+  join voice at all. The codec now lives inside the executable; sending the one
+  file is enough.
+- Third-party licences are collected in [THIRD-PARTY.en.md](THIRD-PARTY.en.md).
+  libopus comes under BSD 3-clause, which requires the licence text to be
+  **provided with the distribution**; it was not written down anywhere before.
+
 ## 1.12.1
 
 - **The "Generate" button sat next to the password field in Join mode as

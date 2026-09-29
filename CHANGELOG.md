@@ -16,6 +16,18 @@ Henüz herkese açık bir sürüm dağıtılmadı.
 
 ---
 
+## 1.12.2
+
+- **Ses kodeği (`libopus.dll`) ayrı bir dosyaydı ve exe'nin yanında durmak
+  zorundaydı.** Yoksa ses sessizce µ-law'a düşüyordu: çerçeve başına 60 bayt
+  yerine 320, yani telde yaklaşık dört katı. Dahası odaya Opus'lu biri önce
+  girdiyse, DLL'i olmayan kopya sese hiç giremiyordu. Artık kodek exe'nin
+  içinde; tek dosya göndermek yeterli.
+- Üçüncü parti bileşenlerin lisansları [THIRD-PARTY.md](THIRD-PARTY.md)
+  dosyasında toplandı. libopus BSD 3 madde ile geliyor ve o lisans, metnin
+  dağıtımla **birlikte verilmesini** şart koşuyor; daha önce hiçbir yerde
+  yazılı değildi.
+
 ## 1.12.1
 
 - **Join modunda parola alanının yanında "Üret" düğmesi duruyordu.** Join'de
