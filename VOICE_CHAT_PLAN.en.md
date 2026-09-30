@@ -478,7 +478,7 @@ needs audio hardware should run in CI.
 | **1b. Skeleton** ✅ | Signalling packets, UDP socket, relaying on the host | `core/voice_relay.py`, `core/voice_net.py`; covered by tests |
 | **2. Two-way** ✅ | The audio device layer, Qt integration, several people | Voices mix; not yet tried on a real line |
 | **3. Usability** | Opus ✅ and mute ✅ are done; the **speaking indicator was dropped from the design on 2026-09-19** (2.2 — so the server does not learn who spoke when); what is left is push-to-talk | Four people can use it |
-| **4. Packaging** | Qt's audio modules are back and the size was **measured** (below); left: the Opus library decision, the UDP firewall rule, documentation | A distributable release |
+| **4. Packaging** | Qt's audio modules are back and the size was **measured** (below); the Opus library ✅ is bundled (1.12.2) and built from source (1.12.3); left: the UDP firewall rule, documentation | A distributable release |
 
 Phase 1a did not wait for Phase 0 because none of the three modules written
 depend on the network measurement. What a bad result would stop is 1b onwards.
@@ -941,9 +941,11 @@ voice. The real fix is to tie the codec to a room setting; not done yet.
 taken out of the exclusion list in `ProxyChat.spec`. The exe went from
 **52.7 MB to 62.4 MB**, so +9.7 MB. The growth comes from Qt's FFmpeg-based
 audio plugin (`ffmpegmediaplugin.dll`, `avcodec`, `avformat`); those are
-LGPL and compatible with GPLv3. **libopus is not bundled:** unless the
-application finds `libopus.dll` next to it, it uses µ-law. Where that
-library should come from (built by us?) is still undecided.
+LGPL and compatible with GPLv3. **libopus has been bundled too since 1.12.2.**
+Before that it had to sit next to the executable as a separate file, and if it
+was missing the sound silently fell back to µ-law. Where that library comes
+from was settled in 1.12.3 as well: it is built from Xiph's source archive
+(see "Supply chain" above and THIRD-PARTY.en.md).
 
 **Not tried yet:** a real conversation between two computers with
 microphones. The whole path is covered by tests — three voices mixing, a

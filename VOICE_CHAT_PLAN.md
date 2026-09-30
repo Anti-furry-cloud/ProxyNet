@@ -459,7 +459,7 @@ CI'da çalışmamalı.
 | **1b. İskelet** ✅ | Sinyalleşme paketleri, UDP soketi, Host'ta aktarma | `core/voice_relay.py`, `core/voice_net.py`; testlerle doğrulandı |
 | **2. Çift yönlü** ✅ | Ses cihazı katmanı, Qt entegrasyonu, çok kişi | Sesler karışıyor; gerçek hatta henüz denenmedi |
 | **3. Kullanılabilirlik** | Opus ✅ ve sustur ✅ yapıldı; **konuşma göstergesi 2026-09-19'da tasarımdan çıkarıldı** (2.2 — sunucu kimin ne zaman konuştuğunu öğrenmesin diye); kalan iş bas-konuş | 4 kişi kullanabilir |
-| **4. Paketleme** | Qt ses modülleri geri alındı ve boyut **ölçüldü** (aşağıda); kalan: Opus kütüphanesi kararı, UDP güvenlik duvarı kuralı, belgeler | Dağıtılabilir sürüm |
+| **4. Paketleme** | Qt ses modülleri geri alındı ve boyut **ölçüldü** (aşağıda); Opus kütüphanesi ✅ pakete gömüldü (1.12.2) ve kaynaktan derleniyor (1.12.3); kalan: UDP güvenlik duvarı kuralı, belgeler | Dağıtılabilir sürüm |
 
 Faz 1a'nın Faz 0'ı beklememesinin sebebi: yazılan üç modülün hiçbiri ağ
 ölçümüne bağlı değil. Ölçüm kötü çıkarsa duracak olan 1b ve sonrası.
@@ -892,9 +892,11 @@ sese giremez. Kalıcı çözüm, kodeği oda ayarına bağlamak; henüz yapılma
 içindeki dışlama listesinden çıkarıldı. Exe **52,7 MB'dan 62,4 MB'a** çıktı,
 yani +9,7 MB. Büyümenin kaynağı Qt'nin FFmpeg tabanlı ses eklentisi
 (`ffmpegmediaplugin.dll`, `avcodec`, `avformat`); bunlar LGPL ve GPLv3 ile
-uyumlu. **libopus pakete konmadı:** uygulama, yanında `libopus.dll`
-bulamazsa µ-law kullanıyor. Kütüphanenin nereden geleceği (kendi derlememiz
-mi) hâlâ karara bağlı değil.
+uyumlu. **libopus da 1.12.2'den beri pakete gömülü.** Öncesinde exe'nin yanında
+ayrı bir dosya olarak durmak zorundaydı ve bulunamazsa ses sessizce µ-law'a
+düşüyordu. Kütüphanenin nereden geleceği sorusu da 1.12.3'te kapandı: Xiph'in
+kaynak arşivinden derleniyor (yukarıdaki "Tedarik zinciri" ve
+THIRD-PARTY.md).
 
 **Denenmeyen:** gerçek iki bilgisayar arasında mikrofonla konuşma. Bütün bu
 yol testlerle doğrulandı — üç kişinin sesinin karışması, yanlış parolanın
