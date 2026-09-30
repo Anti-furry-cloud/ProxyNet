@@ -514,6 +514,13 @@ larger than the build itself: with `pip install --require-hashes`, an install
 **refuses** a file on PyPI that has been changed since. The audio codec's
 provenance was closed in 1.12.3 (THIRD-PARTY.en.md).
 
+The checksum list is also **signed.** That moves trust from the repository to
+a key: someone who takes over the repository can change the list but cannot
+produce the signature. The key is ed25519, fingerprint
+`23DC 905B 569A 80BD D243  525B 80DA 0356 E47B B37C`; the steps and the limit
+of that check are in [VERIFYING.en.md](VERIFYING.en.md) — in particular what a
+signature cannot do on a **first** download.
+
 Every build produces a **manifest** (`tools/derleme_kunyesi.py`): the commit,
 whether the working tree was clean, toolchain versions, the locked packages'
 hashes, libopus's hash and the outputs' hashes. Nothing machine-specific goes

@@ -168,6 +168,7 @@ Geliştirme Türkçe yürüyor; belgelerin hepsi Türkçe ve İngilizce yayınla
 | [apps/proxynull/README.md](apps/proxynull/README.md) | ProxyNull'ın sınırları: zorunluluklar, yasaklar, ProxyChat'ten neden ayrı |
 | [apps/proxynull/PROTOKOL.md](apps/proxynull/PROTOKOL.md) | ProxyNull'ın protokol tasarımı — buluşma kodu, Noise el sıkışması, doğrulama kodu, dolgu; kararı verilmiş ve verilmemiş maddeler ayrı işaretli |
 | [listening/](listening/LISTENING.tr.md) | Kör dinleme testi: simüle ağ kesintileri konuşmada nasıl duyuluyor |
+| [VERIFYING.md](VERIFYING.md) | İndirdiğiniz dosyayı nasıl doğrularsınız, ve bu doğrulamanın sınırı |
 | [THIRD-PARTY.md](THIRD-PARTY.md) | Pakete giren üçüncü parti bileşenler, lisansları ve kaynakları |
 | [LICENSE](LICENSE) | GNU GPL v3 metni |
 
@@ -194,8 +195,19 @@ Yani kodu alıp kapalı kaynak bir ürüne çevirmek ya da yazarını değiştir
 lisans ihlalidir.
 
 Henüz herkese açık bir sürüm yok. Bir sürüm dağıtıldığında dosyaların
-SHA-256 özetleri bu depoda yayınlanacak; elinizdeki dosyanın özeti orada
-yazanla aynı değilse, o dosya bizim dağıttığımız dosya değildir.
+SHA-256 özetleri bu depoda yayınlanacak ve o liste **imzalanacak**; elinizdeki
+dosyanın özeti orada yazanla aynı değilse, o dosya bizim dağıttığımız dosya
+değildir.
+
+İmza anahtarının parmak izi:
+
+```
+23DC 905B 569A 80BD D243  525B 80DA 0356 E47B B37C
+```
+
+Nasıl doğrulanacağı ve bu doğrulamanın **sınırı**:
+[VERIFYING.md](VERIFYING.md). Derleme ayrıca yeniden üretilebilir, yani
+isterseniz özete güvenmek yerine kaynaktan derleyip karşılaştırabilirsiniz.
 
 ---
 

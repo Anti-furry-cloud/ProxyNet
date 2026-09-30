@@ -175,6 +175,7 @@ English. Where the two disagree, **the Turkish one is correct.**
 | [apps/proxynull/README.en.md](apps/proxynull/README.en.md) | ProxyNull's limits: what it must do, what it refuses, why it is separate from ProxyChat |
 | [apps/proxynull/PROTOCOL.en.md](apps/proxynull/PROTOCOL.en.md) | ProxyNull's protocol design — the rendezvous code, the Noise handshake, the verification code, padding; decided and undecided items marked apart |
 | [listening/](listening/LISTENING.md) | A blind listening test: how simulated network interruptions sound in speech |
+| [VERIFYING.en.md](VERIFYING.en.md) | How to verify what you downloaded, and the limit of that check |
 | [THIRD-PARTY.en.md](THIRD-PARTY.en.md) | Third-party components in the package, their licences and where they come from |
 | [LICENSE](LICENSE) | The GNU GPL v3 text |
 
@@ -204,9 +205,19 @@ So taking the code into a closed-source product, or changing whose work it
 is, is a licence violation.
 
 There is no public release yet. When one is distributed, the SHA-256
-checksums of the files will be published in this repository; if the checksum
-of your file does not match the one listed there, that file is not the one
-we distributed.
+checksums of the files will be published in this repository and that list will
+be **signed**; if the checksum of your file does not match the one listed
+there, that file is not the one we distributed.
+
+The signing key's fingerprint:
+
+```
+23DC 905B 569A 80BD D243  525B 80DA 0356 E47B B37C
+```
+
+How to check it, and the **limit** of that check:
+[VERIFYING.en.md](VERIFYING.en.md). The build is also reproducible, so instead
+of trusting the checksum you can rebuild from source and compare.
 
 ---
 

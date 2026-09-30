@@ -493,6 +493,12 @@ büyük: `pip install --require-hashes` ile kurulum, PyPI'daki bir dosya
 sonradan değiştirilmişse **reddeder**. Ses kodeğinin kaynağı da 1.12.3'te
 kapanmıştı (THIRD-PARTY.md).
 
+Özet listesi ayrıca **imzalanıyor.** İmza güveni depodan anahtara taşıyor:
+depoyu ele geçiren biri listeyi değiştirse bile imzayı üretemez. Anahtar
+ed25519, parmak izi `23DC 905B 569A 80BD D243  525B 80DA 0356 E47B B37C`;
+doğrulama adımları ve bu doğrulamanın sınırı [VERIFYING.md](VERIFYING.md)
+içinde yazılı — özellikle **ilk indirmede** imzanın koruyamadığı durum.
+
 Her derleme bir **künye** üretiyor (`tools/derleme_kunyesi.py`): commit,
 çalışma ağacının temiz olup olmadığı, araç zinciri sürümleri, kilitli
 paketlerin özetleri, libopus'un özeti ve çıktıların özetleri. Künyenin içinde
