@@ -454,17 +454,64 @@ Argon2id denemeyi pahalı yapar, imkânsız yapmaz. Tuz oda adından geldiği i�
 aynı oda adı ve parola her yerde aynı anahtarı verir; zayıf bir parola hâlâ
 çevrimdışı kırılabilir (bkz. 3. bölüm, 5.1).
 
-### 5.9 Dağıtım zinciri korumasız
+### 5.9 Dağıtım zinciri — yeniden üretilebilirlik kapandı (1.12.4), imza kapanmadı
 
-Dağıtılan `.exe` imzasızdır ve bulut linkiyle paylaşılır. Rakip, kullanıcıya
-değiştirilmiş bir binary ulaştırabilir. Yeniden üretilebilir derleme ve imzalama
-yoktur.
+Dağıtılan `.exe` **imzasızdır** ve bir linkle paylaşılır. Rakip, kullanıcıya
+değiştirilmiş bir binary ulaştırabilir.
 
-Bir adim atildi (2026-09-25): dagitilan dosyalarin SHA-256 ozetleri
-yayinlaniyor (`tools/surum_ozetleri.py` uretiyor). Indiren kisi kendi
-dosyasinin ozetini karsilastirabilir. Bu, imzalamanin yerini TUTMAZ:
-dagitim linkini ele geciren biri ozet listesini de degistirebilirse
-dogrulama coker. Asil cozum yeniden uretilebilir ve imzali derleme.
+Bu iki ayrı problem ve bedelleri çok farklı, o yüzden 8. bölümde de ayrı
+duruyorlar (8-A, 8-B).
+
+**A — "elimdeki dosya sizin derlediğiniz mi?" (kapandı)**
+
+2026-09-25'te ilk adım atılmıştı: dağıtılan dosyaların SHA-256 özetleri
+yayınlanıyor (`tools/surum_ozetleri.py`). Ama bir özet tek başına yalnızca
+"bu dosya bozulmamış" der; "bu dosya söylediğiniz kaynaktan çıkmış"
+demez — ve dağıtım linkini ele geçiren biri özet listesini de
+değiştirebilirse doğrulama çöker.
+
+1.12.4'ten itibaren derleme **bit bit yeniden üretilebilir.** Ölçüldü
+(2026-09-29): öncesinde aynı kaynaktan yapılan üç derleme üç farklı özet
+veriyordu. Fark dört bölgedeydi ve biri 13,8 MB'lıktı — çünkü zlib, arşivin
+başındaki küçük bir farkı sonuna kadar yayıyor. Kapatan şey üç ayar:
+
+| | |
+| --- | --- |
+| `SOURCE_DATE_EPOCH` | git commit zamanından türetiliyor, yani depoyu klonlayan herkes aynı değeri üretebiliyor |
+| `PYTHONHASHSEED=0` | sıralamayı etkileyen sözlük/küme düzenini sabitliyor |
+| `upx=False` | UPX'in çıktısı derlemeden derlemeye değişebiliyor (ayrıca antivirüsün klasik tetikleyicisi) |
+
+Kaynak dosyaların mtime'ını ellemek **gerekmiyor**, `SOURCE_DATE_EPOCH` tek
+başına yetiyor; bu da ölçüldü. Ve önemlisi: **farklı bir klasörden yapılan
+derleme de aynı özeti veriyor**, yani doğrulayan kişinin projeyi belirli bir
+yola koyması gerekmiyor. NSIS kurulumu zaten deterministikti.
+
+Girdiler de sabitlendi. `requirements.txt` aralık veriyordu (`PySide6>=6.6`),
+yani bir ay sonra derleyen başka bir Qt alıyordu; artık `requirements.lock`
+her paketi tam sürümü ve wheel özetiyle kilitliyor. Bunun kazancı derlemeden
+büyük: `pip install --require-hashes` ile kurulum, PyPI'daki bir dosya
+sonradan değiştirilmişse **reddeder**. Ses kodeğinin kaynağı da 1.12.3'te
+kapanmıştı (THIRD-PARTY.md).
+
+Her derleme bir **künye** üretiyor (`tools/derleme_kunyesi.py`): commit,
+çalışma ağacının temiz olup olmadığı, araç zinciri sürümleri, kilitli
+paketlerin özetleri, libopus'un özeti ve çıktıların özetleri. Künyenin içinde
+makineye özgü hiçbir şey yok; bir test bunu kilitliyor.
+
+**Künye imza değildir.** Onu da biz yazıyoruz; kötü niyetli bir dağıtıcı
+ikisini birden uydurabilir. Yaptığı şey, **iyi niyetli** bir doğrulayıcının
+aynı exe'yi yeniden üretip özetleri karşılaştırmasını mümkün kılmak. O
+karşılaştırma artık anlamlı, çünkü derleme yeniden üretilebilir.
+
+**B — "Windows uyarı vermesin" (kapanmadı)**
+
+Authenticode imzası gerekiyor. 2023'ten beri bütün kod imzalama
+sertifikaları donanım token/HSM zorunlu ve OV/EV çoğunlukla tüzel kişilik
+istiyor; üstelik imza SmartScreen uyarısını **anında kaldırmıyor**, çünkü
+SmartScreen bir itibar sistemi. Bu yüzden ertelendi (8. bölüm, 8-B).
+
+Not: SmartScreen bir güvenlik garantisi değil. A bir güvenlik problemiydi ve
+kapandı; B bir kullanılabilirlik problemi.
 
 ---
 
@@ -517,7 +564,8 @@ Karar kaydı — aynı fikirlerin tekrar gündeme gelmemesi için.
 | 5 | ~~İleri gizlilik (5.1)~~ **Yapıldı — metin 1.9.0, ses 1.10.0** | **En yüksek** | Büyük — protokol değişikliği |
 | 6 | ~~Sunucunun üye listesine güvenmeyi bırakmak (5.4-B)~~ **Yapıldı (1.9.0)** | Orta | Küçük |
 | 7 | ~~Mesaj dolgusu (5.7)~~ **Yapıldı (1.12.0)** | Orta | Orta — tel biçimi değişti |
-| 8 | **İmzalı / yeniden üretilebilir derleme (5.9)** — sıradaki iş | Orta | Orta |
+| 8-A | ~~Yeniden üretilebilir derleme + kilitli bağımlılıklar + künye (5.9)~~ **Yapıldı (1.12.4)** | Orta | Küçük — ölçüldükten sonra üç ayar |
+| 8-B | **Authenticode imzası (5.9)** — ertelendi | Kullanılabilirlik | Küçük, ama para ve tüzel kimlik işi |
 | 9 | Taşıma katmanı şifrelemesi (5.4-A) — **ertelendi** | Düşük–Orta | Büyük |
 
 **5.4-A neden en sona düştü.** Eskiden 5. sıradaydı ve "yüksek etki" yazıyordu;

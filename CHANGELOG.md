@@ -16,6 +16,22 @@ Henüz herkese açık bir sürüm dağıtılmadı.
 
 ---
 
+## 1.12.4
+
+- **Aynı kaynaktan yapılan iki derleme farklı dosyalar üretiyordu.** Yani
+  "bu exe sizin derlediğiniz mi" sorusunu kimse doğrulayamıyordu: elinde
+  kaynak olan biri bile aynı çıktıyı elde edemiyordu. Artık derleme **bit bit
+  yeniden üretilebilir** — üç ayar yetti, ve farklı bir klasörden derleyen
+  bile aynı özeti alıyor.
+- **Bağımlılıklar aralık olarak yazılıydı** (`PySide6>=6.6`), yani bir ay
+  sonra derleyen başka bir Qt alıyordu. `requirements.lock` her paketi tam
+  sürümü ve wheel özetiyle kilitliyor. Asıl kazanç derlemeden büyük: kurulum
+  artık PyPI'daki bir dosya sonradan değiştirilmişse **reddediyor**.
+- Her derleme bir **künye** üretiyor: hangi commit, çalışma ağacı temiz
+  miydi, hangi araç sürümleri, hangi paket özetleri, hangi çıktılar. Künye
+  imza değil — işi, yeniden üretmek isteyen birinin karşılaştırma
+  yapabilmesi.
+
 ## 1.12.3
 
 - **Ses kodeği başka bir projenin derlediği ikiliydi.** `libopus.dll`, PyAV

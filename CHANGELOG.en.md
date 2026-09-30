@@ -17,6 +17,23 @@ No public release has been distributed yet.
 
 ---
 
+## 1.12.4
+
+- **Two builds from the same source produced different files.** So nobody
+  could verify "is this the executable you built?" — even someone holding the
+  source could not reproduce the output. The build is now **reproducible bit
+  for bit**; three settings were enough, and a build from a different
+  directory produces the same checksum.
+- **Dependencies were written as ranges** (`PySide6>=6.6`), so anyone
+  building a month later got a different Qt. `requirements.lock` pins every
+  package to an exact version and wheel hash. The gain is larger than the
+  build itself: an install now **refuses** a file on PyPI that has been
+  changed since.
+- Every build produces a **manifest**: which commit, whether the working tree
+  was clean, which tool versions, which package hashes, which outputs. The
+  manifest is not a signature — its job is to let someone who wants to
+  reproduce the build compare the result.
+
 ## 1.12.3
 
 - **The audio codec was a binary built by another project.** `libopus.dll` had

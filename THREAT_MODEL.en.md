@@ -473,18 +473,66 @@ salt comes from the room name, the same room name and password yield the same
 key everywhere; a weak password can still be cracked offline (see section 3,
 5.1).
 
-### 5.9 The distribution chain is unprotected
+### 5.9 The distribution chain — reproducibility closed (1.12.4), signing not
 
-The distributed `.exe` is unsigned and shared via a cloud link. An adversary
-could deliver a modified binary to a user. There are no reproducible builds and
-no signing.
+The distributed `.exe` is **unsigned** and shared via a link. An adversary
+could deliver a modified binary to a user.
 
-One step was taken (2026-09-25): the SHA-256 checksums of the distributed
-files are published (`tools/surum_ozetleri.py` produces them). Whoever
-downloads can compare the checksum of their file. This does NOT replace
-signing: if someone who takes over the distribution link can also change the
-checksum list, the check collapses. The real fix is a reproducible, signed
-build.
+These are two separate problems with very different costs, which is why
+section 8 now lists them apart (8-A, 8-B).
+
+**A — "is the file I have the one you built?" (closed)**
+
+A first step was taken on 2026-09-25: the SHA-256 checksums of the
+distributed files are published (`tools/surum_ozetleri.py`). But a checksum
+on its own only says "this file is not corrupted"; it does not say "this file
+came from the source you named" — and if whoever takes over the distribution
+link can also change the checksum list, the check collapses.
+
+Since 1.12.4 the build is **reproducible bit for bit.** This was measured
+(2026-09-29): before it, three builds from identical source gave three
+different checksums. They differed in four regions, one of them 13.8 MB,
+because zlib amplifies a small difference at the head of the archive all the
+way to the end. Three settings close it:
+
+| | |
+| --- | --- |
+| `SOURCE_DATE_EPOCH` | derived from the git commit time, so anyone who clones the repository can produce the same value |
+| `PYTHONHASHSEED=0` | pins the dict/set ordering that affects output order |
+| `upx=False` | UPX's output can vary between builds (and it is a classic antivirus trigger) |
+
+Touching the source files' mtimes is **not** needed; `SOURCE_DATE_EPOCH`
+alone suffices, which was also measured. More importantly, **a build from a
+completely different directory produces the same checksum**, so a verifier
+does not have to place the project at some particular path. The NSIS
+installer was already deterministic.
+
+The inputs are pinned too. `requirements.txt` gave ranges (`PySide6>=6.6`),
+so someone building a month later got a different Qt; `requirements.lock` now
+pins every package to an exact version and wheel hash. The gain there is
+larger than the build itself: with `pip install --require-hashes`, an install
+**refuses** a file on PyPI that has been changed since. The audio codec's
+provenance was closed in 1.12.3 (THIRD-PARTY.en.md).
+
+Every build produces a **manifest** (`tools/derleme_kunyesi.py`): the commit,
+whether the working tree was clean, toolchain versions, the locked packages'
+hashes, libopus's hash and the outputs' hashes. Nothing machine-specific goes
+into it; a test locks that.
+
+**The manifest is not a signature.** We write it too, and a malicious
+distributor could fake both. What it does is let an **honest** verifier
+rebuild the same executable and compare checksums. That comparison is
+meaningful now, because the build is reproducible.
+
+**B — "make Windows stop warning" (not closed)**
+
+That needs Authenticode. Since 2023 every code-signing certificate requires a
+hardware token or HSM, and OV/EV usually wants a legal entity; on top of that
+a signature does **not** remove the SmartScreen warning immediately, because
+SmartScreen is a reputation system. So it is deferred (section 8, 8-B).
+
+Note that SmartScreen is not a security guarantee. A was a security problem
+and is closed; B is a usability problem.
 
 ---
 
@@ -538,7 +586,8 @@ A decision record, so the same ideas are not re-litigated.
 | 5 | ~~Forward secrecy (5.1)~~ **Done — text 1.9.0, voice 1.10.0** | **Highest** | Large — a protocol change |
 | 6 | ~~Stop trusting the server's user list (5.4-B)~~ **Done (1.9.0)** | Medium | Small |
 | 7 | ~~Message padding (5.7)~~ **Done (1.12.0)** | Medium | Medium — wire format changed |
-| 8 | **Signed / reproducible builds (5.9)** — the next job | Medium | Medium |
+| 8-A | ~~Reproducible builds + locked dependencies + build manifest (5.9)~~ **Done (1.12.4)** | Medium | Small — three settings, once measured |
+| 8-B | **Authenticode signing (5.9)** — deferred | Usability | Small, but a money and legal-identity job |
 | 9 | Transport-layer encryption (5.4-A) — **deferred** | Low–Medium | Large |
 
 **Why 5.4-A dropped to the bottom.** It used to be 5th and marked "high
