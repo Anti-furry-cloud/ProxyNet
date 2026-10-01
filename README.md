@@ -94,15 +94,36 @@ closed: **[THREAT_MODEL.en.md](THREAT_MODEL.en.md)**
 
 ### What is next
 
-**The next job is signed and reproducible builds.** The distributed program is
-unsigned; whoever downloads it has no way to verify that what they hold is what
-we built. The order and the reasoning are in section 8 of
-[THREAT_MODEL.en.md](THREAT_MODEL.en.md).
+**The next job is not code but a trial: voice chat has never been tried
+between two separate computers.** So far the only thing anyone has listened to
+is two copies on one machine. The whole path is covered by tests — three
+voices mixing, a wrong password failing to decrypt, audio without a hello not
+being relayed — but a test does not stand in for real microphones on a real
+line.
 
-The other thing still pending is the **live-use test**: offering voice chat as a
-default depends on it, and that test has not started.
+After that, the **live-use test**. Offering voice chat as a default depends on
+it. It has not started, for a concrete reason: sessions only count once the
+product itself writes the record file, and today only the voice prototype
+writes one. The rule was written that way so that "does this work?" attempts
+do not go on record as bad results.
+
+The two items left in the list in section 8 of
+[THREAT_MODEL.en.md](THREAT_MODEL.en.md) are **deferred on purpose**, with the
+reasoning written there: Authenticode signing (8-B) and transport-layer
+encryption (9).
 
 #### Recently closed
+
+**Reproducible builds and the supply chain** (1.12.3–1.12.4). Two builds from
+the same source produced different files, so a published checksum could say
+"this file is not corrupted" but not "this file came from the source you
+named". The build is now reproducible bit for bit, and someone building from a
+different directory gets the same result. Dependencies are no longer ranges but
+exact versions pinned to wheel hashes — an install now refuses a package that
+has been changed. The audio codec used to be a binary built by another project
+and is now compiled from the source archive Xiph publishes. The checksum list
+is signed; how to check it, and **the limit of that check**, are in
+[VERIFYING.en.md](VERIFYING.en.md).
 
 **Message padding** (1.12.0). The length of the ciphertext gave away the length
 of the plaintext exactly: the server could not read the content, but it could

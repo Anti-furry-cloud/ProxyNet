@@ -90,15 +90,34 @@ Hepsinin ayrıntısı, neden böyle olduğu ve kapatılma sırası burada:
 
 ### Sırada ne var
 
-**Sıradaki iş: imzalı ve yeniden üretilebilir derleme.** Dağıtılan program
-imzasız; indiren kişinin elindekinin bizim derlediğimiz şey olduğunu
-doğrulamasının bir yolu yok. Sırası ve gerekçesi
-[THREAT_MODEL.md](THREAT_MODEL.md) 8. bölümde.
+**Sıradaki iş kod değil, deneme: sesli sohbet iki ayrı bilgisayar arasında
+hiç denenmedi.** Bugüne kadar kulakla dinlenen tek şey aynı makinedeki iki
+kopya oldu. Bütün yol testlerle doğrulanmış durumda — üç kişinin sesinin
+karışması, yanlış parolanın çözememesi, merhabasız sesin iletilmemesi dahil —
+ama test, gerçek mikrofonların ve gerçek bir hattın yerini tutmaz.
 
-Bekleyen diğer şey **canlı kullanım testi**: sesli sohbetin varsayılan olarak
-sunulması ona bağlı ve o test henüz başlamadı.
+Sonra **canlı kullanım testi**. Sesli sohbetin varsayılan olarak sunulması ona
+bağlı. Test henüz başlamadı ve bunun somut bir sebebi var: oturumlar, ürünün
+kendi kayıt dosyasını yazmaya başlamasından sonra sayılıyor, o dosyayı şu an
+yalnızca ses prototipi yazıyor. Kural böyle yazıldı ki "çalışıyor mu" diye
+yapılan denemeler kötü sonuç olarak kayda geçmesin.
+
+[THREAT_MODEL.md](THREAT_MODEL.md) 8. bölümdeki listede kalan iki madde
+**bilerek ertelendi**, gerekçeleri orada yazılı: Authenticode imzası (8-B) ve
+taşıma katmanı şifrelemesi (9).
 
 #### Son kapananlar
+
+**Yeniden üretilebilir derleme ve tedarik zinciri** (1.12.3–1.12.4). Aynı
+kaynaktan yapılan iki derleme farklı dosyalar üretiyordu; yani yayınlanan bir
+özet "bu dosya bozulmamış" diyebiliyor ama "bu dosya söylediğiniz kaynaktan
+çıkmış" diyemiyordu. Artık derleme bit bit yeniden üretilebilir ve farklı bir
+klasörden derleyen bile aynı sonucu alıyor. Bağımlılıklar aralık değil, tam
+sürüm ve wheel özetiyle kilitli — kurulum artık değiştirilmiş bir paketi
+reddediyor. Ses kodeği başka bir projenin derlediği ikiliydi, şimdi Xiph'in
+yayımladığı kaynaktan derleniyor. Özet listesi imzalanıyor; nasıl
+doğrulanacağı ve **bu doğrulamanın sınırı** [VERIFYING.md](VERIFYING.md)
+içinde.
 
 **Mesaj dolgusu** (1.12.0). Şifreli metnin uzunluğu düz metnin uzunluğunu
 birebir ele veriyordu: sunucu içeriği okuyamıyor ama "bu üç karakterlik bir
