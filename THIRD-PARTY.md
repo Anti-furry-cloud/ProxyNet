@@ -41,7 +41,7 @@ doğrulanmamıştı. Artık Xiph'in yayımladığı kaynak arşivinden derleniyo
 | Yapılandırma | CMake 4.4.3, `Visual Studio 18 2026` üreteci |
 | Seçenekler | `BUILD_SHARED_LIBS=ON`, `OPUS_BUILD_SHARED_LIBRARY=ON`, `OPUS_STATIC_RUNTIME=ON`, `OPUS_BUILD_TESTING=OFF`, `OPUS_BUILD_PROGRAMS=OFF` |
 
-Arşivin özeti **2026-09-18'de** `docs/sesli-sohbet-plani.md` içine yazılmıştı;
+Arşivin özeti **2026-09-18'de** `VOICE_CHAT_PLAN.md` içine yazılmıştı;
 indirilen dosya o değere karşı doğrulandı, yani bugün üretilmiş bir değere
 değil, aylar önce kayda geçmiş bir değere karşı.
 

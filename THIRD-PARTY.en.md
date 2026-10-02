@@ -43,7 +43,7 @@ publishes:
 | Configuration | CMake 4.4.3, `Visual Studio 18 2026` generator |
 | Options | `BUILD_SHARED_LIBS=ON`, `OPUS_BUILD_SHARED_LIBRARY=ON`, `OPUS_STATIC_RUNTIME=ON`, `OPUS_BUILD_TESTING=OFF`, `OPUS_BUILD_PROGRAMS=OFF` |
 
-The archive's checksum was written into `docs/sesli-sohbet-plani.en.md` on
+The archive's checksum was written into `VOICE_CHAT_PLAN.en.md` on
 **2026-09-18**; the downloaded file was verified against that value, so
 against something recorded months ago rather than something produced today.
 
