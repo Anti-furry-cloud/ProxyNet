@@ -16,6 +16,49 @@ Henüz herkese açık bir sürüm dağıtılmadı.
 
 ---
 
+## 1.12.6
+
+- **Gizlilik: seçilen ses cihazı açılamayınca mikrofonun susturması
+  kayboluyordu.** Görüşmede susturulmuşken istenen biçimi desteklemeyen bir
+  cihaz seçilirse program önceki cihaza dönüyordu — ama susturulmamış olarak.
+  Mikrofon açık gidiyor, "Mikrofonu sustur" kutusu ise işaretli kalıyordu.
+  1.12.5'te vardı.
+- Aynı durumda gösterilen mesaj "sesli sohbet açılamadı" diyordu, oysa görüşme
+  önceki cihazla **sürüyordu**. Mesaj artık bunu söylüyor.
+- **Görüşme sırasında kulaklık çıkarılınca ses o cihazda kalıyordu.** Liste
+  tazeleniyor ama görüşme sessizce sağır ve dilsiz oluyordu. Artık sistem
+  varsayılanına geçiliyor; seçili kulaklık geri takılınca ona dönülüyor.
+  Susturma korunuyor.
+- **Çift tıkladıktan sonra birkaç saniye ekranda hiçbir şey yoktu.** Açılış
+  ekranı programın bütün parçaları yüklendikten sonra gösteriliyordu, ve
+  üstüne iki saniye daha ayrıca bekleniyordu. Artık önce açılış ekranı
+  geliyor, ağır parçalar onun arkasında yükleniyor ve iki saniye "en az
+  görünme süresi" sayılıyor.
+- Ses cihazı listesi programın açılışında okunuyor ve açılışı uzatıyordu —
+  satır zaten kapalı dururken. Artık satır açılınca ya da sese katılınca
+  okunuyor. Bu yüzden seçili cihazların adı satırın ipucunda, liste bir kez
+  okunduktan sonra görünüyor.
+- Sunucunun eski sürüm istemcilere gönderdiği hata metinleri karışıktı:
+  altısı Türkçe, biri İngilizce. Hepsi İngilizce oldu. Güncel istemciler bu
+  metni göstermiyor, hatayı kendi dillerinde yazıyor.
+
+## 1.12.5
+
+- **Mikrofon ve hoparlör seçilemiyordu.** Ses her zaman Windows'un varsayılan
+  cihazından açılıyordu. Yanlış mikrofonu kullanan biri bunu ancak Windows ses
+  ayarlarından değiştirebiliyordu — ve değişiklik, sesten ayrılıp yeniden
+  katılmadan uygulanmıyordu, çünkü cihaz yalnızca katılırken okunuyordu.
+  Artık sesli sohbet panelinde iki liste var; bir kerelik ayar olduğu için
+  kapalı bir **Ses cihazları** satırının arkasında duruyorlar ve seçili
+  cihazlar satırın üzerine gelince görünüyor.
+- Seçim saklanıyor; ama yalnızca cihazın **kimliği**, adı değil: Bluetooth
+  cihaz adlarında kişi adı bulunabiliyor.
+- Kulaklık çıkarılınca sistem varsayılanına düşülüyor, ama seçim
+  **silinmiyor**: geri takılınca yine o kullanılıyor.
+- Görüşme sırasında cihaz değiştirmek görüşmeyi kesmiyor; yalnızca ses kartı
+  yeniden açılıyor, şifreleme ve bağlantı olduğu gibi kalıyor. Yeni cihaz
+  açılamazsa görüşme düşmüyor, eskisine dönülüyor.
+
 ## 1.12.4
 
 - **Aynı kaynaktan yapılan iki derleme farklı dosyalar üretiyordu.** Yani

@@ -17,6 +17,51 @@ No public release has been distributed yet.
 
 ---
 
+## 1.12.6
+
+- **Privacy: when the chosen audio device could not be opened, the
+  microphone's mute was lost.** If, while muted in a call, a device that does
+  not support the required format was chosen, the program went back to the
+  previous device — but unmuted. The microphone was live while the "Mute
+  microphone" box stayed checked. It was present in 1.12.5.
+- In the same situation the message said "voice chat could not be opened",
+  while the call was in fact **continuing** on the previous device. The
+  message now says so.
+- **Unplugging the headset during a call left the audio on that device.** The
+  list refreshed, but the call silently went deaf and mute. It now switches to
+  the system default, and goes back to the chosen headset when it is plugged
+  in again. Mute is preserved.
+- **After a double-click there was nothing on screen for a few seconds.** The
+  splash screen was shown only after every part of the program had loaded, and
+  then two further seconds were waited on top. The splash now comes first, the
+  heavy parts load behind it, and the two seconds count as a minimum visible
+  time.
+- The audio device list was read at program start and lengthened it — while
+  the row sat closed anyway. It is now read when the row is opened or voice is
+  joined, so the chosen devices appear in the row's tooltip once the list has
+  been read.
+- The error messages the server sends to older clients were mixed: six in
+  Turkish, one in English. All are English now. Current clients do not show
+  this text; they write the error in their own language.
+
+## 1.12.5
+
+- **The microphone and speaker could not be chosen.** Audio always opened on
+  Windows' default device. Someone using the wrong microphone could change it
+  only in the Windows sound settings — and the change did not take effect
+  without leaving voice and joining again, because the device was read only
+  on joining. The voice chat panel now has two lists; since it is a one-time
+  setting they sit behind a closed **Audio devices** row, and hovering over the
+  row shows the devices in use.
+- The choice is remembered, but only the device's **id**, not its name:
+  Bluetooth device names can contain a person's name.
+- When a headset is unplugged it falls back to the system default, but the
+  choice is **not erased**: plug it back in and it is used again.
+- Switching devices during a call does not drop the call; only the sound card
+  is reopened, while the encryption and the connection stay as they are. If
+  the new device cannot be opened, the call does not drop and it goes back to
+  the previous one.
+
 ## 1.12.4
 
 - **Two builds from the same source produced different files.** So nobody
