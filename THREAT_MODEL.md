@@ -305,7 +305,7 @@ kullanıcı adı, o kişinin geçici açık anahtarına bağlı: bir isim yanın
 "doğrulandı" görünüyorsa o kişi paroladan türetilmiş geçerli bir imza üretmiş
 **ve** o imzadaki açık anahtara karşılık gelen gizli anahtarı elinde tuttuğunu
 göstermiştir (sarılı gönderen anahtarını açılabilir halde göndererek). Sunucunun
-uydurduğu ya da ağa enjekte edilen bir isim bunu yapamaz ve arayüzde
+uydurduğu ya da ağa enjekte edilen bir isim bunu yapamaz ve
 arayüzde **adıyla hiç görünmez.** Kanıt sunucudan değil anahtar takasından geliyor;
 yani sunucu artık kimin odada olduğu konusunda **son söz sahibi değil.**
 Doğrulanmayanlar kullanıcı listesinde tek tek yazılmıyor, tek bir sayaç
@@ -319,10 +319,10 @@ yapılıyor.
 
 Kod: `core/client.py` → `verified_users`, `core/room_session.py` →
 `keyed_peers`, `apps/proxychat/ui.py` → `unverified_label`. Testler:
-`tests/test_verified_users.py`. Testlerin yaninda
-**elle de denendi** (2026-09-27, iki pencere): ayni parolali eslerde isaret
-cikmiyor, farkli/eksik parolali es listede adiyla gorunmuyor (sayac satirina
-dusuyor) ve cozulemeyen mesaj beklemeden yer tutucuyla geliyor.
+`tests/test_verified_users.py`. Testlerin yanında
+**elle de denendi** (2026-09-27, iki pencere): aynı parolalı eşlerde işaret
+çıkmıyor, farklı/eksik parolalı eş listede adıyla görünmüyor (sayaç satırına
+düşüyor) ve çözülemeyen mesaj beklemeden yer tutucuyla geliyor.
 
 Kalan sınır: sunucu hâlâ paket düşürebilir ve sahte bir `room_snapshot` ile
 istemcileri anahtarlarını bırakmaya zorlayabilir. Bu bir hizmet engellemedir,

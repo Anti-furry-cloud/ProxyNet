@@ -320,7 +320,7 @@ server.** A username is now bound to that person's ephemeral public key: if a
 name shows as verified, that person produced a valid signature derived from the
 password **and** demonstrated they hold the private key matching the public key
 in it (by sending their wrapped sender key in a form that opens). A name the
-server invents, or one injected into the network, cannot do that and appears as
+server invents, or one injected into the network, cannot do that and does
 not appear **by name at all** in the interface. The proof comes from the key exchange, not from the
 server — the server no longer has **the last word** on who is in the room.
 Unverified people are not listed one by one; they collapse into a single
