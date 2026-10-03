@@ -44,7 +44,7 @@ its principles is rejected, however useful it may be.
 | T1 | A curious person on the same local network | Can connect to the port, can sniff traffic | **Partial** — cannot read content but can join the room |
 | T2 | The person running the server (host) | Sees everything passing through the server | **Good** — never sees plaintext |
 | T3 | Passive on-path observer (ISP, VPN provider) | Records traffic | **Partial** — content safe, metadata exposed |
-| T4 | Active network attacker | Injects, drops, alters packets | **Weak** — messages cannot be forged, but envelope packets (errors, user lists) can be |
+| T4 | Active network attacker | Injects, drops, alters packets | **Weak** — message content cannot be forged and, since 1.12.7, a message cannot be relabelled as another member's; envelope packets (errors, user lists) can be forged |
 | T5 | State-level adversary | Stores traffic for years, seizes devices, applies legal compulsion | **Not met** — forward secrecy is in place (text 1.9.0, voice 1.10.0) but metadata and the transport are still exposed |
 
 **T5 is the reason this document exists, and it is not currently met.** We
@@ -71,7 +71,10 @@ These threats cannot be solved by ProxyNet and must not be pretended otherwise:
   this is the default. The one narrow area we could close is the copied room
   password, which is kept out of the clipboard history, the cloud clipboard and
   clipboard monitors (`apps/proxychat/ui.py`). That was for one field, not a
-  general guarantee.
+  general guarantee. The same reasoning covers notifications (1.12.7): Windows
+  keeps them in the Notification Center's database on disk and can show them on
+  the lock screen, so a notification from an encrypted room says only who
+  wrote, never what (`apps/proxychat/ui.py` → `_on_attention_requested`).
 - **The channel used to share the room password.** If you send the password
   over WhatsApp, the chain breaks there. It should be shared face to face or
   through a separate secure channel.
@@ -104,6 +107,12 @@ All of these are tested (`tests/test_crypto.py`, `tests/test_hardening.py`):
   chain risk are small.
 - Limits against resource exhaustion: 64 KiB per packet, 8 KiB per message,
   20 messages per 10 seconds, at most 50 clients, 120-second idle timeout.
+- **Text other people choose is never drawn as HTML** (1.12.7). Qt draws a
+  label that looks like HTML as rich text and loads the file an `<img>` tag
+  names; on Windows a path such as `\\host\share` makes the program open an
+  SMB connection to that host, which gives away its IP and an NTLM hash. Room
+  names and device names reach the screen as plain text —
+  `tests/test_zengin_metin.py`.
 
 Gaps from section 5 that have been closed (the detail and the remaining
 limits stay there):
@@ -127,6 +136,9 @@ limits stay there):
   `tests/test_voice_opus.py` → `SabitBitHiziTests`.
 - **The event log does not record message length** (5.3, 1.5.0) —
   `tests/test_logging_and_scroll.py`.
+- **The name on a message has to belong to the key that opened it, and a
+  replayed message is not shown twice** (5.4-B, 1.12.7) —
+  `tests/test_mesaj_kokeni.py`.
 
 ---
 
@@ -339,6 +351,28 @@ password carry no marker, a peer with a different or missing password shows as
 unverified (they fall into the counter row instead of being named), and an
 undecryptable message arrives as a placeholder without any wait.
 
+**The name on each message is bound too (1.12.7).** The verified list said who
+is in the room, but each message still carried the envelope's name, which the
+server writes and which travels in the clear: on the path, Ayse's message
+could be relabelled as Veli's. The key alone is no answer either — every
+member receives every other member's sender key, so any of them can encrypt
+under Veli's. A message is now shown as its sender's only when **both** agree:
+the envelope's name, and the holder of the key that opened it. Otherwise its
+content is withheld and the reason is shown. A key that is already held by
+someone else is refused, so a member cannot announce another member's key as
+their own. And a recorded message sent again no longer appears twice:
+AES-GCM opens it again without complaint, so the client remembers what it has
+shown. Code: `core/client.py` → `_check_origin`, `core/room_session.py` →
+`key_owner`, `first_sight`. Tests: `tests/test_mesaj_kokeni.py`.
+
+What this does not close: sender keys carry no signature. A member who can
+**also** inject packets onto the path (the transport is unencrypted, 5.4-A)
+can write under another member's key and put that member's name on the
+envelope; and the server, which labels the key announcements too, can swap the
+names of two verified people consistently. Signal closes this with a signing
+key per sender. It is a protocol change, so it waits for a scheme bump rather
+than being slipped in.
+
 Remaining limit: the server can still drop packets, and a forged
 `room_snapshot` can push clients into dropping their keys. That is denial of
 service, not a leak, and it heals itself: the same packet also triggers a fresh
@@ -350,6 +384,14 @@ There is no authentication on the server; anyone who can reach the port joins a
 room and sees the user list and the rhythm of the traffic. This is a deliberate
 decision (see section 7) but **must be re-evaluated** if the server is moved to
 a publicly reachable address.
+
+What open entry made possible until 1.12.7 is worth writing down: anyone in the
+room, without the password, could close another client's connection with one
+made-up key packet addressed to that client's public key. The client raised an
+exception it did not catch (`UnknownSenderKey`), and the listen loop ended.
+Every packet a stranger can send has to be treated as hostile; the test that
+reproduces the attack through a real server is
+`tests/test_anahtar_paketleri.py` → `GercekBaglantiTests`.
 
 ### 5.6 The server listened on all network interfaces — closed (1.6.2)
 
@@ -578,7 +620,7 @@ A decision record, so the same ideas are not re-litigated.
 | Relaying voice through the server (SFU, without decrypting) | **Accepted (2026-09-16)** | Relay from the start; the "only for rooms larger than 4 people" condition was dropped. The alternative, mesh, would have handed every participant's IP to everyone in the room (Principle 3); with a relay the host keeps seeing the IPs it already sees. Content stays encrypted, so Principle 1 is not violated. The relay's own unsolved problems (sender id assignment, authentication towards the host) are in section 9 of the voice chat plan |
 | Writing our own virtual network (a Hamachi of our own) | **Rejected (2026-09-29)** | Hamachi is three separate things: a virtual network adapter, a mediation server that introduces peers to each other, and a relay for when hole punching fails. The adapter is no longer the real obstacle — Wintun (from the WireGuard project) is signed by Microsoft, so there is no kernel driver to write and no EV certificate to buy; in exchange, installing an adapter needs administrator rights and the "download and run" experience is gone. The real cost is the **mediation server**: a single point with a stable address that sees who meets whom and when, that can be taken down, and that wants money and maintenance forever. That runs straight into Principle 3, and it is exactly what 9.1 calls the easiest thing to block — so work done to improve censorship resistance would consist of building the thing that makes blocking easy. On top of that, what is needed is not a general-purpose virtual LAN but two ProxyChat instances reaching each other; an adapter would mean routing our own UDP through a virtual network card and back into our own process. **In-app NAT traversal was chosen instead:** a Tor onion service or a short code passed by hand for rendezvous (neither is a server we run), and hole punching for voice; the VPN stops being the default and becomes the fallback. This cannot be done on its own: because the server would move to a public address, room-entry authentication has to come with it (5.5). The first step is to measure the NAT type before writing anything |
 | A separate CLI program that only carries voice | **Deferred** | A suggestion from outside (2026-09-17): a separate program that runs from the command line like the prototype and carries nothing but audio; easy to understand and use, with a small attack surface (no Qt interface, room list, history or notifications). For: the prototype already works this way and worked well; it also fits ProxyNull's "fewer features is security" principle. Against: the password and the other side's address still have to be shared outside the program, two programs mean two maintenance burdens, and being in the same room as the text chat is lost. To be decided after Phase 1b, once real use has been seen |
-| Linux support | **Deferred (2026-09-29)** | ProxyChat runs only on Windows 10/11 and will stay that way for a while. This is not an omission but a consequence of splitting the project in two: ProxyChat's audience is "a group of 2–5 friends" and that audience is overwhelmingly on Windows, while platform-independent use where encryption is the priority is ProxyNull's job — and ProxyNull was planned as platform-neutral from the start (`apps/proxynull/README.en.md`). **Revisit condition:** once the live-use test has passed and the program has been distributed publicly, if people who want to run it on Linux ask for it in writing. The condition is written now so there is no argument about it later. **Three things to decide if it is ported:** (1) `SO_EXCLUSIVEADDRUSE` does not exist on Linux, but a second bind already fails there unless `SO_REUSEADDR` is set — 5.6's guarantee largely holds by a different route, and a paragraph is enough. (2) Storing the password with DPAPI will not work; either it is not offered on that platform at all (more consistent with the threat model) or it is wired to libsecret. (3) **The critical one:** the `x-qt-windows-mime` types that keep the copied password out of the clipboard history, the cloud clipboard and clipboard monitors are silently ignored on Linux, so the password lands in the clipboard manager's history. On that platform "copy the password" must either be disabled or carry a warning; if this is forgotten, the Linux build is **less safe** than the Windows one and nobody notices. Waiting costs nothing and the job gets cheaper: `libopus` becomes the distribution's own signed package, and reproducible builds (5.9) are easier on Linux. Meanwhile the core is held platform-neutral by a test: if a Windows-specific import, call or drive-letter path enters `core/`, `tests/test_platform_notr.py` fails and says the code belongs under `apps/proxychat/` |
+| Linux support | **Deferred (2026-09-29)** | ProxyChat runs only on Windows 10/11 and will stay that way for a while. This is not an omission but a consequence of splitting the project in two: ProxyChat's audience is "a group of 2–5 friends" and that audience is overwhelmingly on Windows, while platform-independent use where encryption is the priority is ProxyNull's job — and ProxyNull was planned as platform-neutral from the start (`apps/proxynull/README.en.md`). **Revisit condition:** once the live-use test has passed and the program has been distributed publicly, if people who want to run it on Linux ask for it in writing. The condition is written now so there is no argument about it later. **Three things to decide if it is ported:** (1) `SO_EXCLUSIVEADDRUSE` does not exist on Linux, but a second bind already fails there unless `SO_REUSEADDR` is set — 5.6's guarantee largely holds by a different route, and a paragraph is enough. (2) Storing the password with DPAPI will not work; either it is not offered on that platform at all (more consistent with the threat model) or it is wired to libsecret. (3) **The critical one:** the `x-qt-windows-mime` types that keep the copied password out of the clipboard history, the cloud clipboard and clipboard monitors are silently ignored on Linux, so the password lands in the clipboard manager's history. On that platform "copy the password" must either be disabled or carry a warning; if this is forgotten, the Linux build is **less safe** than the Windows one and nobody notices. Waiting costs nothing and the job gets cheaper: `libopus` becomes the distribution's own signed package, and reproducible builds (5.9) are easier on Linux. Meanwhile the core is held platform-neutral by a test: if a Windows-specific import, call or drive-letter path enters `core/`, `tests/test_platform_notr.py` fails and says the code belongs under `apps/proxychat/`. Two files may branch on the platform and the test names them: `core/server.py` (`SO_EXCLUSIVEADDRUSE`, point 1 above) and, since 1.12.7, `core/transport.py`, only for the layout of the `SO_LINGER` structure; both platforms are handled there and nothing is left to decide |
 
 ---
 

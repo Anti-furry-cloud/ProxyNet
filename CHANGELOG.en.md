@@ -17,6 +17,59 @@ No public release has been distributed yet.
 
 ---
 
+## 1.12.7
+
+- **When someone left voice or closed the program, everyone on the server
+  could lose audio.** Windows reports a packet sent to a closed port as an
+  error on the next receive; the Host's voice loop took that for a closed
+  socket and stopped. The leaver's port closes shortly before the server
+  removes them, so an ordinary exit could trigger it; so could doing it on
+  purpose. Audio came back only when the Host restarted. The client had the
+  same bug: if the server was briefly unreachable, the call kept sending but
+  heard nothing.
+- **A single client that joined a room and never read slowed everyone's
+  messages and made some of them get lost.** No password was needed. On every
+  broadcast the server tried to write to that client and waited a second, and
+  kept the connection open; once its buffer filled, every message was delayed
+  and some never arrived. A connection whose write times out is now closed at
+  once.
+- **Anyone in a room could drop someone else's connection with one
+  packet.** No password was needed: a made-up key packet addressed to the
+  victim's public key raised an error the victim's program did not catch, and
+  the connection closed. The program reconnected, and the attacker could send
+  the same packet again. The same code was written to hold a real peer's key
+  that arrives before their offer; that never worked either. Someone who knows
+  the password had a second way in (an invalid public key). Both are closed,
+  and the lists that hold packets from unknown peers no longer grow without
+  limit.
+- **A message could be shown as written by someone else.** The name above a
+  message is written by the server and travels in the clear; on the path,
+  Ayşe's message could be relabelled as Veli's. The content could not be
+  forged, but who wrote it could. A message whose name does not match the
+  holder of the key that opened it is now withheld, and the reason is shown.
+- **A member could announce another member's key as their own.** Everyone
+  receives everyone's key, so this was possible. A key that belongs to someone
+  else is now refused.
+- **A recorded message sent again appeared a second time.** The encryption
+  opened it again without complaint. The same message is no longer shown
+  twice.
+- **Messages from an encrypted room went into notifications in plain text.**
+  Windows keeps notifications on disk and can show them on the lock screen,
+  which contradicted "messages are not written to disk". In an encrypted room
+  a notification now says only who wrote.
+- **A room name could be read as HTML.** Other users choose the room name in
+  the title; a name carrying an image tag could make the program load a file
+  or a network address. On Windows that can send the IP and a hash of the
+  Windows login password to another server. Tooltips showing audio device names had the
+  same hole. Both are plain text now.
+- A malformed packet (a user list, history or voice token of the wrong type)
+  could leave the interface half-updated and a voice join stuck in
+  "joining". The server builds these packets and they travel unencrypted; no
+  field's type is trusted any more. The server, too, ended a connection with a
+  traceback when a packet's type arrived as a list. A run with random packets
+  became a permanent test.
+- Talks to 1.12.6; nothing changed on the wire.
+
 ## 1.12.6
 
 - **Privacy: when the chosen audio device could not be opened, the

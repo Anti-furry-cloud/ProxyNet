@@ -22,7 +22,7 @@ different promises.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | For whom | Everyday use, a group of friends | Situations where encryption is the priority |
-| Status | Working. 1.12.6 is built and tested but not yet distributed; voice chat and forward secrecy (text 1.9.0, voice 1.10.0) landed in the app | No code yet; its [limits](apps/proxynull/README.en.md) and [protocol design](apps/proxynull/PROTOCOL.en.md) are written down |
+| Status | Working. 1.12.7 is built and tested but not yet distributed; voice chat and forward secrecy (text 1.9.0, voice 1.10.0) landed in the app | No code yet; its [limits](apps/proxynull/README.en.md) and [protocol design](apps/proxynull/PROTOCOL.en.md) are written down |
 | Goal | Be usable, protect content | Meet the T5 adversary in the threat model |
 | Platform | **Windows 10/11 (64-bit)** | Platform-neutral by design (Rust, command line) |
 
@@ -113,6 +113,22 @@ reasoning written there: Authenticode signing (8-B) and transport-layer
 encryption (9).
 
 #### Recently closed
+
+**A security pass** (1.12.7). A night spent attacking the program turned up
+eleven holes; all are closed and each has a test that fails on the old code.
+The worst needed no password. When someone left voice chat, Windows could make
+the host's audio relay stop **for everyone**; one made-up packet could drop
+another person's connection; a client that joined a room and never read could
+stall everyone's messages. The name above a message was not checked against
+the key that encrypted it, so it could be relabelled on the way; it now has to
+match. A recorded message sent again no longer shows twice. A room name
+carrying an image tag could make the program open a network address on
+Windows, giving away the IP and a password hash; names are plain text now.
+And a notification from an encrypted room no longer carries the message,
+since Windows keeps notifications on disk. **What is still open** is written
+down too: sender keys carry no signature, so someone who knows the password
+and can also inject packets can still write under another member's name
+([THREAT_MODEL.en.md](THREAT_MODEL.en.md) 5.4-B).
 
 **Reproducible builds and the supply chain** (1.12.3–1.12.4). Two builds from
 the same source produced different files, so a published checksum could say

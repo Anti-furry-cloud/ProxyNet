@@ -16,6 +16,59 @@ Henüz herkese açık bir sürüm dağıtılmadı.
 
 ---
 
+## 1.12.7
+
+- **Biri sesten çıkınca ya da programı kapatınca, sunucudaki herkesin sesi
+  kesilebiliyordu.** Windows, kapalı bir porta gönderilen paketi sonraki
+  alımda hata olarak bildirir; Host'un ses döngüsü bunu "soket kapandı" sanıp
+  duruyordu. Çıkan kişinin portu, sunucu onu listeden silmeden kısa bir süre
+  önce kapandığı için bu sıradan bir çıkışla bile olabiliyordu; bilerek de
+  yapılabiliyordu. Ses ancak Host yeniden başlatılınca dönüyordu. Aynı hata
+  istemcide de vardı: sunucu bir an ulaşılamaz olunca görüşme ses
+  gönderiyor ama hiçbir şey duymuyordu.
+- **Odaya girip hiç okumayan tek bir istemci, odadaki herkesin mesajlaşmasını
+  yavaşlatıyor ve mesaj kaybettiriyordu.** Parola gerekmiyordu. Sunucu her
+  yayında o istemciye yazmaya çalışıp bir saniye bekliyordu, bağlantıyı da
+  açık tutuyordu; tamponu dolduktan sonra her mesaj gecikiyor, bir kısmı hiç
+  ulaşmıyordu. Yazması zaman aşımına düşen bir bağlantı artık hemen
+  kapatılıyor.
+- **Odadaki herkes, başka birinin bağlantısını tek bir paketle
+  koparabiliyordu.** Parola gerekmiyordu: kurbanın açık anahtarına adresli
+  uydurma bir anahtar paketi, kurbanın programında yakalanmayan bir hataya yol
+  açıyor ve bağlantıyı kapatıyordu. Program yeniden bağlanıyor, saldırgan
+  aynı paketi yeniden gönderebiliyordu. Aynı kod, gerçek bir eşin anahtarı
+  teklifinden önce gelirse onu bekletmek için yazılmıştı; o da hiç
+  çalışmamıştı. Parolayı bilen biri için ikinci bir yol daha vardı (geçersiz
+  bir açık anahtar). İkisi de kapandı; tanımadığı eşlerden gelen paketleri
+  tuttuğu listeler de artık sınırsız büyümüyor.
+- **Bir mesaj başka birinin yazmış gibi gösterilebiliyordu.** Mesajın
+  üstündeki adı sunucu yazıyor ve ad düz metin gidiyor; yolda Ayşe'nin mesajı
+  Veli'ninmiş gibi etiketlenebiliyordu. İçerik sahte üretilemiyordu, ama kimin
+  yazdığı sahtelenebiliyordu. Artık ad, mesajı açan anahtarın sahibiyle
+  uyuşmazsa mesaj gösterilmiyor ve sebebi yazılıyor.
+- **Odadaki bir üye, başka bir üyenin anahtarını kendi anahtarıymış gibi
+  duyurabiliyordu.** Herkes herkesin anahtarını aldığı için bu mümkündü. Artık
+  başkasına ait bir anahtar reddediliyor.
+- **Kaydedilmiş bir mesaj yeniden gönderilince ekranda ikinci kez
+  çıkıyordu.** Şifreleme onu itirazsız yeniden açıyordu. Artık aynı mesaj iki
+  kez gösterilmiyor.
+- **Şifreli bir odanın mesajı bildirimde açık metin olarak gidiyordu.**
+  Windows bildirimleri diskte tutar ve kilit ekranında gösterebilir; bu,
+  "mesajlar diske yazılmaz" sözüyle çelişiyordu. Şifreli odada bildirim artık
+  yalnızca kimin yazdığını söylüyor.
+- **Oda adı HTML olarak yorumlanabiliyordu.** Başlıktaki oda adını başka
+  kullanıcılar seçiyor; resim etiketi içeren bir ad, programa bir dosya ya da
+  ağ adresi yükletebiliyordu. Windows'ta bu, IP'yi ve Windows oturum parolasının
+  özetini başka bir sunucuya gönderebilir. Ses cihazı adlarının ipuçlarında da aynı
+  açık vardı. Artık ikisi de düz metin.
+- Bozuk biçimli bir paket (yanlış türde bir kullanıcı listesi, geçmiş ya da
+  ses jetonu) arayüzü yarım güncellenmiş, ses katılımını da "katılıyor"
+  hâlinde asılı bırakabiliyordu. Bu paketleri sunucu kuruyor ve şifresiz
+  gidiyorlar; artık hiçbir alanın türüne güvenilmiyor. Sunucu da türü liste
+  olan bir paket gelince o bağlantıyı bir hata dökümüyle bitiriyordu. Rastgele
+  paketlerle yapılan bir deneme kalıcı teste dönüştü.
+- 1.12.6 ile konuşabiliyor; ağdaki biçim değişmedi.
+
 ## 1.12.6
 
 - **Gizlilik: seçilen ses cihazı açılamayınca mikrofonun susturması

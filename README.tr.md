@@ -22,7 +22,7 @@ paylaşıyor ama farklı sözler veriyor.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | Kime | Günlük kullanım, arkadaş grubu | Şifrelemenin öncelik olduğu durumlar |
-| Durum | Çalışıyor. 1.12.6 derlendi ve test edildi, henüz dağıtılmadı; sesli sohbet ve ileri gizlilik (metin 1.9.0, ses 1.10.0) uygulamaya girdi | Henüz kod yok; [sınırları](apps/proxynull/README.md) ve [protokol tasarımı](apps/proxynull/PROTOKOL.md) yazılı |
+| Durum | Çalışıyor. 1.12.7 derlendi ve test edildi, henüz dağıtılmadı; sesli sohbet ve ileri gizlilik (metin 1.9.0, ses 1.10.0) uygulamaya girdi | Henüz kod yok; [sınırları](apps/proxynull/README.md) ve [protokol tasarımı](apps/proxynull/PROTOKOL.md) yazılı |
 | Hedefi | Kullanışlı olmak, içeriği korumak | Tehdit modelindeki T5 rakibini karşılamak |
 | Platform | **Windows 10/11 (64-bit)** | Baştan platform-nötr (Rust, komut satırı) |
 
@@ -107,6 +107,21 @@ yapılan denemeler kötü sonuç olarak kayda geçmesin.
 taşıma katmanı şifrelemesi (9).
 
 #### Son kapananlar
+
+**Bir güvenlik taraması** (1.12.7). Programa saldırmakla geçen bir gece on bir
+açık çıkardı; hepsi kapandı ve her birinin eski kodda başarısız olan bir testi
+var. En kötüleri parola gerektirmiyordu. Biri sesli sohbetten çıkınca Windows,
+Host'un ses aktarımını **herkes için** durdurabiliyordu; tek bir uydurma paket
+başka birinin bağlantısını koparabiliyordu; odaya girip hiç okumayan bir
+istemci herkesin mesajlarını takılabiliyordu. Bir mesajın üstündeki ad, onu
+şifreleyen anahtarla karşılaştırılmıyordu, yani yolda değiştirilebiliyordu;
+artık uyuşmak zorunda. Kaydedilmiş bir mesajın yeniden gönderilmesi artık iki
+kez görünmüyor. Resim etiketi içeren bir oda adı, Windows'ta programa bir ağ
+adresi açtırıp IP'yi ve bir parola özetini verdirebiliyordu; adlar artık düz
+metin. Şifreli bir odanın bildirimi de artık mesajı taşımıyor, çünkü Windows
+bildirimleri diskte tutar. **Hâlâ açık olan** da yazılı: gönderen anahtarları
+imza taşımıyor, yani parolayı bilen ve ayrıca paket enjekte edebilen biri hâlâ
+başka bir üyenin adıyla yazabilir ([THREAT_MODEL.md](THREAT_MODEL.md) 5.4-B).
 
 **Yeniden üretilebilir derleme ve tedarik zinciri** (1.12.3–1.12.4). Aynı
 kaynaktan yapılan iki derleme farklı dosyalar üretiyordu; yani yayınlanan bir

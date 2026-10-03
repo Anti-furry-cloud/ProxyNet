@@ -43,7 +43,7 @@ Her yeni özellik bu belgeye karşı ölçülür. Belgedeki ilkeleri ihlal eden 
 | T1 | Aynı yerel ağdaki meraklı kişi | Porta bağlanabilir, trafiği dinleyebilir | **Kısmi** — içeriği okuyamaz ama odaya girebilir |
 | T2 | Sunucuyu işleten kişi (host) | Sunucudan geçen her şeyi görür | **İyi** — düz metni asla görmez |
 | T3 | Yol üzerindeki pasif dinleyici (ISP, VPN sağlayıcısı) | Trafiği kaydeder | **Kısmi** — içerik güvenli, metadata açık |
-| T4 | Aktif ağ saldırganı | Paket enjekte eder, düşürür, değiştirir | **Zayıf** — mesajlar sahte üretilemez ama zarf paketleri (hata, kullanıcı listesi) sahtelenebilir |
+| T4 | Aktif ağ saldırganı | Paket enjekte eder, düşürür, değiştirir | **Zayıf** — mesaj içeriği sahte üretilemez ve 1.12.7'den beri bir mesaj başka bir üyeninmiş gibi etiketlenemez; zarf paketleri (hata, kullanıcı listesi) sahtelenebilir |
 | T5 | Devlet ölçeğinde rakip | Trafiği yıllarca saklar, cihaza el koyar, hukuki zorlama uygular | **Karşılamıyor** — ileri gizlilik var (metin 1.9.0, ses 1.10.0) ama üstveri ve taşıma katmanı açık |
 
 **T5 belgenin varlık sebebidir ve şu an karşılanmıyor.** Bunu bilerek yazıyoruz;
@@ -69,7 +69,11 @@ Bu tehditler ProxyNet tarafından çözülemez ve çözülüyormuş gibi davran�
   olan bir platformda yanıltıcı olur. Kapatabildiğimiz tek dar alan
   kopyalanan oda parolası oldu; o, pano geçmişinden, bulut panosundan ve pano
   izleyicilerden hariç tutuluyor (`apps/proxychat/ui.py`). Bu tek bir alan
-  içindi, genel bir güvence değil.
+  içindi, genel bir güvence değil. Aynı gerekçe bildirimler için de geçerli
+  (1.12.7): Windows bildirimleri Bildirim Merkezi'nin veritabanında, yani
+  diskte tutar ve kilit ekranında gösterebilir. Bu yüzden şifreli bir odanın
+  bildirimi yalnızca kimin yazdığını söyler, ne yazdığını değil
+  (`apps/proxychat/ui.py` → `_on_attention_requested`).
 - **Oda parolasının paylaşım kanalı.** Parolayı WhatsApp'tan gönderirseniz
   zincir orada kırılır. Parola yüz yüze veya ayrı bir güvenli kanaldan
   paylaşılmalıdır.
@@ -100,6 +104,12 @@ Bunların hepsi test edilmiştir (`tests/test_crypto.py`, `tests/test_hardening.
   tedarik zinciri riski küçüktür.
 - Kaynak tükenmesine karşı sınırlar: paket 64 KiB, içerik 8 KiB, 10 saniyede
   20 mesaj, en fazla 50 istemci, boşta kalma 120 saniye.
+- **Başkalarının seçtiği metin hiçbir zaman HTML olarak çizilmez** (1.12.7).
+  Qt, HTML'ye benzeyen bir etiketi zengin metin olarak çizer ve `<img>`
+  etiketinin gösterdiği dosyayı yükler; Windows'ta `\\sunucu\pay` gibi bir
+  yol, programa o sunucuya SMB bağlantısı açtırır ve bu IP'yi ve bir NTLM
+  özetini verir. Oda adları ve cihaz adları ekrana düz metin olarak çıkıyor —
+  `tests/test_zengin_metin.py`.
 
 Kapanan açıklar (ayrıntısı ve kalan sınırları 5. bölümde duruyor):
 
@@ -122,6 +132,9 @@ Kapanan açıklar (ayrıntısı ve kalan sınırları 5. bölümde duruyor):
   `tests/test_voice_opus.py` → `SabitBitHiziTests`.
 - **Olay kaydı mesaj uzunluğunu yazmıyor** (5.3, 1.5.0) —
   `tests/test_logging_and_scroll.py`.
+- **Mesajdaki ad, mesajı açan anahtarın sahibine ait olmak zorunda; tekrar
+  oynatılan mesaj iki kez gösterilmiyor** (5.4-B, 1.12.7) —
+  `tests/test_mesaj_kokeni.py`.
 
 ---
 
@@ -324,6 +337,28 @@ Kod: `core/client.py` → `verified_users`, `core/room_session.py` →
 çıkmıyor, farklı/eksik parolalı eş listede adıyla görünmüyor (sayaç satırına
 düşüyor) ve çözülemeyen mesaj beklemeden yer tutucuyla geliyor.
 
+**Her mesajdaki ad da bağlandı (1.12.7).** Doğrulanmış liste odada kimin
+olduğunu söylüyordu, ama her mesaj hâlâ zarftaki adı taşıyordu; o adı sunucu
+yazıyor ve düz metin gidiyor: yolda Ayşe'nin mesajı Veli'ninmiş gibi
+etiketlenebiliyordu. Tek başına anahtar da çözüm değil — her üye diğer her
+üyenin gönderen anahtarını alıyor, yani herhangi biri Veli'nin anahtarıyla
+şifreleyebilir. Mesaj artık yalnızca **ikisi birden** uyuşunca göndereninin
+gösteriliyor: zarftaki ad ve mesajı açan anahtarın sahibi. Uyuşmazsa içerik
+gösterilmiyor ve sebebi yazılıyor. Başkasına ait bir anahtar reddediliyor;
+yani bir üye başka bir üyenin anahtarını kendi anahtarıymış gibi duyuramıyor.
+Kaydedilmiş bir mesajın yeniden gönderilmesi de artık iki kez görünmüyor:
+AES-GCM onu itirazsız yeniden açar, o yüzden istemci gösterdiğini hatırlıyor.
+Kod: `core/client.py` → `_check_origin`, `core/room_session.py` →
+`key_owner`, `first_sight`. Testler: `tests/test_mesaj_kokeni.py`.
+
+Bunun kapatmadığı: gönderen anahtarları imza taşımıyor. Yola **ayrıca** paket
+de enjekte edebilen bir üye (taşıma katmanı şifresiz, 5.4-A) başka bir üyenin
+anahtarıyla yazıp zarfa o üyenin adını koyabilir; anahtar duyurularını da
+etiketleyen sunucu ise iki doğrulanmış kişinin adlarını tutarlı biçimde yer
+değiştirebilir. Signal bunu her gönderene ayrı bir imza anahtarıyla kapatıyor.
+Bu bir protokol değişikliği; araya sıkıştırılmıyor, şema yükseltmesini
+bekliyor.
+
 Kalan sınır: sunucu hâlâ paket düşürebilir ve sahte bir `room_snapshot` ile
 istemcileri anahtarlarını bırakmaya zorlayabilir. Bu bir hizmet engellemedir,
 sızıntı değil, ve kendini onarıyor: aynı paket yeni bir anahtar duyurusunu da
@@ -335,6 +370,14 @@ Sunucuda kimlik doğrulama yoktur; port erişilebilir olan herkes odaya girer,
 kullanıcı listesini ve trafik ritmini görür. Bu bilinçli bir karardır
 (bkz. 7. bölüm) ama sunucunun halka açık bir adrese taşınması hâlinde
 **yeniden değerlendirilmelidir.**
+
+Serbest girişin 1.12.7'ye kadar neyi mümkün kıldığı yazılmaya değer: odadaki
+herkes, parolayı bilmeden, bir istemcinin açık anahtarına adresli tek bir
+uydurma anahtar paketiyle o istemcinin bağlantısını kapatabiliyordu. İstemci
+yakalamadığı bir istisna atıyordu (`UnknownSenderKey`) ve dinleme döngüsü
+bitiyordu. Bir yabancının gönderebildiği her paket düşmanca sayılmalı;
+saldırıyı gerçek bir sunucu üzerinden yeniden üreten test
+`tests/test_anahtar_paketleri.py` → `GercekBaglantiTests`.
 
 ### 5.6 Sunucu tüm ağ arayüzlerini dinliyordu — kapatıldı (1.6.2)
 
@@ -555,7 +598,7 @@ Karar kaydı — aynı fikirlerin tekrar gündeme gelmemesi için.
 | Ses için sunucu üzerinden aktarma (SFU, çözmeden) | **Kabul edildi (2026-09-16)** | Baştan aktarma; "yalnızca 4 kişiyi aşan odalar için" koşulu kaldırıldı. Alternatifi olan mesh, odadaki herkesin IP'sini herkese dağıtacaktı (İlke 3); aktarmada Host zaten gördüğü IP'leri görmeye devam eder. İçerik şifreli kaldığı için İlke 1 ihlal edilmiyor. Aktarmanın kendi çözülmemiş sorunları (gönderen kimliği ataması, Host'a kimlik doğrulaması) sesli sohbet planının 9. bölümünde |
 | Kendi sanal ağımızı (Hamachi benzeri) yazmak | **Reddedildi (2026-09-29)** | Hamachi üç ayrı şeyden oluşuyor: sanal ağ adaptörü, eşleri buluşturan aracı sunucu, ve delik açma tutmadığında devreye giren aktarma. Adaptör artık asıl engel değil — Wintun (WireGuard projesinden) Microsoft tarafından imzalanmış durumda, yani kernel sürücüsü yazmak ve EV sertifikası almak gerekmiyor; karşılığında adaptör kurmak yönetici hakkı istiyor ve "indir çalıştır" deneyimi bozuluyor. Asıl maliyet **aracı sunucu**: sabit adresli, kimin kiminle ne zaman buluştuğunu gören, kapatılabilen ve sürekli para ile bakım isteyen tek bir nokta. Bu doğrudan İlke 3'e çarpıyor, ve 9.1'de "en kolay engellenen şey" diye yazdığımızın ta kendisi — yani engellenme direncini artırmak için yapılacak iş, engellenmeyi kolaylaştıran şeyi kurmak olurdu. Üstelik ihtiyaç genel amaçlı bir sanal LAN değil, iki ProxyChat'in birbirine ulaşması; adaptör, kendi UDP paketimizi sanal bir ağ kartından geçirip yine kendi sürecimize sokmak olurdu. **Yerine uygulama içi NAT geçişi tercih edildi:** buluşma için Tor onion servisi ya da elden ele kısa kod (ikisinde de bizim işlettiğimiz bir sunucu yok), ses için delik açma; VPN varsayılan olmaktan çıkıp yedek olur. Bu iş tek başına yapılamaz: sunucu halka açık bir adrese çıkacağı için yanında oda girişine kimlik doğrulaması gelmek zorunda (5.5). İlk adım, yazmaya başlamadan önce NAT tipini ölçmek |
 | Yalnızca sesli konuşma yapan ayrı CLI programı | **Ertelendi** | Dışarıdan gelen bir öneri (2026-09-17): prototip gibi komut satırından çalışan, yalnızca sesi taşıyan ayrı bir program; anlaması ve kullanması kolay, saldırı yüzeyi küçük (Qt arayüzü, oda listesi, geçmiş, bildirim yok). Lehinde: prototip zaten bu şekilde çalışıyor ve iyi çalıştı; ProxyNull'ın "az özellik güvenliktir" ilkesiyle de uyumlu. Aleyhinde: parola ve karşı tarafın adresi hâlâ program dışından paylaşılmak zorunda, iki ayrı program iki ayrı bakım yükü demek ve metin sohbetiyle aynı odada olmak avantajı kaybedilir. Faz 1b'den sonra, gerçek kullanım görüldüğünde karara bağlanacak |
-| Linux desteği | **Ertelendi (2026-09-29)** | ProxyChat yalnızca Windows 10/11'de çalışıyor ve bir süre öyle kalacak. Bu bir eksik değil, iki ürüne bölme kararının sonucu: ProxyChat'in hedef kitlesi "2–5 kişilik arkadaş grubu" ve o kitle ezici çoğunlukla Windows'ta; şifrelemenin öncelik olduğu, platform bağımsız kullanım ProxyNull'ın işi ve o baştan platform-nötr planlandı (`apps/proxynull/README.md`). **Yeniden değerlendirme koşulu:** canlı kullanım testi geçip program herkese açık dağıtıldıktan sonra, Linux'ta çalıştırmak isteyenlerden yazılı talep gelirse. Koşul şimdi yazıldı ki o gün tartışma olmasın. **Taşınırsa karar verilecek üç nokta:** (1) `SO_EXCLUSIVEADDRUSE` Linux'ta yok, ama `SO_REUSEADDR` verilmedikçe ikinci bind zaten başarısız oluyor — 5.6'nın güvencesi farklı yolla büyük ölçüde duruyor, bir paragraf yeter. (2) DPAPI ile parola saklama çalışmaz; ya o platformda hiç sunulmaz (tehdit modeliyle daha tutarlı) ya libsecret'a bağlanır. (3) **En kritik olan:** kopyalanan parolayı pano geçmişinden, bulut panosundan ve pano izleyicilerden hariç tutan `x-qt-windows-mime` tipleri Linux'ta sessizce yok sayılır, yani parola pano yöneticisinin geçmişine düşer. O platformda "parolayı kopyala" ya kapatılmalı ya uyarı vermelidir; unutulursa Linux sürümü Windows sürümünden **daha az güvenli** olur ve kimse fark etmez. Beklemenin maliyeti yok, hatta iş o gün daha kolay: `libopus` dağıtımın imzalı paketi olur ve yeniden üretilebilir derleme (5.9) Linux'ta daha kolaydır. Çekirdeğin bu arada platform-nötr kalması teste bağlandı: `core/` içine Windows'a özgü bir import, çağrı ya da sürücü harfli yol girerse `tests/test_platform_notr.py` düşer ve o kodun `apps/proxychat/` altına ait olduğunu söyler |
+| Linux desteği | **Ertelendi (2026-09-29)** | ProxyChat yalnızca Windows 10/11'de çalışıyor ve bir süre öyle kalacak. Bu bir eksik değil, iki ürüne bölme kararının sonucu: ProxyChat'in hedef kitlesi "2–5 kişilik arkadaş grubu" ve o kitle ezici çoğunlukla Windows'ta; şifrelemenin öncelik olduğu, platform bağımsız kullanım ProxyNull'ın işi ve o baştan platform-nötr planlandı (`apps/proxynull/README.md`). **Yeniden değerlendirme koşulu:** canlı kullanım testi geçip program herkese açık dağıtıldıktan sonra, Linux'ta çalıştırmak isteyenlerden yazılı talep gelirse. Koşul şimdi yazıldı ki o gün tartışma olmasın. **Taşınırsa karar verilecek üç nokta:** (1) `SO_EXCLUSIVEADDRUSE` Linux'ta yok, ama `SO_REUSEADDR` verilmedikçe ikinci bind zaten başarısız oluyor — 5.6'nın güvencesi farklı yolla büyük ölçüde duruyor, bir paragraf yeter. (2) DPAPI ile parola saklama çalışmaz; ya o platformda hiç sunulmaz (tehdit modeliyle daha tutarlı) ya libsecret'a bağlanır. (3) **En kritik olan:** kopyalanan parolayı pano geçmişinden, bulut panosundan ve pano izleyicilerden hariç tutan `x-qt-windows-mime` tipleri Linux'ta sessizce yok sayılır, yani parola pano yöneticisinin geçmişine düşer. O platformda "parolayı kopyala" ya kapatılmalı ya uyarı vermelidir; unutulursa Linux sürümü Windows sürümünden **daha az güvenli** olur ve kimse fark etmez. Beklemenin maliyeti yok, hatta iş o gün daha kolay: `libopus` dağıtımın imzalı paketi olur ve yeniden üretilebilir derleme (5.9) Linux'ta daha kolaydır. Çekirdeğin bu arada platform-nötr kalması teste bağlandı: `core/` içine Windows'a özgü bir import, çağrı ya da sürücü harfli yol girerse `tests/test_platform_notr.py` düşer ve o kodun `apps/proxychat/` altına ait olduğunu söyler. Platforma göre dallanmasına izin verilen iki dosya var ve test onları adıyla biliyor: `core/server.py` (`SO_EXCLUSIVEADDRUSE`, yukarıdaki 1. nokta) ve 1.12.7'den beri `core/transport.py`, yalnızca `SO_LINGER` yapısının düzeni için; orada iki platform da karşılanıyor, karar verilecek bir şey kalmıyor |
 
 ---
 
