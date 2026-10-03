@@ -231,6 +231,11 @@ The only official source of this project is
 ProxyNet circulating elsewhere may not have come from here; check this
 place before downloading.
 
+The project's only official channel elsewhere is
+**https://www.youtube.com/@ProxyNet_dev**. It distributes no files: every
+download comes from this repository, with its signed checksum list. An account
+under a similar name that offers a download is not this project.
+
 The project is released under the **GNU GPL v3**. That does not forbid
 copying — it permits it. There are only three conditions:
 

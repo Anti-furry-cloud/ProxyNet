@@ -218,6 +218,11 @@ Bu projenin tek resmî kaynağı **https://github.com/Anti-furry-cloud/ProxyNet*
 adresidir. Başka bir yerde dolaşan bir ProxyChat/ProxyNet kopyası buradan
 çıkmamış olabilir; indirmeden önce buraya bakın.
 
+Projenin başka bir yerdeki tek resmî kanalı
+**https://www.youtube.com/@ProxyNet_dev** adresidir. Oradan dosya
+dağıtılmıyor: her indirme bu depodan, imzalı özet listesiyle birlikte gelir.
+Benzer adla açılmış ve indirme sunan bir hesap bu proje değildir.
+
 Proje **GNU GPL v3** ile yayınlanıyor. Bu, kopyalamayı yasaklamıyor — tam
 tersi, serbest bırakıyor. Yalnızca üç şart var:
 
