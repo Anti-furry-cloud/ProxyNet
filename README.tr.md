@@ -218,10 +218,12 @@ Bu projenin tek resmî kaynağı **https://github.com/Anti-furry-cloud/ProxyNet*
 adresidir. Başka bir yerde dolaşan bir ProxyChat/ProxyNet kopyası buradan
 çıkmamış olabilir; indirmeden önce buraya bakın.
 
-Projenin başka bir yerdeki tek resmî kanalı
-**https://www.youtube.com/@ProxyNet_dev** adresidir. Oradan dosya
+Projenin başka yerlerdeki tek resmî kanalları
+**https://www.youtube.com/@ProxyNet_dev** ve
+**https://www.tiktok.com/@proxynet.dev** adresleridir. Oralardan dosya
 dağıtılmıyor: her indirme bu depodan, imzalı özet listesiyle birlikte gelir.
-Benzer adla açılmış ve indirme sunan bir hesap bu proje değildir.
+Benzer adla açılmış ve indirme sunan bir hesap — bir linkte, yorumda ya da
+mesajda — bu proje değildir.
 
 Proje **GNU GPL v3** ile yayınlanıyor. Bu, kopyalamayı yasaklamıyor — tam
 tersi, serbest bırakıyor. Yalnızca üç şart var:
@@ -255,6 +257,11 @@ isterseniz özete güvenmek yerine kaynaktan derleyip karşılaştırabilirsiniz
 Tehdit modelinde bir hata, eksik bir rakip ya da fazla iyimser bir iddia
 görürsen **issue aç.** En çok işime yarayacak geri bildirim şu: *"5. bölümde
 yazmadığın ama var olan bir açık şu."*
+
+GitHub kullanmak istemiyorsan **proxynet.dev@protonmail.com** adresine yaz.
+**Bir güvenlik açığı için herkese açık issue açma** — o adresi kullan ve ilk
+mesajda yalnızca sorunun ne olduğunu söyle; ayrıntıyı nasıl ileteceğimizi
+birlikte seçeriz.
 
 Kod olmadan güvenlik iddiası denetlenemez — bunun farkındayım. Bu depo bir
 kanıt değil, bir niyet beyanı ve bir tasarım taslağıdır.

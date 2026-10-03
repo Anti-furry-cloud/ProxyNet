@@ -231,10 +231,12 @@ The only official source of this project is
 ProxyNet circulating elsewhere may not have come from here; check this
 place before downloading.
 
-The project's only official channel elsewhere is
-**https://www.youtube.com/@ProxyNet_dev**. It distributes no files: every
+The project's only official channels elsewhere are
+**https://www.youtube.com/@ProxyNet_dev** and
+**https://www.tiktok.com/@proxynet.dev**. They distribute no files: every
 download comes from this repository, with its signed checksum list. An account
-under a similar name that offers a download is not this project.
+under a similar name that offers a download — in a link, a comment or a
+message — is not this project.
 
 The project is released under the **GNU GPL v3**. That does not forbid
 copying — it permits it. There are only three conditions:
@@ -268,6 +270,11 @@ of trusting the checksum you can rebuild from source and compare.
 If you see a mistake in the threat model, a missing adversary, or a claim that
 is too optimistic, **open an issue.** The most useful feedback I can get is:
 *"here is a gap that exists but is not listed in section 5."*
+
+If you would rather not use GitHub, write to **proxynet.dev@protonmail.com**.
+**For a security hole, do not open a public issue** — use that address, and
+in the first message say only what the problem is; we will choose together
+how to pass on the details.
 
 A security claim cannot be audited without code — I am aware of that. This
 repository is not evidence; it is a statement of intent and a design draft.
