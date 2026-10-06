@@ -11,6 +11,13 @@
 > **Güncelleme (2026-09-16):** yayından sonra 3. bölümdeki şemada ciddi bir
 > hata bulundu ve düzeltildi. Ne olduğu, nasıl bulunduğu ve düzeltmesi 3.
 > bölümde açıkça yazılı.
+> **İstisna (2026-10-06):** metinde adı geçen `tools/ses_` ile başlayan
+> ölçüm, değerlendirme, simülasyon ve prototip araçları ile testleri
+> (`tests/test_ses_degerlendir.py` gibi) kod açıldığında da
+> **yayınlanmayacak**. Geliştirme sırasında kullanılan yardımcı araçlar,
+> ürünün parçası değiller. Kurdukları kurallar ve verdikleri kararlar bu
+> belgede yazılı; ama yalnızca bu araçlara dayanan iddialar, kod açıldığında
+> da dışarıdan doğrulanamayacak.
 
 Durum: **Faz 1b bitti; sesli sohbet ProxyChat'in içinde** (1.8.0,
 2026-09-25). Sunucu sesi çözmeden aktarıyor, istemci ayrı bir UDP yolundan

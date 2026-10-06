@@ -11,6 +11,13 @@
 > is written on top of it. **Update (2026-09-16):** after publication a serious
 > bug was found in the scheme in section 3 and fixed. What it was, how it was
 > found and the fix are written out plainly in section 3.
+> **Exception (2026-10-06):** the measurement, evaluation, simulation and
+> prototype tools named in the text whose paths start with `tools/ses_`, and
+> their tests (such as `tests/test_ses_degerlendir.py`), **will not be
+> published**, not even when the code opens. They are helper tools used during
+> development, not part of the product. The rules they set and the decisions
+> they produced are written down here; but claims that rest only on these
+> tools will not be checkable from outside, even once the code is open.
 
 Status: **Phase 1b is done; voice chat is inside ProxyChat** (1.8.0,
 2026-09-25). The server relays audio without decrypting it, the client talks
