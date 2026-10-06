@@ -22,7 +22,7 @@ paylaşıyor ama farklı sözler veriyor.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | Kime | Günlük kullanım, arkadaş grubu | Şifrelemenin öncelik olduğu durumlar |
-| Durum | Çalışıyor. 1.12.7 derlendi ve test edildi, henüz dağıtılmadı; sesli sohbet ve ileri gizlilik (metin 1.9.0, ses 1.10.0) uygulamaya girdi | Henüz kod yok; [sınırları](apps/proxynull/README.md) ve [protokol tasarımı](apps/proxynull/PROTOKOL.md) yazılı |
+| Durum | Çalışıyor. 1.12.8 derlendi ve test edildi, henüz dağıtılmadı; sesli sohbet ve ileri gizlilik (metin 1.9.0, ses 1.10.0) uygulamaya girdi | Henüz kod yok; [sınırları](apps/proxynull/README.md) ve [protokol tasarımı](apps/proxynull/PROTOKOL.md) yazılı |
 | Hedefi | Kullanışlı olmak, içeriği korumak | Tehdit modelindeki T5 rakibini karşılamak |
 | Platform | **Windows 10/11 (64-bit)** | Baştan platform-nötr (Rust, komut satırı) |
 
@@ -107,6 +107,16 @@ yapılan denemeler kötü sonuç olarak kayda geçmesin.
 taşıma katmanı şifrelemesi (9).
 
 #### Son kapananlar
+
+**Ekranda görünen adres** (1.12.8). Ekranını yayınlayan ya da video çeken biri
+IP adresini farkında olmadan sızdırıyordu: adres sohbet ekranındaki
+"Bağlandı: …" satırında, Host'un paylaşacağı adres listesinde, bağlantı
+ekranındaki IP alanında ve ağ listesinde açıkça duruyordu. Adresler artık
+varsayılan olarak maskeli; **Adresi göster** basılı tutulunca görünüyor,
+**Adresi kopyala** adresi göstermeden ve pano geçmişine girmeden kopyalıyor.
+Bu yalnızca **ekranla** ilgili: arkadaşların bağlandıkları için adresi yine
+biliyor, sunucuya bağlanan herkes de onu görüyor. Adresi ağdan gizlemek bu
+sürümün işi değil.
 
 **Bir güvenlik taraması** (1.12.7). Programa saldırmakla geçen bir gece on bir
 açık çıkardı; hepsi kapandı ve her birinin eski kodda başarısız olan bir testi

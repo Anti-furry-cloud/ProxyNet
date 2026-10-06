@@ -17,6 +17,24 @@ No public release has been distributed yet.
 
 ---
 
+## 1.12.8
+
+- **The IP address was plainly visible on the chat screen.** After connecting
+  the top left read "Connected: 25.x.x.x", and on the Host every address to
+  share was listed. Anyone streaming their screen or recording a video leaked
+  their address without noticing. The address is now hidden by default. Holding
+  **Show address** reveals it and letting go hides it again; **Copy address**
+  puts it on the clipboard without showing it (and without entering the
+  clipboard history). An address that only points at this machine (Demo mode's
+  127.0.0.1) is not a secret and stays as it is.
+- **The connect screen showed addresses too.** In Join, the last IP used sat in
+  its field as soon as the program opened; in Host, the network list spelled
+  out the machine's addresses. Both are masked now: the IP field shows what you
+  type and hides it once you leave the field; the network list names the kind
+  of network instead of the address (Hamachi, Local network, Other network; two
+  of the same kind are numbered). **Show address** here, held down, reveals
+  both.
+
 ## 1.12.7
 
 - **When someone left voice or closed the program, everyone on the server

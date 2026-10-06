@@ -22,7 +22,7 @@ different promises.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | For whom | Everyday use, a group of friends | Situations where encryption is the priority |
-| Status | Working. 1.12.7 is built and tested but not yet distributed; voice chat and forward secrecy (text 1.9.0, voice 1.10.0) landed in the app | No code yet; its [limits](apps/proxynull/README.en.md) and [protocol design](apps/proxynull/PROTOCOL.en.md) are written down |
+| Status | Working. 1.12.8 is built and tested but not yet distributed; voice chat and forward secrecy (text 1.9.0, voice 1.10.0) landed in the app | No code yet; its [limits](apps/proxynull/README.en.md) and [protocol design](apps/proxynull/PROTOCOL.en.md) are written down |
 | Goal | Be usable, protect content | Meet the T5 adversary in the threat model |
 | Platform | **Windows 10/11 (64-bit)** | Platform-neutral by design (Rust, command line) |
 
@@ -113,6 +113,16 @@ reasoning written there: Authenticode signing (8-B) and transport-layer
 encryption (9).
 
 #### Recently closed
+
+**The address on screen** (1.12.8). Anyone streaming their screen or recording
+a video gave away their IP address without noticing: it was on the chat
+screen's "Connected: …" line, in the Host's list of addresses to share, in the
+connect screen's IP field and in its network list. Addresses are now masked by
+default; holding **Show address** reveals them, and **Copy address** copies
+them without showing them and without entering the clipboard history. This is
+about the **screen** only: your friends still know the address, since they
+connect to it, and so does anyone who connects to the server. Hiding the
+address from the network is not what this version does.
 
 **A security pass** (1.12.7). A night spent attacking the program turned up
 eleven holes; all are closed and each has a test that fails on the old code.

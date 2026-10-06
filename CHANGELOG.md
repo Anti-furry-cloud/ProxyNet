@@ -16,6 +16,23 @@ Henüz herkese açık bir sürüm dağıtılmadı.
 
 ---
 
+## 1.12.8
+
+- **IP adresi sohbet ekranında açıkça görünüyordu.** Bağlanınca sol üstte
+  "Bağlandı: 25.x.x.x" yazıyordu; Host'ta da paylaşılacak adreslerin hepsi
+  listeleniyordu. Ekranını yayınlayan ya da video çeken biri adresini farkında
+  olmadan sızdırıyordu. Adres artık varsayılan olarak gizli. **Adresi göster**
+  basılı tutulunca görünüyor, bırakınca yeniden gizleniyor; **Adresi kopyala**
+  adresi ekranda göstermeden panoya alıyor (pano geçmişine girmeden). Yalnızca
+  bu makineyi gösteren adres (Demo modunun 127.0.0.1'i) gizli bir bilgi
+  olmadığı için olduğu gibi kalıyor.
+- **Bağlantı ekranında da adres görünüyordu.** Join'de son bağlanılan IP program
+  açılır açılmaz alanda duruyordu; Host'ta dinlenecek ağ listesi makinenin
+  adreslerini sıralıyordu. İkisi de artık maskeli: IP alanı yazarken görünüyor,
+  alandan çıkınca gizleniyor; ağ listesi adres yerine ağın türünü yazıyor
+  (Hamachi, Yerel ağ, Diğer ağ; aynı türden iki ağ numaralanıyor). Buradaki
+  **Adresi göster** de basılı tutulunca ikisini birden açıyor.
+
 ## 1.12.7
 
 - **Biri sesten çıkınca ya da programı kapatınca, sunucudaki herkesin sesi
