@@ -6,11 +6,11 @@ End-to-end encrypted chat that runs on your own server. The goal is not merely
 for a group of friends to talk — the goal is that **messages cannot be read by
 anyone**, including the person running the server and a state-level adversary.
 
-> **This repository currently contains documents only.** The source code is not
-> open yet, there is no downloadable release, and the software has had no
-> independent audit. **Nobody should rely on this today.** I am publishing the
-> documents early because I would rather hear about a design mistake now than
-> after months of code have been written on top of it.
+> **First public release: ProxyChat 1.12.8 (Windows).** The source code is in
+> this repository, the installer on the [Releases](../../releases) page. It is
+> an early release written by one person and **has had no independent security
+> audit.** Before using it for anything sensitive, read the **"does not do"**
+> and **"what it is for, and what it is not"** sections below.
 
 ---
 
@@ -22,7 +22,7 @@ different promises.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | For whom | Everyday use, a group of friends | Situations where encryption is the priority |
-| Status | Working. 1.12.8 is built and tested but not yet distributed; voice chat and forward secrecy (text 1.9.0, voice 1.10.0) landed in the app | No code yet; its [limits](apps/proxynull/README.en.md) and [protocol design](apps/proxynull/PROTOCOL.en.md) are written down |
+| Status | Working. First public release 1.12.8 ([download](../../releases)); voice chat and forward secrecy (text 1.9.0, voice 1.10.0) included | No code yet; its [limits](apps/proxynull/README.en.md) and [protocol design](apps/proxynull/PROTOCOL.en.md) are written down |
 | Goal | Be usable, protect content | Meet the T5 adversary in the threat model |
 | Platform | **Windows 10/11 (64-bit)** | Platform-neutral by design (Rust, command line) |
 
@@ -54,9 +54,10 @@ contaminates ProxyNull.
   encrypted with a key derived from the room session and, like text, **has
   forward secrecy** (1.10.0); the server relays it without decrypting and cannot
   tell who is speaking. A noise
-  gate silences the microphone while nobody speaks. It is **not offered
-  as a default** yet: it will not be described that way until the
-  live-use test passes.
+  gate silences the microphone while nobody speaks. It has been tried
+  between two separate computers and works. Still, it is **not offered as a
+  default** yet: it will not be described that way until the live-use test
+  passes.
 - Turkish and English interface.
 - **Windows 10/11 (64-bit) only.** The core — encryption, protocol, transport,
   voice — is platform-neutral Python; what ties the product to Windows is three
@@ -87,21 +88,17 @@ copy:
   recorded traffic, which forward secrecy closes. The real fix is a PAKE.
 - **The transport layer is unencrypted.** An active attacker cannot forge
   message content but can forge envelope packets.
-- **The distributed file is unsigned.**
+- **The distributed file has no Authenticode signature.** Windows SmartScreen
+  warns. Instead, the checksum list is signed with GPG; how to check it is in
+  [VERIFYING.en.md](VERIFYING.en.md).
 
 The detail of each, why it is that way, and the order in which they will be
 closed: **[THREAT_MODEL.en.md](THREAT_MODEL.en.md)**
 
 ### What is next
 
-**The next job is not code but a trial: voice chat has never been tried
-between two separate computers.** So far the only thing anyone has listened to
-is two copies on one machine. The whole path is covered by tests — three
-voices mixing, a wrong password failing to decrypt, audio without a hello not
-being relayed — but a test does not stand in for real microphones on a real
-line.
-
-After that, the **live-use test**. Offering voice chat as a default depends on
+**Voice chat has been tried between two separate computers and works.** The
+next job is the **live-use test**. Offering voice chat as a default depends on
 it. It has not started, for a concrete reason: sessions only count once the
 product itself writes the record file, and today only the voice prototype
 writes one. The rule was written that way so that "does this work?" attempts
@@ -172,8 +169,8 @@ later, recorded traffic cannot be opened. This was the biggest gap.
 **Voice chat now lives inside the application** (2026-09-25). The server
 relays audio without decrypting it, the client speaks over a separate UDP
 path, and the interface has join/leave, a participant list, mute and a noise
-gate and a threshold control. It was tried with two copies on one machine and the audio was heard;
-two separate computers are still untried.
+gate and a threshold control. It was first tried with two copies on one machine; later it
+was also tried between two separate computers and worked.
 
 Whether the connection quality is good enough was decided by measurements
 whose rules were published before the measuring started; on 2026-09-24 the
@@ -194,6 +191,27 @@ protects your content against the person running the server and against third
 parties who cannot enter the room. It does not protect against a state-level
 adversary, and I do not claim it does. I would rather write the difference down
 than conceal it.
+
+---
+
+## What it is for, and what it is not
+
+ProxyChat is for **small groups of people who know each other**: friends, a
+gaming team, a family. Someone in the group runs the server on their own
+computer; the conversation does not sit on another company's server.
+
+What it is **not**:
+
+- **Not an anonymity tool.** The server you connect to sees your IP address;
+  whoever runs the server sees who is in the room and when. It does not hide
+  who you are, only what you write.
+- **Not designed for hiding from anyone.** The code is open, its design and
+  its limits are written down; there is no hidden distribution and no hidden
+  audience.
+- **Not a central service.** There is no server run by me. I do not see or
+  keep any user's name, address or messages, and the program sends me
+  nothing.
+- **Not made for illegal use**, and I do not support such use.
 
 ---
 
@@ -222,15 +240,20 @@ English. Where the two disagree, **the Turkish one is correct.**
 | [apps/proxynull/README.en.md](apps/proxynull/README.en.md) | ProxyNull's limits: what it must do, what it refuses, why it is separate from ProxyChat |
 | [apps/proxynull/PROTOCOL.en.md](apps/proxynull/PROTOCOL.en.md) | ProxyNull's protocol design — the rendezvous code, the Noise handshake, the verification code, padding; decided and undecided items marked apart |
 | [listening/](listening/LISTENING.md) | A blind listening test: how simulated network interruptions sound in speech |
-| [VERIFYING.en.md](VERIFYING.en.md) | How to verify what you downloaded, and the limit of that check |
+| [MANUAL.en.md](MANUAL.en.md) | Installation, usage and building from source |
+| [SECURITY.en.md](SECURITY.en.md) | How to report a security hole |
+| [VERIFYING.en.md](VERIFYING.en.md) | How to verify what you downloaded, how to rebuild it from source, and the limit of that check |
 | [THIRD-PARTY.en.md](THIRD-PARTY.en.md) | Third-party components in the package, their licences and where they come from |
 | [LICENSE](LICENSE) | The GNU GPL v3 text |
 
 Every document has a Turkish/English switcher at the top; the counterparts are
 not listed separately.
 
-The code will be added to this repository when it opens; the documents will
-stay where they are.
+The source code itself: the application in [apps/proxychat/](apps/proxychat/README.en.md),
+the shared core in `core/`, the tests in `tests/`; the build scripts are in the
+root folder. Development runs in a separate repository; this one is a
+**snapshot** of it, updated with each release, not its history. Detail in
+[VERIFYING.en.md](VERIFYING.en.md).
 
 ---
 
@@ -258,10 +281,10 @@ copying — it permits it. There are only three conditions:
 So taking the code into a closed-source product, or changing whose work it
 is, is a licence violation.
 
-There is no public release yet. When one is distributed, the SHA-256
-checksums of the files will be published in this repository and that list will
-be **signed**; if the checksum of your file does not match the one listed
-there, that file is not the one we distributed.
+Releases are published on the [Releases](../../releases) page. Each one comes
+with the SHA-256 checksums of its files and a **signature** of that list; if
+the checksum of your file does not match the one listed there, that file is
+not the one I distributed.
 
 The signing key's fingerprint:
 
@@ -286,8 +309,8 @@ If you would rather not use GitHub, write to **proxynet.dev@protonmail.com**.
 in the first message say only what the problem is; we will choose together
 how to pass on the details.
 
-A security claim cannot be audited without code — I am aware of that. This
-repository is not evidence; it is a statement of intent and a design draft.
+The code is here now, so the claims can be tested against it. That does not
+stand in for an audit: nobody but me has reviewed the code end to end.
 
 **You can also help without reading any code:** listen to a few short
 recordings and say how the interruptions sound to you. Instructions and

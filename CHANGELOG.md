@@ -12,7 +12,7 @@ Başlıkta **⚠ tel kırılması** yazıyorsa o sürüm, eski sürümlerle şif
 alışverişi yapamaz; iki taraf da "farklı sürüm" görür. Bu bilerek böyle:
 pazarlık olmadığı için kimse iki tarafı eski şemaya düşürmeye zorlayamaz.
 
-Henüz herkese açık bir sürüm dağıtılmadı.
+İlk herkese açık sürüm **1.12.8**; indirmek için [Releases](../../releases).
 
 ---
 

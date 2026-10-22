@@ -18,13 +18,17 @@
 > development, not part of the product. The rules they set and the decisions
 > they produced are written down here; but claims that rest only on these
 > tools will not be checkable from outside, even once the code is open.
+> **Update (2026-10-22):** the code is open; the `core/` and `apps/` paths in
+> the text are now in this repository. The `tools/ses_` tools stay out under
+> the exception above. Voice chat has also been tried between two separate
+> computers and works.
 
 Status: **Phase 1b is done; voice chat is inside ProxyChat** (1.8.0,
 2026-09-25). The server relays audio without decrypting it, the client talks
 over a separate UDP path, and the interface has join/leave, a participant list,
 mute, a noise gate and a threshold control. It was tried with two copies on one
-machine and the audio was heard; **it has not been tried with two separate
-computers yet.** **Phase 0's decision gate came out ACCEPTABLE on 2026-09-24.**
+machine first; **later it was also tried between two separate computers and
+worked.** **Phase 0's decision gate came out ACCEPTABLE on 2026-09-24.**
 1.10.0 brought **forward secrecy** to voice: the session key now comes from the
 room session rather than from the password (sections 3 and 9). Shipping voice
 chat as a **default** depends on the live-use test, and that test has not
@@ -483,7 +487,7 @@ needs audio hardware should run in CI.
 | **0. Measurement** | A small tool measuring UDP latency, jitter and loss | **Decision gate**: if the numbers are bad, the plan stops here — v1: BAD; v2 (2026-09-24): **ACCEPTABLE** |
 | **1a. Core** ✅ | Packet format, AES-GCM + HKDF, jitter buffer, tests | A tested core that works without audio hardware |
 | **1b. Skeleton** ✅ | Signalling packets, UDP socket, relaying on the host | `core/voice_relay.py`, `core/voice_net.py`; covered by tests |
-| **2. Two-way** ✅ | The audio device layer, Qt integration, several people | Voices mix; not yet tried on a real line |
+| **2. Two-way** ✅ | The audio device layer, Qt integration, several people | Voices mix; also tried between two separate computers |
 | **3. Usability** | Opus ✅ and mute ✅ are done; the **speaking indicator was dropped from the design on 2026-09-19** (2.2 — so the server does not learn who spoke when); what is left is push-to-talk | Four people can use it |
 | **4. Packaging** | Qt's audio modules are back and the size was **measured** (below); the Opus library ✅ is bundled (1.12.2) and built from source (1.12.3); left: the UDP firewall rule, documentation | A distributable release |
 

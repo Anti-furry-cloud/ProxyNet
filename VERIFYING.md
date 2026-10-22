@@ -10,7 +10,7 @@ ve burada neden öyle olduğu yazılı: [THREAT_MODEL.md](THREAT_MODEL.md) 5.9.
 Uyarının yerini tutan şey şu: her sürümle birlikte dosyaların SHA-256
 özetlerini içeren bir liste (`SHA256SUMS.txt`) ve o listenin **imzası**
 (`SHA256SUMS.txt.asc`) yayınlanıyor. İkisini kontrol ederseniz, elinizdeki
-dosyanın bizim ürettiğimiz dosya olduğunu kendiniz doğrulayabilirsiniz.
+dosyanın benim ürettiğim dosya olduğunu kendiniz doğrulayabilirsiniz.
 
 ---
 
@@ -51,7 +51,7 @@ gpg --verify SHA256SUMS.txt.asc SHA256SUMS.txt
 `Good signature from "Anti-furry-cloud ..."` görmelisiniz.
 
 > `WARNING: This key is not certified with a trusted signature` uyarısı
-> normaldir. Anahtarı kimsenin tanıdığı bir ağa bağlamadık; uyarı "bu anahtarı
+> normaldir. Anahtarı kimsenin tanıdığı bir ağa bağlamadım; uyarı "bu anahtarı
 > tanıyan birini bulamadım" demek, "imza geçersiz" demek değil. Önemli olan
 > parmak izinin eşleşmesi.
 
@@ -75,8 +75,8 @@ Get-FileHash ProxyChat.exe -Algorithm SHA256
 
 1. Dosyayı [resmî kaynaktan](https://github.com/Anti-furry-cloud/ProxyNet)
    yeniden indirin — yarım inen bir dosya da özeti tutturmaz.
-2. Yine tutmuyorsa **bize bildirin** ([SECURITY](THREAT_MODEL.md)). Elinizdeki
-   dosya bizim dağıttığımız dosya değil.
+2. Yine tutmuyorsa **bana bildirin** ([SECURITY.md](SECURITY.md)). Elinizdeki
+   dosya benim dağıttığım dosya değil.
 
 ---
 
@@ -90,12 +90,12 @@ ve imza onu çözmez.
 İmzanın gerçekten işe yaradığı yerler:
 
 - **Sonraki sürümler.** Anahtarı bir kez aldıysanız, ileride anahtarın
-  değişmesi *görünür* olur. Sessizce başka birinin yerimize geçmesi zorlaşır.
+  değişmesi *görünür* olur. Sessizce başka birinin yerime geçmesi zorlaşır.
 - **Depo dışından doğrulama.** Parmak izini başka bir kanaldan — yüz yüze,
   telefonda, ayrı bir yerde yazılı olarak — aldıysanız, saldırganın hepsini
   aynı anda değiştirmesi gerekir.
 - **Dağıtım linki ele geçerse.** Program başka bir yerden dolaşıyorsa, imza
-  onun bizden çıkmadığını gösterir.
+  onun benden çıkıp çıkmadığını gösterir.
 
 Aynı mantık oda parolasında da geçerli: parolayı yüz yüze paylaşmak, bu
 belgede parmak izini ayrıca doğrulamakla aynı şeydir.
@@ -104,8 +104,52 @@ belgede parmak izini ayrıca doğrulamakla aynı şeydir.
 
 ## Kaynaktan kendiniz derlemek
 
-Derleme **yeniden üretilebilir** (1.12.4): aynı commit'ten derleyen herkes bit
+Derleme **yeniden üretilebilir** (1.12.4): aynı kaynaktan derleyen herkes bit
 bit aynı dosyayı elde eder. Yani özete güvenmek zorunda değilsiniz — kendiniz
-derleyip karşılaştırabilirsiniz. Her sürümle birlikte yayınlanan derleme
-künyesi hangi girdilerin kullanıldığını yazıyor. Ayrıntı:
-[THREAT_MODEL.md](THREAT_MODEL.md) 5.9.
+derleyip karşılaştırabilirsiniz. Ayrıntı: [THREAT_MODEL.md](THREAT_MODEL.md) 5.9.
+
+Her sürümle birlikte bir **derleme künyesi** (`DERLEME-KUNYESI.txt`)
+yayınlanıyor: hangi Python, hangi PyInstaller, hangi paketler ve hangi
+`SOURCE_DATE_EPOCH` ile derlendiğini yazıyor.
+
+**Gerekenler:** Windows 10/11 (64-bit), Python 3.11 (künyedeki sürüm), NSIS
+(kurulum dosyası için; künyedeki sürüm) ve libopus.dll.
+
+**1. Kaynağı alın** — sürümün etiketinden (ör. `v1.12.8`), ya `git clone` ile
+ya da GitHub'dan ZIP olarak. Derleme betiği git deposu olmayan bir klasörde de
+çalışır.
+
+**2. Paketleri kilitli sürümleriyle kurun.**
+
+```powershell
+python -m venv .venv
+.venv\Scripts\python.exe -m pip install --require-hashes -r requirements.lock
+```
+
+`--require-hashes`, PyPI'daki bir dosya sonradan değiştirilmişse kurulumu
+reddeder.
+
+**3. libopus.dll.** Depoda durmuyor. Ya [THIRD-PARTY.md](THIRD-PARTY.md)
+içindeki tarifle kaynağından derleyin, ya da sürümle yayınlanan DLL'i alıp
+özetini `SHA256SUMS.txt` ile karşılaştırın.
+
+**4. Künyedeki zaman damgasını verip derleyin.**
+
+```powershell
+$env:SOURCE_DATE_EPOCH = "<künyedeki SOURCE_DATE_EPOCH>"
+$env:PROXYCHAT_OPUS_DLL = "C:\yol\libopus.dll"
+.uild_exe.ps1
+.uild_installer.ps1
+Get-FileHash dist\ProxyChat.exe, dist\ProxyChat-Setup.exe -Algorithm SHA256
+```
+
+Çıkan özetler `SHA256SUMS.txt` ile aynı olmalı.
+
+**Neden zaman damgasını elle veriyorsunuz:** Geliştirme ayrı bir depoda
+sürüyor; bu depo onun bir **kopyası**, geçmişi değil. Ölçüm ve prototip
+araçları dışında bırakıldı ([VOICE_CHAT_PLAN.md](VOICE_CHAT_PLAN.md));
+programın derlemesine girmiyorlar. Künyedeki commit kimliği o geliştirme
+deposuna ait ve burada bulunmaz. Derleme betiği zaman damgasını normalde son
+commit'in zamanından alıyor; bu deponun commit'leri farklı zamanlarda olduğu
+için künyedeki değeri sizin vermeniz gerekiyor. Ortamda verilen değer
+korunuyor.

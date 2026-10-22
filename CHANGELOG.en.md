@@ -13,7 +13,7 @@ messages with older ones; both sides see "different version". That is
 deliberate: with no negotiation, nobody can force two clients down to an older
 scheme.
 
-No public release has been distributed yet.
+The first public release is **1.12.8**; download it from [Releases](../../releases).
 
 ---
 

@@ -18,12 +18,16 @@
 > ürünün parçası değiller. Kurdukları kurallar ve verdikleri kararlar bu
 > belgede yazılı; ama yalnızca bu araçlara dayanan iddialar, kod açıldığında
 > da dışarıdan doğrulanamayacak.
+> **Güncelleme (2026-10-22):** kod açıldı; metindeki `core/` ve `apps/`
+> yolları artık bu depoda. `tools/ses_` araçları yukarıdaki istisna gereği
+> dışarıda kaldı. Sesli sohbet iki ayrı bilgisayar arasında da denendi ve
+> çalıştı.
 
 Durum: **Faz 1b bitti; sesli sohbet ProxyChat'in içinde** (1.8.0,
 2026-09-25). Sunucu sesi çözmeden aktarıyor, istemci ayrı bir UDP yolundan
 konuşuyor, arayüzde katıl/ayrıl, katılımcı listesi, sustur, gürültü kapısı ve
-eşik ayarı var. Aynı makinede iki kopyayla denendi ve ses duyuldu; **iki ayrı
-bilgisayarla henüz denenmedi.** **Faz 0'ın karar kapısı 2026-09-24'te KABUL
+eşik ayarı var. Önce aynı makinede iki kopyayla denendi; **daha sonra iki ayrı
+bilgisayar arasında da denendi ve çalıştı.** **Faz 0'ın karar kapısı 2026-09-24'te KABUL
 EDİLEBİLİR çıktı.** 1.10.0'da sesin **ileri gizliliği** geldi: oturum anahtarı
 artık paroladan değil oda oturumundan türüyor (3. ve 9. bölüm). Sesli sohbetin
 ürüne **varsayılan** olarak girmesi canlı kullanım testine bağlı ve o test henüz
@@ -464,7 +468,7 @@ CI'da çalışmamalı.
 | **0. Ölçüm** | UDP gecikme, jitter ve kayıp ölçen küçük bir araç | **Karar kapısı**: rakamlar kötüyse plan burada durur — v1: KÖTÜ; v2 (2026-09-24): **KABUL EDİLEBİLİR** |
 | **1a. Çekirdek** ✅ | Paket biçimi, AES-GCM + HKDF, jitter tamponu, testler | Ses donanımı olmadan çalışan, test edilmiş çekirdek |
 | **1b. İskelet** ✅ | Sinyalleşme paketleri, UDP soketi, Host'ta aktarma | `core/voice_relay.py`, `core/voice_net.py`; testlerle doğrulandı |
-| **2. Çift yönlü** ✅ | Ses cihazı katmanı, Qt entegrasyonu, çok kişi | Sesler karışıyor; gerçek hatta henüz denenmedi |
+| **2. Çift yönlü** ✅ | Ses cihazı katmanı, Qt entegrasyonu, çok kişi | Sesler karışıyor; iki ayrı bilgisayar arasında da denendi |
 | **3. Kullanılabilirlik** | Opus ✅ ve sustur ✅ yapıldı; **konuşma göstergesi 2026-09-19'da tasarımdan çıkarıldı** (2.2 — sunucu kimin ne zaman konuştuğunu öğrenmesin diye); kalan iş bas-konuş | 4 kişi kullanabilir |
 | **4. Paketleme** | Qt ses modülleri geri alındı ve boyut **ölçüldü** (aşağıda); Opus kütüphanesi ✅ pakete gömüldü (1.12.2) ve kaynaktan derleniyor (1.12.3); kalan: UDP güvenlik duvarı kuralı, belgeler | Dağıtılabilir sürüm |
 

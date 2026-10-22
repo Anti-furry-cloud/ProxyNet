@@ -6,11 +6,11 @@ Kendi sunucunda çalışan, uçtan uca şifreli sohbet. Amaç bir arkadaş grubu
 konuşabilmesi değil yalnızca — amaç **mesajların hiç kimse tarafından
 okunamaması**, sunucuyu işleten kişi ve devlet ölçeğinde bir rakip dahil.
 
-> **Bu depoda şu an yalnızca belgeler var.** Kaynak kodu henüz açık değil,
-> indirilebilir bir sürüm yok ve yazılım hiçbir bağımsız denetimden geçmedi.
-> **Kimse bugün buna güvenmemeli.** Belgeleri erken yayınlıyorum çünkü
-> tasarımdaki bir hatayı, üzerine aylarca kod yazdıktan sonra değil, şimdi
-> duymak istiyorum.
+> **İlk herkese açık sürüm: ProxyChat 1.12.8 (Windows).** Kaynak kodu bu
+> depoda, kurulum dosyası [Releases](../../releases) sayfasında. Tek kişinin
+> yazdığı erken bir sürüm ve **hiçbir bağımsız güvenlik denetiminden geçmedi.**
+> Hassas bir şey için kullanmadan önce aşağıdaki **"ne yapmıyor"** ve **"ne
+> için, ne için değil"** bölümlerini oku.
 
 ---
 
@@ -22,7 +22,7 @@ paylaşıyor ama farklı sözler veriyor.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | Kime | Günlük kullanım, arkadaş grubu | Şifrelemenin öncelik olduğu durumlar |
-| Durum | Çalışıyor. 1.12.8 derlendi ve test edildi, henüz dağıtılmadı; sesli sohbet ve ileri gizlilik (metin 1.9.0, ses 1.10.0) uygulamaya girdi | Henüz kod yok; [sınırları](apps/proxynull/README.md) ve [protokol tasarımı](apps/proxynull/PROTOKOL.md) yazılı |
+| Durum | Çalışıyor. İlk herkese açık sürüm 1.12.8 ([indir](../../releases)); sesli sohbet ve ileri gizlilik (metin 1.9.0, ses 1.10.0) içinde | Henüz kod yok; [sınırları](apps/proxynull/README.md) ve [protokol tasarımı](apps/proxynull/PROTOKOL.md) yazılı |
 | Hedefi | Kullanışlı olmak, içeriği korumak | Tehdit modelindeki T5 rakibini karşılamak |
 | Platform | **Windows 10/11 (64-bit)** | Baştan platform-nötr (Rust, komut satırı) |
 
@@ -54,8 +54,9 @@ kirletmemesi için ikisi bilerek ayrıldı.
 - **Sesli sohbet** (1.8.0): aynı odadakiler konuşabilir. Ses, oda oturumunun
   anahtarından türeyen anahtarla şifreleniyor ve metin gibi **ileri gizliliği
   var** (1.10.0); sunucu onu çözmeden aktarıyor ve kimin konuştuğunu göremiyor. Konuşma yokken mikrofonu
-  sessizleştiren bir gürültü kapısı var. Henüz **varsayılan olarak
-  sunulmuyor**: canlı kullanım testi geçilmeden öyle anlatılmayacak.
+  sessizleştiren bir gürültü kapısı var. İki ayrı bilgisayar arasında
+  denendi ve çalıştı. Yine de henüz **varsayılan olarak sunulmuyor**: canlı
+  kullanım testi geçilmeden öyle anlatılmayacak.
 - Türkçe ve İngilizce arayüz.
 - **Yalnızca Windows 10/11 (64-bit).** Çekirdek — şifreleme, protokol, taşıma,
   ses — platform-nötr Python'dur; ürünü Windows'a bağlayan şey üç işletim
@@ -83,20 +84,17 @@ Bunları saklamıyorum; saklarsam belge bir pazarlama metnine dönüşür:
   ileri gizlilik onu kapatıyor. Asıl çözüm bir PAKE.
 - **Taşıma katmanı şifresiz.** Aktif bir saldırgan mesaj içeriğini
   sahteleyemez ama zarf paketlerini sahteleyebilir.
-- **Dağıtılan dosya imzasız.**
+- **Dağıtılan dosyanın Authenticode imzası yok.** Windows SmartScreen uyarı
+  verir. Onun yerine özet listesi GPG ile imzalı; nasıl kontrol edileceği
+  [VERIFYING.md](VERIFYING.md) içinde.
 
 Hepsinin ayrıntısı, neden böyle olduğu ve kapatılma sırası burada:
 **[THREAT_MODEL.md](THREAT_MODEL.md)**
 
 ### Sırada ne var
 
-**Sıradaki iş kod değil, deneme: sesli sohbet iki ayrı bilgisayar arasında
-hiç denenmedi.** Bugüne kadar kulakla dinlenen tek şey aynı makinedeki iki
-kopya oldu. Bütün yol testlerle doğrulanmış durumda — üç kişinin sesinin
-karışması, yanlış parolanın çözememesi, merhabasız sesin iletilmemesi dahil —
-ama test, gerçek mikrofonların ve gerçek bir hattın yerini tutmaz.
-
-Sonra **canlı kullanım testi**. Sesli sohbetin varsayılan olarak sunulması ona
+**Sesli sohbet iki ayrı bilgisayar arasında denendi ve çalıştı.** Sıradaki iş
+**canlı kullanım testi**. Sesli sohbetin varsayılan olarak sunulması ona
 bağlı. Test henüz başlamadı ve bunun somut bir sebebi var: oturumlar, ürünün
 kendi kayıt dosyasını yazmaya başlamasından sonra sayılıyor, o dosyayı şu an
 yalnızca ses prototipi yazıyor. Kural böyle yazıldı ki "çalışıyor mu" diye
@@ -163,9 +161,9 @@ açılamaz. En büyük açık buydu.
 
 **Sesli sohbet artık uygulamanın içinde** (2026-09-25). Sunucu sesi
 çözmeden aktarıyor, istemci ayrı bir UDP yolundan konuşuyor, arayüzde
-katıl/ayrıl, katılımcı listesi, sustur, gürültü kapısı ve eşik ayarı var. Aynı makinede
-iki kopyayla denendi ve ses duyuldu; iki ayrı bilgisayarla henüz
-denenmedi.
+katıl/ayrıl, katılımcı listesi, sustur, gürültü kapısı ve eşik ayarı var. Önce aynı
+makinede iki kopyayla denendi; daha sonra iki ayrı bilgisayar arasında da
+denendi ve çalıştı.
 
 Bağlantı kalitesinin yeterli olup olmadığına, kuralları ölçüm yapılmadan
 önce yayınlanmış ölçümlerle karar verildi: 2026-09-24'te sonuç **kabul
@@ -184,6 +182,26 @@ Bu listeyi okuyup "o zaman bu ne işe yarıyor?" diye sorabilirsin. Cevap:
 sunucuyu işleten kişiye ve odaya giremeyen üçüncü kişilere karşı içeriğini
 koruyor. Devlet ölçeğinde bir rakibe karşı korumuyor ve bunu iddia etmiyorum.
 Aradaki farkı gizlemek yerine yazmayı tercih ediyorum.
+
+---
+
+## Ne için, ne için değil
+
+ProxyChat **birbirini tanıyan küçük gruplar** için: arkadaşlar, bir oyun
+ekibi, bir aile. Sunucuyu gruptan biri kendi bilgisayarında açar; konuşmalar
+başka bir şirketin sunucusunda durmaz.
+
+Ne **değildir**:
+
+- **Anonimlik aracı değil.** Bağlandığın sunucu IP adresini görür; sunucuyu
+  açan kişi odada kimin, ne zaman olduğunu görür. Kim olduğunu gizlemez,
+  yalnızca ne yazdığını korur.
+- **Kimseden saklanmak için tasarlanmadı.** Kod açık, tasarımı ve sınırları
+  yazılı; gizli bir dağıtımı ya da gizli bir kullanıcı kitlesi yok.
+- **Merkezi bir hizmet değil.** Benim işlettiğim bir sunucu yok. Hiçbir
+  kullanıcının adını, adresini ya da mesajını görmüyorum, tutmuyorum;
+  program da bana hiçbir şey göndermiyor.
+- **Yasa dışı kullanım için yapılmadı** ve böyle bir kullanımı desteklemiyorum.
 
 ---
 
@@ -212,13 +230,18 @@ Geliştirme Türkçe yürüyor; belgelerin hepsi Türkçe ve İngilizce yayınla
 | [apps/proxynull/README.md](apps/proxynull/README.md) | ProxyNull'ın sınırları: zorunluluklar, yasaklar, ProxyChat'ten neden ayrı |
 | [apps/proxynull/PROTOKOL.md](apps/proxynull/PROTOKOL.md) | ProxyNull'ın protokol tasarımı — buluşma kodu, Noise el sıkışması, doğrulama kodu, dolgu; kararı verilmiş ve verilmemiş maddeler ayrı işaretli |
 | [listening/](listening/LISTENING.tr.md) | Kör dinleme testi: simüle ağ kesintileri konuşmada nasıl duyuluyor |
-| [VERIFYING.md](VERIFYING.md) | İndirdiğiniz dosyayı nasıl doğrularsınız, ve bu doğrulamanın sınırı |
+| [MANUAL.md](MANUAL.md) | Kurulum, kullanım ve kaynaktan derleme |
+| [SECURITY.md](SECURITY.md) | Bir güvenlik açığını nasıl bildirirsin |
+| [VERIFYING.md](VERIFYING.md) | İndirdiğiniz dosyayı nasıl doğrularsınız, kaynaktan nasıl yeniden derlersiniz, ve bu doğrulamanın sınırı |
 | [THIRD-PARTY.md](THIRD-PARTY.md) | Pakete giren üçüncü parti bileşenler, lisansları ve kaynakları |
 | [LICENSE](LICENSE) | GNU GPL v3 metni |
 
 Her belgenin en üstünde Türkçe/English geçişi var; ayrıca listelenmedi.
 
-Kod açıldığında bu depoya eklenecek; belgeler yerinde kalacak.
+Kaynak kodun kendisi: uygulama [apps/proxychat/](apps/proxychat/README.md), ortak
+çekirdek `core/`, testler `tests/`; derleme betikleri kök klasörde.
+Geliştirme ayrı bir depoda sürüyor; bu depo onun her sürümde güncellenen bir
+**kopyası**, geçmişi değil. Ayrıntısı [VERIFYING.md](VERIFYING.md) içinde.
 
 ---
 
@@ -245,10 +268,10 @@ tersi, serbest bırakıyor. Yalnızca üç şart var:
 Yani kodu alıp kapalı kaynak bir ürüne çevirmek ya da yazarını değiştirmek
 lisans ihlalidir.
 
-Henüz herkese açık bir sürüm yok. Bir sürüm dağıtıldığında dosyaların
-SHA-256 özetleri bu depoda yayınlanacak ve o liste **imzalanacak**; elinizdeki
-dosyanın özeti orada yazanla aynı değilse, o dosya bizim dağıttığımız dosya
-değildir.
+Sürümler [Releases](../../releases) sayfasında yayınlanıyor. Her sürümle
+birlikte dosyaların SHA-256 özetleri ve o listenin **imzası** geliyor;
+elinizdeki dosyanın özeti orada yazanla aynı değilse, o dosya benim
+dağıttığım dosya değildir.
 
 İmza anahtarının parmak izi:
 
@@ -273,8 +296,8 @@ GitHub kullanmak istemiyorsan **proxynet.dev@protonmail.com** adresine yaz.
 mesajda yalnızca sorunun ne olduğunu söyle; ayrıntıyı nasıl ileteceğimizi
 birlikte seçeriz.
 
-Kod olmadan güvenlik iddiası denetlenemez — bunun farkındayım. Bu depo bir
-kanıt değil, bir niyet beyanı ve bir tasarım taslağıdır.
+Artık kod da burada, yani iddiaları koda bakarak sınayabilirsin. Bu bir
+denetim yerine geçmez: kodu benden başka kimse baştan sona incelemedi.
 
 **Kod okumadan da yardım edebilirsin:** birkaç kısa kaydı dinleyip
 kesintilerin sana nasıl geldiğini söyle. Yönerge ve sorular:
