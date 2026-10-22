@@ -1,0 +1,31 @@
+name: tests
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    # Uygulama Windows hedefli: PySide6 arayuzu, DPAPI ile parola saklama ve
+    # NSIS installer. Testleri de Windows'ta kosturmak dogru olan.
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Bagimliliklari kur
+        # requirements-dev.txt pyinstaller da kuruyor; test isinde gereksiz.
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt pytest
+
+      - name: Testler
+        # Qt penceresiz ortamda calisabilsin diye offscreen platform eklentisi.
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest -q

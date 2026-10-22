@@ -19,6 +19,15 @@ No public release has been distributed yet.
 
 ## 1.12.8
 
+- **The installer could only be reproduced in the same directory.** NSIS
+  embedded the modification time of the executable it packs; someone who built
+  an identical executable elsewhere got a different Setup checksum. So 1.12.8's
+  Setup file was rebuilt and the checksum list signed again. The executable
+  inside it did not change.
+- **The source could not be built without a git repository.** For someone who
+  downloaded the source as a ZIP, the build script crashed instead of warning
+  "this is not a git repository". The build record also always wrote git's
+  value rather than a `SOURCE_DATE_EPOCH` given in the environment.
 - **The IP address was plainly visible on the chat screen.** After connecting
   the top left read "Connected: 25.x.x.x", and on the Host every address to
   share was listed. Anyone streaming their screen or recording a video leaked

@@ -539,15 +539,22 @@ way to the end. Three settings close it:
 
 | | |
 | --- | --- |
-| `SOURCE_DATE_EPOCH` | derived from the git commit time, so anyone who clones the repository can produce the same value |
+| `SOURCE_DATE_EPOCH` | derived from the git commit time, so anyone who clones the repository can produce the same value; if the environment already sets it, that value is kept, so someone who passes the value from the build record can reproduce the published executable from another repository too |
 | `PYTHONHASHSEED=0` | pins the dict/set ordering that affects output order |
 | `upx=False` | UPX's output can vary between builds (and it is a classic antivirus trigger) |
 
 Touching the source files' mtimes is **not** needed; `SOURCE_DATE_EPOCH`
 alone suffices, which was also measured. More importantly, **a build from a
 completely different directory produces the same checksum**, so a verifier
-does not have to place the project at some particular path. The NSIS
-installer was already deterministic.
+does not have to place the project at some particular path.
+
+I had written that the NSIS installer "was already deterministic"; **that was
+half true.** Two installers built in the same directory matched, but NSIS
+embedded the modification time of the executable it packs. Someone who built a
+byte-identical executable in another directory got a different Setup checksum.
+Measured (2026-10-22): equalising only the executable's time made the checksums
+match. It is closed with `SetDateSave off` in the installer script. That is why
+1.12.8's Setup file was rebuilt; the executable inside it is the same.
 
 The inputs are pinned too. `requirements.txt` gave ranges (`PySide6>=6.6`),
 so someone building a month later got a different Qt; `requirements.lock` now

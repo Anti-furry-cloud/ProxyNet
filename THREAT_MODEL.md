@@ -520,14 +520,22 @@ başındaki küçük bir farkı sonuna kadar yayıyor. Kapatan şey üç ayar:
 
 | | |
 | --- | --- |
-| `SOURCE_DATE_EPOCH` | git commit zamanından türetiliyor, yani depoyu klonlayan herkes aynı değeri üretebiliyor |
+| `SOURCE_DATE_EPOCH` | git commit zamanından türetiliyor, yani depoyu klonlayan herkes aynı değeri üretebiliyor; ortamda zaten verilmişse o değer kullanılıyor, böylece derleme künyesindeki değeri veren biri yayınlanan exe'yi başka bir depodan da yeniden üretebiliyor |
 | `PYTHONHASHSEED=0` | sıralamayı etkileyen sözlük/küme düzenini sabitliyor |
 | `upx=False` | UPX'in çıktısı derlemeden derlemeye değişebiliyor (ayrıca antivirüsün klasik tetikleyicisi) |
 
 Kaynak dosyaların mtime'ını ellemek **gerekmiyor**, `SOURCE_DATE_EPOCH` tek
 başına yetiyor; bu da ölçüldü. Ve önemlisi: **farklı bir klasörden yapılan
 derleme de aynı özeti veriyor**, yani doğrulayan kişinin projeyi belirli bir
-yola koyması gerekmiyor. NSIS kurulumu zaten deterministikti.
+yola koyması gerekmiyor.
+
+NSIS kurulumu için "zaten deterministikti" diye yazmıştım; **yarısı doğruydu.**
+Aynı klasörde yapılan iki kurulum aynı özeti veriyordu, ama NSIS paketlediği
+exe'nin değiştirilme zamanını kuruluma gömüyordu. İçeriği birebir aynı exe'yi
+başka bir klasörde derleyen biri farklı bir Setup özeti alıyordu. Ölçüldü
+(2026-10-22): yalnızca exe'nin zamanını eşitlemek özeti tutturdu. Kurulum
+betiğinde `SetDateSave off` ile kapandı. Bu yüzden 1.12.8'in Setup dosyası
+yeniden üretildi; içindeki exe aynı.
 
 Girdiler de sabitlendi. `requirements.txt` aralık veriyordu (`PySide6>=6.6`),
 yani bir ay sonra derleyen başka bir Qt alıyordu; artık `requirements.lock`

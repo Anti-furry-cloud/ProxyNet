@@ -1,0 +1,51 @@
+# ProxyChat derleme kilidi -- ELLE DUZENLENMEZ.
+#
+# Neden var: requirements.txt aralik veriyordu (PySide6>=6.6), yani bir ay
+# sonra derleyen baska bir Qt aliyordu ve exe farkli cikiyordu. Yeniden
+# uretilebilir derleme (THREAT_MODEL 5.9) once bunu sabitlemeyi gerektiriyor.
+#
+# Asil kazanc derlemeden buyuk: --require-hashes ile kurulum, PyPI'daki bir
+# dosya sonradan degistirilmisse REDDEDER. Bu bir tedarik zinciri korumasi.
+#
+# Kullanim:
+#     pip install --require-hashes -r requirements.lock
+#
+# Hedef ortam: Python 3.11 / Windows x64. Baska bir Python ya da platform
+# icin wheel'ler degisir; kilit yeniden uretilmelidir.
+#
+# pytest ve diger gelistirme araclari burada YOK; onlar dagitilan dosyanin
+# parcasi degil (bkz. requirements-dev.txt).
+#
+# Bir pakette birden fazla ozet varsa (cryptography), PyPI o surum icin birden
+# fazla uyumlu wheel yayinlamis demektir; pip hangisini secerse secsin kilitli
+# olsun diye hepsi yaziliyor.
+
+PySide6==6.11.2 \
+    --hash=sha256:3201d67e3c10be2eaedd3910ff0f02351eca7e88c95a291cde5e7f2f55ef207f
+PySide6_Addons==6.11.2 \
+    --hash=sha256:f449ea4431da20e7b86752cca8d166f93434516fe417f981c27e5f8e1b554407
+PySide6_Essentials==6.11.2 \
+    --hash=sha256:c8a29def77032773a30879f7f24415b5395ad08592d147c170824ef4c735dfc1
+shiboken6==6.11.2 \
+    --hash=sha256:6ab0eba1c904455df621f9a6df3ca2bb896bab8670572d2bc4e37804ae91f19a
+cryptography==50.0.1 \
+    --hash=sha256:55d16b1ef3ee0958d893a977b19777887e546c9954ea81b200c3301a864013f2 \
+    --hash=sha256:aed8db4f6d71c51efb89530e12d9464e7bf2923d46c3205dc794a2a93f8c0648
+cffi==2.1.1 \
+    --hash=sha256:42f6930c31dc7f50732c9ae793c2786c7b6b044195967bbdde40bb9be81c4cc0
+pycparser==3.0 \
+    --hash=sha256:b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992
+pyinstaller==6.22.2 \
+    --hash=sha256:9b990fa6bbe143572f06644a984ad0d7aa2e2ccc6929d4916031343a5888e9a7
+pyinstaller-hooks-contrib==2026.7 \
+    --hash=sha256:24257a04c7a5a7a034cf28e39dcee20fbeeb9f043076729480f2e1b69904408a
+altgraph==0.17.5 \
+    --hash=sha256:f3a22400bce1b0c701683820ac4f3b159cd301acab067c51c653e06961600597
+pefile==2024.8.26 \
+    --hash=sha256:76f8b485dcd3b1bb8166f1128d395fa3d87af26360c2358fb75b80019b957c6f
+pywin32-ctypes==0.2.3 \
+    --hash=sha256:8a1513379d709975552d202d942d9837758905c8d01eb82b8bcc30918929e7b8
+packaging==26.3 \
+    --hash=sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c
+setuptools==65.5.0 \
+    --hash=sha256:f62ea9da9ed6289bfe868cd6845968a2c854d1427f8548d52cae02a42b4f0356

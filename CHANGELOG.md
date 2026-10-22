@@ -18,6 +18,15 @@ Henüz herkese açık bir sürüm dağıtılmadı.
 
 ## 1.12.8
 
+- **Kurulum dosyası yalnızca aynı klasörde yeniden üretilebiliyordu.** NSIS,
+  paketlediği exe'nin değiştirilme zamanını kuruluma gömüyordu; içeriği aynı
+  exe'yi başka bir yerde derleyen biri farklı bir Setup özeti alıyordu. Bu
+  yüzden 1.12.8'in Setup dosyası yeniden üretildi ve özet listesi yeniden
+  imzalandı. İçindeki exe değişmedi.
+- **Kaynak git deposu olmadan derlenemiyordu.** Kaynağı ZIP olarak indiren biri
+  için derleme betiği, "bu bir git deposu değil" uyarısı vermek yerine
+  çöküyordu. Ayrıca derleme künyesi, ortamda verilen `SOURCE_DATE_EPOCH` yerine
+  her zaman git'teki değeri yazıyordu.
 - **IP adresi sohbet ekranında açıkça görünüyordu.** Bağlanınca sol üstte
   "Bağlandı: 25.x.x.x" yazıyordu; Host'ta da paylaşılacak adreslerin hepsi
   listeleniyordu. Ekranını yayınlayan ya da video çeken biri adresini farkında

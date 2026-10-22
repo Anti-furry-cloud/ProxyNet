@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Sanal ortam
+.venv/
+venv/
+
+# PyInstaller / NSIS ciktilari
+build/
+dist/
+*.manifest
+
+# Editor / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+
+# Arsivler
+*.zip
+
+# Arac ciktilari. tools/ altindaki olcum ve prototip araclari
+# calistirilinca kok klasore yaziyorlar; dagitilan programin
+# parcasi degiller ve depoya girmezler.
+ses-olcum-sonucu-*.txt
+ses-olcum-kaydi-*.json
+ses-prototip-kaydi-*.jsonl

@@ -1,0 +1,8 @@
+# Gelistirirken bu yeter. DERLEME icin requirements.lock kullanilmali:
+# burada aralik var (>=), yani bir ay sonra kuran baska surumler alir ve exe
+# farkli cikar. Kilit hem tam surumleri hem wheel ozetlerini sabitliyor:
+#
+#     pip install --require-hashes -r requirements.lock
+#
+PySide6>=6.6
+cryptography>=44.0
