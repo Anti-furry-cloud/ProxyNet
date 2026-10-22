@@ -77,10 +77,24 @@ def _dongu(hat: LineSocket, olaylar: list) -> None:
 
 
 class SunucuTests(unittest.TestCase):
+    """Okumayan istemci, tamponu dolunca odadan atiliyor; mesajlar akmaya devam ediyor.
+
+    Tamponun ne kadar veriyle dolacagi makineye bagli: eskiden test sabit 16
+    mesaj (~112 KB) gonderip bunun yettigini varsayiyordu. Bizim makinede
+    yetiyordu, GitHub'in Windows sunucusunda (daha buyuk yerel baglanti
+    tamponlari) yetmedi ve istemci hic atilmadi. Artik istemci atilana kadar
+    -- bir ust sinirla -- gonderiliyor. Hiz siniri yalnizca bu testte
+    kaldiriliyor; yoksa saniyede iki mesajla buyuk bir tamponu doldurmak
+    dakikalar surerdi.
+    """
+
     def test_okumayan_istemci_odadan_atiliyor_mesajlar_akiyor(self):
         eski = server_modulu._POLL_INTERVAL
         server_modulu._POLL_INTERVAL = 0.3
         self.addCleanup(setattr, server_modulu, "_POLL_INTERVAL", eski)
+        gercek_sinirlayici = server_modulu.RateLimiter
+        server_modulu.RateLimiter = lambda max_events=0, window=10.0: gercek_sinirlayici(10**6, window)
+        self.addCleanup(setattr, server_modulu, "RateLimiter", gercek_sinirlayici)
         port = bos_port()
         server = ChatServer(port=port)
         server.start()
@@ -112,16 +126,24 @@ class SunucuTests(unittest.TestCase):
         while "kotu" not in server.hub.registry.usernames("general") and time.monotonic() < bitis:
             time.sleep(0.02)
 
-        n = 16
-        for i in range(n):
-            gonderen.send_message(f"{i:02d}" + "m" * 7000)
-            time.sleep(0.55)
-        bitis = time.monotonic() + 3
+        # Atilana kadar gonder: ust sinir 20 sn ya da ~16 MB.
+        n = 0
+        bitis = time.monotonic() + 20
+        while "kotu" in server.hub.registry.usernames("general") and n < 2000 and time.monotonic() < bitis:
+            gonderen.send_message(f"{n:04d}" + "m" * 7000)
+            n += 1
+            time.sleep(0.01)
+        self.assertNotIn("kotu", server.hub.registry.usernames("general"), f"okumayan istemci {n} mesajdan sonra da atilmadi")
+
+        # Atildiktan sonra mesajlar takilmadan akiyor.
+        for i in range(5):
+            gonderen.send_message(f"son{i}")
+            n += 1
+        bitis = time.monotonic() + 5
         while len(gelen) < n and time.monotonic() < bitis:
             time.sleep(0.05)
-
-        self.assertNotIn("kotu", server.hub.registry.usernames("general"), "okumayan istemci atilmadi")
         self.assertGreaterEqual(len(gelen), n - 1, f"mesajlar takildi: {len(gelen)}/{n}")
+        self.assertIn("son4", gelen)
 
 
 if __name__ == "__main__":
