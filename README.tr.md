@@ -242,7 +242,7 @@ Geliştirme Türkçe yürüyor; belgelerin hepsi Türkçe ve İngilizce yayınla
 | --- | --- |
 | [CHANGELOG.md](CHANGELOG.md) | Sürüm sürüm neyin yanlış olduğu ve ne değiştiği |
 | [THREAT_MODEL.md](THREAT_MODEL.md) | Neyi koruduğu, neyi korumadığı, rakip modeli, tasarım ilkeleri, açıkların kapatılma sırası |
-| [VOICE_CHAT_PLAN.md](VOICE_CHAT_PLAN.md) | Sesli sohbetin tasarım planı — topoloji, paket biçimi, şifreleme şeması, açık güvenlik soruları |
+| [VOICE_CHAT_PLAN.md](VOICE_CHAT_PLAN.md) | Sesli sohbetin tasarımı ve geliştirme günlüğü — topoloji, paket biçimi, şifreleme şeması, açık güvenlik soruları |
 | [apps/proxynull/README.md](apps/proxynull/README.md) | ProxyNull'ın sınırları: zorunluluklar, yasaklar, ProxyChat'ten neden ayrı |
 | [apps/proxynull/PROTOKOL.md](apps/proxynull/PROTOKOL.md) | ProxyNull'ın protokol tasarımı — buluşma kodu, Noise el sıkışması, doğrulama kodu, dolgu; kararı verilmiş ve verilmemiş maddeler ayrı işaretli |
 | [listening/](listening/LISTENING.tr.md) | Kör dinleme testi: simüle ağ kesintileri konuşmada nasıl duyuluyor |

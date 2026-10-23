@@ -252,7 +252,7 @@ English. Where the two disagree, **the Turkish one is correct.**
 | --- | --- |
 | [CHANGELOG.en.md](CHANGELOG.en.md) | What was wrong and what changed, version by version |
 | [THREAT_MODEL.en.md](THREAT_MODEL.en.md) | What it protects, what it does not, the adversary model, design principles, the order gaps get closed |
-| [VOICE_CHAT_PLAN.en.md](VOICE_CHAT_PLAN.en.md) | The voice chat design plan — topology, packet format, encryption scheme, open security questions |
+| [VOICE_CHAT_PLAN.en.md](VOICE_CHAT_PLAN.en.md) | Voice chat's design and development log — topology, packet format, encryption scheme, open security questions |
 | [apps/proxynull/README.en.md](apps/proxynull/README.en.md) | ProxyNull's limits: what it must do, what it refuses, why it is separate from ProxyChat |
 | [apps/proxynull/PROTOCOL.en.md](apps/proxynull/PROTOCOL.en.md) | ProxyNull's protocol design — the rendezvous code, the Noise handshake, the verification code, padding; decided and undecided items marked apart |
 | [listening/](listening/LISTENING.md) | A blind listening test: how simulated network interruptions sound in speech |

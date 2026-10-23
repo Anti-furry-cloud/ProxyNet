@@ -80,8 +80,9 @@ Eklenmesi isteniyorsa önce o sorular cevaplanmalı ve gerekçe buraya yazılmal
 | Davet bağlantıları, sunucu keşfi | Merkezî bir dizin gerektirir; 1. maddeyle çelişir |
 | Mesaj düzenleme/silme | Geçmiş yönetimi karmaşıklaşır; kalıcılık kararlarıyla çakışır |
 
-Sesli sohbet ayrı değerlendiriliyor: planı `../../VOICE_CHAT_PLAN.md`
-içinde, kendi karar kapısıyla birlikte duruyor.
+Sesli sohbet ayrı değerlendirildi ve 1.8.0'dan beri uygulamada. Tasarımı,
+geçtiği karar kapısı ve geliştirme günlüğü
+[VOICE_CHAT_PLAN.md](../../VOICE_CHAT_PLAN.md) içinde.
 
 ---
 

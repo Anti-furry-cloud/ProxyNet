@@ -83,8 +83,9 @@ and the rationale written here.
 | Invite links, server discovery | Requires a central directory; conflicts with reason 1 |
 | Editing/deleting messages | Complicates history management; clashes with the persistence decisions |
 
-Voice chat is evaluated separately: its plan lives in
-`../../VOICE_CHAT_PLAN.en.md`, together with its own decision gate.
+Voice chat was evaluated separately and has been in the app since 1.8.0. Its
+design, the decision gate it passed and its development log are in
+[VOICE_CHAT_PLAN.en.md](../../VOICE_CHAT_PLAN.en.md).
 
 ---
 

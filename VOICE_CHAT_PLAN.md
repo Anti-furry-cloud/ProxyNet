@@ -1,6 +1,12 @@
 **Türkçe** · [English](VOICE_CHAT_PLAN.en.md)
 
-# Sesli sohbet — tasarım planı
+# Sesli sohbet — tasarım ve geliştirme günlüğü
+
+> **Durum (2026-10-24):** Sesli sohbet **1.8.0'dan beri ProxyChat'in içinde**
+> ve iki ayrı bilgisayar arasında denenip çalıştı. Bu belge onun tasarımını ve
+> nasıl geliştirildiğini anlatıyor. Aşağıdaki tarihli notlar ve "sıradaki iş"
+> cümleleri, yazıldıkları günün durumunu anlatır. Dosyanın adı (`VOICE_CHAT_PLAN`)
+> koddaki göndermeler bozulmasın diye değişmedi.
 
 > **Yayın notu (2026-09-16):** Kaynak kodu henüz açık değil; metindeki dosya
 > yolları (`core/voice_crypto.py` gibi) şu an görünmüyor ve kod açıldığında

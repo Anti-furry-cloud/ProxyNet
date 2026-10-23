@@ -1,6 +1,13 @@
 [Türkçe](VOICE_CHAT_PLAN.md) · **English**
 
-# Voice chat — design plan
+# Voice chat — design and development log
+
+> **Status (2026-10-24):** voice chat has been **inside ProxyChat since 1.8.0**
+> and has been tried between two separate computers, where it worked. This
+> document describes its design and how it was developed. The dated notes and
+> the "next step" sentences below describe the state on the day they were
+> written. The file keeps its name (`VOICE_CHAT_PLAN`) so references in the
+> code do not break.
 
 > **Publication note (2026-09-16):** The source code is not open yet; the file
 > paths in the text (such as `core/voice_crypto.py`) are not visible and were
