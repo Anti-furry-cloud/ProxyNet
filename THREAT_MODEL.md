@@ -572,6 +572,43 @@ SmartScreen bir itibar sistemi. Bu yüzden ertelendi (8. bölüm, 8-B).
 Not: SmartScreen bir güvenlik garantisi değil. A bir güvenlik problemiydi ve
 kapandı; B bir kullanılabilirlik problemi.
 
+### 5.10 Kuantum bilgisayar: "şimdi kaydet, sonra çöz" — açık
+
+Oturum anahtarı yalnızca X25519 anahtar değişiminden türüyor
+(`core/key_agreement.py`). Oda parolası anahtarın içine girmiyor; yalnızca
+açık anahtarları doğrulayan HMAC'te kullanılıyor. X25519 bir eliptik eğri
+yöntemi ve yeterince büyük, hata düzeltmeli bir kuantum bilgisayar onu Shor
+algoritmasıyla kırabilir.
+
+Bugün böyle bir makine yok; ne zaman olacağı, hatta olup olmayacağı belirsiz.
+Tehlike bugünün trafiği değil, **kaydedilmiş** trafik: açık anahtarlar şifresiz
+taşıma katmanından geçtiği için (5.4-A), trafiği bugün kaydeden biri ileride
+X25519'u kırabilen bir makineye sahip olursa o oturumların anahtarlarını
+**parolayı bilmeden** çıkarabilir. İleri gizlilik (5.1) buna karşı korumaz; o,
+parolanın sonradan sızmasına karşı koruyor.
+
+Etkilenmeyenler: içeriği şifreleyen AES-GCM ve parolayı işleyen Argon2id. Bir
+kuantum bilgisayarın simetrik şifrelemeye karşı bilinen en iyi saldırısı
+(Grover) güvenlik marjını yarıya indirir; 256 bitlik anahtar ve bellek yoğun
+Argon2id için bu pratikte bir kırılma değil.
+
+Pratik anlamı: bir arkadaş grubunun bugünkü konuşmaları için risk küçük.
+**Yıllarca gizli kalması gereken bir şey için ProxyChat bugün yeterli değil.**
+
+Kapatmanın iki adımı (8. bölüm, 10. sıra):
+
+1. Paroladan Argon2id ile türetilen anahtarı oturum anahtarının türetimine
+   (HKDF) de katmak — WireGuard'ın kuantuma karşı önerdiği ön paylaşımlı
+   anahtar yöntemi. Kuantum saldırganı X25519'u kırsa bile parolayı da bilmek
+   zorunda kalır. Sınırı: zayıf bir parola yine tahmin edilebilir; onun asıl
+   çözümü bir PAKE.
+2. Hibrit anahtar değişimi: X25519 ile birlikte kuantuma dayanıklı bir
+   yöntem (ML-KEM). Büyük mesajlaşma uygulamalarının ve tarayıcıların geçtiği
+   yol bu.
+
+İkisi de tel biçimini değiştirir; eski sürümlerle şifreli konuşma kesilir.
+Açık 2026-10-24'te bu belgeye yazıldı.
+
 ---
 
 ## 6. Tasarım ilkeleri
@@ -626,6 +663,7 @@ Karar kaydı — aynı fikirlerin tekrar gündeme gelmemesi için.
 | 8-A | ~~Yeniden üretilebilir derleme + kilitli bağımlılıklar + künye (5.9)~~ **Yapıldı (1.12.4)** | Orta | Küçük — ölçüldükten sonra üç ayar |
 | 8-B | **Authenticode imzası (5.9)** — ertelendi | Kullanılabilirlik | Küçük, ama para ve tüzel kimlik işi |
 | 9 | Taşıma katmanı şifrelemesi (5.4-A) — **ertelendi** | Düşük–Orta | Büyük |
+| 10 | **Kuantuma karşı (5.10):** önce parolayı oturum anahtarına katmak, sonra hibrit ML-KEM | Bugün düşük, uzun vadede yüksek | Orta — tel biçimi değişir |
 
 **5.4-A neden en sona düştü.** Eskiden 5. sıradaydı ve "yüksek etki" yazıyordu;
 ikisi de yanlıştı. Üç gerekçe:

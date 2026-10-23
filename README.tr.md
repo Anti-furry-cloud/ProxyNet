@@ -98,6 +98,10 @@ Bunları saklamıyorum; saklarsam belge bir pazarlama metnine dönüşür:
   pahalı yapar, imkânsız yapmaz. Parolayı bulan biri **canlı** bir oturumun
   anahtar takasını taklit edip araya girebilir; kaydedilmiş trafiği açamaz,
   ileri gizlilik onu kapatıyor. Asıl çözüm bir PAKE.
+- **Henüz kuantuma dayanıklı değil.** Kaydedilmiş trafik, ileride X25519'u
+  kırabilen bir kuantum bilgisayarla parola bilinmeden çözülebilir. Bugün
+  böyle bir makine yok; kapatma planı [THREAT_MODEL.md](THREAT_MODEL.md) 5.10
+  içinde.
 - **Taşıma katmanı şifresiz.** Aktif bir saldırgan mesaj içeriğini
   sahteleyemez ama zarf paketlerini sahteleyebilir.
 - **Dağıtılan dosyanın Authenticode imzası yok.** Windows SmartScreen uyarı

@@ -102,6 +102,10 @@ copy:
   expensive, not impossible. Someone who finds the password can impersonate the
   key exchange of a **live** session and get in between; they cannot open
   recorded traffic, which forward secrecy closes. The real fix is a PAKE.
+- **Not yet quantum-resistant.** Recorded traffic could be decrypted later by
+  a quantum computer able to break X25519, without the password. No such
+  machine exists today; the plan to close it is in
+  [THREAT_MODEL.en.md](THREAT_MODEL.en.md) 5.10.
 - **The transport layer is unencrypted.** An active attacker cannot forge
   message content but can forge envelope packets.
 - **The distributed file has no Authenticode signature.** Windows SmartScreen

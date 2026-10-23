@@ -592,6 +592,44 @@ SmartScreen is a reputation system. So it is deferred (section 8, 8-B).
 Note that SmartScreen is not a security guarantee. A was a security problem
 and is closed; B is a usability problem.
 
+### 5.10 Quantum computers: "record now, decrypt later" — open
+
+The session key comes only from the X25519 key exchange
+(`core/key_agreement.py`). The room password does not enter the key; it is
+used only in the HMAC that authenticates the public keys. X25519 is an
+elliptic-curve method, and a large enough, error-corrected quantum computer
+could break it with Shor's algorithm.
+
+No such machine exists today; when it will, or whether it ever will, is
+uncertain. The danger is not today's traffic but **recorded** traffic: because
+the public keys cross the unencrypted transport layer (5.4-A), someone who
+records traffic today and later gets a machine that can break X25519 could
+recover those sessions' keys **without knowing the password**. Forward secrecy
+(5.1) does not protect against this; it protects against the password leaking
+later.
+
+Not affected: AES-GCM, which encrypts the content, and Argon2id, which
+processes the password. The best known quantum attack on symmetric encryption
+(Grover) halves the security margin; for a 256-bit key and memory-hard
+Argon2id that is not a practical break.
+
+What it means in practice: for a group of friends' conversations today the
+risk is small. **For something that must stay secret for years, ProxyChat is
+not adequate today.**
+
+Two steps to close it (section 8, item 10):
+
+1. Also feed the key derived from the password with Argon2id into the session
+   key derivation (HKDF) — the pre-shared key approach WireGuard recommends
+   against quantum attackers. Someone who breaks X25519 would still need the
+   password. Its limit: a weak password can still be guessed; the real fix for
+   that is a PAKE.
+2. A hybrid key exchange: X25519 together with a quantum-resistant method
+   (ML-KEM). This is the route the large messaging apps and browsers have taken.
+
+Both change the wire format; encrypted conversation with older versions stops.
+The gap was written into this document on 2026-10-24.
+
 ---
 
 ## 6. Design principles
@@ -647,6 +685,7 @@ A decision record, so the same ideas are not re-litigated.
 | 8-A | ~~Reproducible builds + locked dependencies + build manifest (5.9)~~ **Done (1.12.4)** | Medium | Small — three settings, once measured |
 | 8-B | **Authenticode signing (5.9)** — deferred | Usability | Small, but a money and legal-identity job |
 | 9 | Transport-layer encryption (5.4-A) — **deferred** | Low–Medium | Large |
+| 10 | **Against quantum attackers (5.10):** first feed the password into the session key, then hybrid ML-KEM | Low today, high in the long run | Medium — wire format changes |
 
 **Why 5.4-A dropped to the bottom.** It used to be 5th and marked "high
 impact"; both were wrong. Three reasons:
