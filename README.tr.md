@@ -6,11 +6,27 @@ Kendi sunucunda çalışan, uçtan uca şifreli sohbet. Amaç bir arkadaş grubu
 konuşabilmesi değil yalnızca — amaç **mesajların hiç kimse tarafından
 okunamaması**, sunucuyu işleten kişi ve devlet ölçeğinde bir rakip dahil.
 
-> **İlk herkese açık sürüm: ProxyChat 1.12.8 (Windows).** Kaynak kodu bu
-> depoda, kurulum dosyası [Releases](../../releases) sayfasında. Tek kişinin
-> yazdığı erken bir sürüm ve **hiçbir bağımsız güvenlik denetiminden geçmedi.**
-> Hassas bir şey için kullanmadan önce aşağıdaki **"ne yapmıyor"** ve **"ne
-> için, ne için değil"** bölümlerini oku.
+## Hızlı başlangıç
+
+**[ProxyChat 1.12.8'i indir (Windows 10/11)](../../releases/latest)** — ilk
+herkese açık sürüm. O sayfadan `ProxyChat-Setup.exe` dosyasını al.
+
+1. **Kur.** Dosyanın Authenticode imzası yok, bu yüzden Windows SmartScreen
+   uyarı verir: *Ek bilgi → Yine de çalıştır*. Önce dosyayı kontrol etmek
+   istersen: [VERIFYING.md](VERIFYING.md).
+2. **Aynı ağda olun.** Herkesin sunucuyu açanın bilgisayarına ulaşabilmesi
+   gerekiyor: aynı yerel ağ ya da Hamachi gibi bir sanal LAN.
+3. **Biri sunucuyu açar.** **Host**'u seçer, dinlenecek ağı seçer, bir oda
+   parolası girer ve bağlanır. Adresi ve parolayı arkadaşlarına iletir — yüz
+   yüze ya da şifreli bir mesajlaşma uygulamasıyla.
+4. **Diğerleri katılır.** **Join**'i seçer; adresi, aynı oda adını ve aynı
+   parolayı girer. Parola aynı değilse kimse mesajları okuyamaz.
+
+> **Güvenmeden önce:** tek kişinin yazdığı erken bir sürüm ve **hiçbir
+> bağımsız güvenlik denetiminden geçmedi.** **Ne yazdığını korur, kim
+> olduğunu değil** — sunucu odada kimin, ne zaman olduğunu görür. Aşağıda
+> [ne yapmadığını](#proxychat-bugün-ne-yapmıyor) ve
+> [ne için, ne için olmadığını](#ne-için-ne-için-değil) oku.
 
 ---
 

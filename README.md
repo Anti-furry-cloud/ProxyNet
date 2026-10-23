@@ -6,11 +6,27 @@ End-to-end encrypted chat that runs on your own server. The goal is not merely
 for a group of friends to talk — the goal is that **messages cannot be read by
 anyone**, including the person running the server and a state-level adversary.
 
-> **First public release: ProxyChat 1.12.8 (Windows).** The source code is in
-> this repository, the installer on the [Releases](../../releases) page. It is
-> an early release written by one person and **has had no independent security
-> audit.** Before using it for anything sensitive, read the **"does not do"**
-> and **"what it is for, and what it is not"** sections below.
+## Quick start
+
+**[Download ProxyChat 1.12.8 for Windows 10/11](../../releases/latest)** —
+the first public release. Get `ProxyChat-Setup.exe` from that page.
+
+1. **Install.** The file has no Authenticode signature, so Windows SmartScreen
+   warns: *More info → Run anyway*. To check the file first:
+   [VERIFYING.en.md](VERIFYING.en.md).
+2. **Be on the same network.** Everyone must reach the host's computer: the
+   same local network, or a virtual LAN such as Hamachi.
+3. **One person hosts.** Choose **Host**, pick the network to listen on, enter
+   a room password and connect. Share the address and the password with your
+   friends — face to face or over an encrypted messenger.
+4. **The others join.** Choose **Join**, enter the address, the same room and
+   the same password. Without the same password nobody can read the messages.
+
+> **Before you rely on it:** an early release by one person, with **no
+> independent security audit**. It protects **what you write, not who you
+> are** — the server sees who is in the room and when. Read
+> [what it does not do](#what-proxychat-does-not-do-today) and
+> [what it is for, and what it is not](#what-it-is-for-and-what-it-is-not).
 
 ---
 
