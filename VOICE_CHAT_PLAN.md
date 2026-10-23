@@ -920,6 +920,9 @@ mikrofon, şifreleme, UDP, Host'ta aktarma, jitter tamponu, hoparlör — artık
 yalnızca testlerle değil kulakla da doğrulandı. Henüz denenmeyen: iki ayrı
 bilgisayar ve gerçek bir hat.
 
+*Sonradan (1.12.8'e kadar): iki ayrı bilgisayar arasında da denendi ve
+çalıştı.*
+
 **Sürüm 1.8.0.** Sesli sohbet ve dört yeni sinyalleşme paketi girdiği için
 numara yükseldi. Eski bir sunucu `voice_join`'i tanımadığı için hiç cevap
 vermiyor; istemci beş saniye sonra vazgeçiyor ve "sunucu cevap vermedi,

@@ -517,8 +517,10 @@ key everywhere; a weak password can still be cracked offline (see section 3,
 
 ### 5.9 The distribution chain — reproducibility closed (1.12.4), signing not
 
-The distributed `.exe` is **unsigned** and shared via a link. An adversary
-could deliver a modified binary to a user.
+The distributed `.exe` has **no Authenticode signature**. Since 1.12.8 it is
+published on GitHub's Releases page together with a GPG-signed checksum list;
+before that, trial builds were shared via a cloud link. An adversary could try
+to deliver a modified binary to a user.
 
 These are two separate problems with very different costs, which is why
 section 8 now lists them apart (8-A, 8-B).

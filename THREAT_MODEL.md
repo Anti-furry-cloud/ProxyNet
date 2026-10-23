@@ -499,8 +499,10 @@ aynı oda adı ve parola her yerde aynı anahtarı verir; zayıf bir parola hâl
 
 ### 5.9 Dağıtım zinciri — yeniden üretilebilirlik kapandı (1.12.4), imza kapanmadı
 
-Dağıtılan `.exe` **imzasızdır** ve bir linkle paylaşılır. Rakip, kullanıcıya
-değiştirilmiş bir binary ulaştırabilir.
+Dağıtılan `.exe`'nin **Authenticode imzası yoktur**. 1.12.8'den beri GitHub'ın
+Releases sayfasında, GPG ile imzalı bir özet listesiyle birlikte yayınlanıyor;
+ondan önce deneme sürümleri bir bulut linkiyle paylaşılıyordu. Rakip,
+kullanıcıya değiştirilmiş bir binary ulaştırmaya çalışabilir.
 
 Bu iki ayrı problem ve bedelleri çok farklı, o yüzden 8. bölümde de ayrı
 duruyorlar (8-A, 8-B).

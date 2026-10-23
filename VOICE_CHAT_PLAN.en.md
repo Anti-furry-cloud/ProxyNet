@@ -969,6 +969,9 @@ worked.** So the end-to-end path — microphone, encryption, UDP, relaying on
 the host, jitter buffer, speaker — is now confirmed by ear and not only by
 tests. Not tried yet: two separate computers on a real line.
 
+*Later (by 1.12.8): it was also tried between two separate computers, and
+it worked.*
+
 **Version 1.8.0.** The number went up because voice chat and four new
 signalling packets landed. An older server does not know `voice_join` and
 never answers; the client gives up after five seconds and says the server
