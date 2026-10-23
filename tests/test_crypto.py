@@ -85,8 +85,12 @@ class Argon2idTests(unittest.TestCase):
         icin etiket de degisti; dolgu anlayan bir istemcinin dolgu
         anlamayan biriyle konusmasi dolguyu anlamsiz kilardi, o yuzden
         pazarlik degil temiz kirilma (core/padding.py).
+
+        v2 -> v3 (1.13.0): ikili anahtara paroladan tureyen on paylasimli
+        anahtar girdi (kuantuma karsi ilk adim, THREAT_MODEL 5.10). Tel bicimi
+        ayni ama anahtarlar farkli; eski istemciyle "farkli surum" gorulsun.
         """
-        self.assertEqual(SCHEME, "aesgcm-x25519-v2")
+        self.assertEqual(SCHEME, "aesgcm-x25519-v3")
 
 
 class ClientKeyCacheTests(unittest.TestCase):

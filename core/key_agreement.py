@@ -33,14 +33,36 @@ This module makes the trade:
 So even if the password is captured later, old traffic stays closed: what the
 adversary needs is the ephemeral private keys, and those are gone.
 
+## The password also enters the pair key (1.13.0)
+
+Until 1.13.0 the pair key came from the X25519 secret alone. That left one
+adversary uncovered: someone who records the traffic today and later breaks
+X25519 itself -- a large quantum computer running Shor's algorithm. The public
+keys cross the network, so such an adversary could rebuild every pair key
+**without the password** (THREAT_MODEL.en.md 5.10).
+
+Now a pre-shared key derived from the password (`pair_psk`) is fed into the
+same HKDF next to the X25519 secret -- the approach WireGuard recommends
+against quantum adversaries. Breaking X25519 is no longer enough; the password
+is needed too. Nothing else changes: forward secrecy still rests on the
+ephemeral keys, and the password still authenticates the offer.
+
+The pre-shared key is an HMAC of the Argon2id master key under its own context
+string, so it is independent of the offer tag that travels in the clear. Its
+limit is the password's: a weak password can still be guessed offline, and a
+quantum computer speeds that guessing up by at most a square root, which
+Argon2id's memory cost largely absorbs. This is a first step, not
+post-quantum cryptography; a hybrid key exchange (X25519 + ML-KEM) is the
+second.
+
 ## The flow
 
 1. Each client generates an ephemeral key pair at the start of a session.
 2. It announces its public key together with the HMAC derived from the
    password (`offer`).
 3. It verifies the other side's offer (`verify_offer`) and computes the
-   **pair key** with Diffie-Hellman (`pair_key`). Both sides arrive at the
-   same value.
+   **pair key** from Diffie-Hellman plus the password-derived pre-shared key
+   (`pair_key`, `pair_psk`). Both sides arrive at the same value.
 4. Each client generates a random **sender key** once per session
    (`new_sender_key`), wraps it for every peer with the pair key
    (`wrap_sender_key`) and broadcasts its messages under that key.
@@ -102,9 +124,13 @@ OFFER_MAC_BYTES = 32
 SENDER_KEY_BYTES = 32
 #: The AES-GCM nonce. Wrapping generates a fresh one every time.
 WRAP_NONCE_BYTES = 12
+#: The pre-shared key derived from the password (HMAC-SHA256).
+PAIR_PSK_BYTES = 32
 
 _OFFER_MAC_CONTEXT = b"proxynet-offer-v1"
-_PAIR_KEY_INFO = b"proxynet-pair-v1"
+#: v1 -> v2 (1.13.0): the pre-shared key from the password joins the HKDF input.
+_PAIR_KEY_INFO = b"proxynet-pair-v2"
+_PAIR_PSK_CONTEXT = b"proxynet-pair-psk-v1"
 _SENDER_KEY_WRAP_INFO = b"proxynet-sender-key-v1"
 
 
@@ -138,6 +164,17 @@ def verify_offer(public_key: bytes, mac: bytes, master_key: bytes, room: str) ->
         raise OfferError(f"the tag must be {OFFER_MAC_BYTES} bytes")
     if not hmac.compare_digest(mac, offer_mac(public_key, master_key, room)):
         raise OfferError("the offer could not be verified with this room password")
+
+
+def pair_psk(master_key: bytes, room: str) -> bytes:
+    """The pre-shared key that joins the pair key, derived from the password.
+
+    Its context string differs from the offer tag's, so the two HMAC outputs
+    are independent: the tag travels in the clear, this never leaves the
+    client. The room name is bound in for the same reason as in the tag.
+    """
+    message = _PAIR_PSK_CONTEXT + room.encode("utf-8") + b"\x00"
+    return hmac.new(master_key, message, hashlib.sha256).digest()
 
 
 def new_sender_key() -> bytes:
@@ -185,14 +222,22 @@ class EphemeralKey:
         """The tag for our own public key."""
         return offer_mac(self.public_key, master_key, room)
 
-    def pair_key(self, peer_public: bytes) -> bytes:
+    def pair_key(self, peer_public: bytes, psk: bytes) -> bytes:
         """The pair key shared with the other side.
 
         Both sides must arrive at the same value, which is why the two public
         keys enter the HKDF salt **sorted**. Without sorting, each side would
         put its own key first and use a different salt.
+
+        `psk` is `pair_psk(...)`: the X25519 secret and the password-derived
+        key enter the HKDF together, so breaking X25519 alone does not give
+        the key (see "The password also enters the pair key" above). It is a
+        required argument on purpose -- a call that forgets it must fail, not
+        quietly fall back to the X25519-only key.
         """
         _check_public(peer_public)
+        if not isinstance(psk, (bytes, bytearray)) or len(psk) != PAIR_PSK_BYTES:
+            raise ValueError(f"the pre-shared key must be {PAIR_PSK_BYTES} bytes")
         if peer_public == self.public_key:
             raise OfferError("cannot agree with our own public key")
         try:
@@ -208,7 +253,7 @@ class EphemeralKey:
             length=32,
             salt=salt,
             info=_PAIR_KEY_INFO,
-        ).derive(shared)
+        ).derive(shared + bytes(psk))
 
 
 def _check_public(public_key: bytes) -> None:

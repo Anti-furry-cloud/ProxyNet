@@ -17,6 +17,24 @@ The first public release is **1.12.8**; download it from [Releases](../../releas
 
 ---
 
+## 1.13.0 — ⚠ wire break
+
+- **Encrypted traffic recorded today could later be opened, without the
+  password, by a quantum computer able to break X25519.** The session key came
+  only from the X25519 key exchange; the room password was used only for
+  authentication. Now a key derived from the password also enters the session
+  key: breaking X25519 alone is not enough, the password is needed too. Text
+  and voice are protected together. Its limit: a weak password does not
+  protect this; for real quantum resistance a hybrid key exchange (ML-KEM) is
+  next. Detail: [THREAT_MODEL.en.md](THREAT_MODEL.en.md) 5.10.
+- So 1.13.0 **cannot talk encrypted with 1.12.x**: the keys differ. If an older
+  version is in the same room, its messages show as "a different version", while
+  its voice is simply not heard (its key does not open, so it is skipped, with no
+  separate notice). Everyone in the room needs to update.
+- The voice tests failed now and then: the tests' free-port helper looked only
+  at TCP, and when it landed in a UDP range Windows reserves for itself the
+  voice socket could not be opened.
+
 ## 1.12.8
 
 - **The installer could only be reproduced in the same directory.** NSIS

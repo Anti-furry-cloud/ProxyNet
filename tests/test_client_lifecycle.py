@@ -15,11 +15,27 @@ from core.server import ChatServer
 
 
 def bos_port() -> int:
-    s = socket.socket()
-    s.bind(("127.0.0.1", 0))
-    port = s.getsockname()[1]
-    s.close()
-    return port
+    """TCP'de ve UDP'de bos bir port: sunucu ses icin ayni numarayi UDP'de aciyor.
+
+    Yalnizca TCP'ye bakmak yetmiyordu (2026-10-24): Windows bazi UDP port
+    araliklarini kendine ayiriyor (netsh ... excludedportrange), secilen port
+    oraya duserse UDP bind "erisim engellendi" veriyor ve ses testleri ara
+    sira dusuyordu.
+    """
+    for _ in range(50):
+        s = socket.socket()
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+        s.close()
+        u = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            u.bind(("127.0.0.1", port))
+        except OSError:
+            continue
+        finally:
+            u.close()
+        return port
+    raise RuntimeError("TCP ve UDP'de bos bir port bulunamadi")
 
 
 class _SunuculuTest(unittest.TestCase):

@@ -189,8 +189,8 @@ this; the server merely carries it and does not know what it means.
 The ordering problem is handled too: the text handshake can finish after the
 voice join. In that case the peer is skipped silently and the participant list
 is processed again once the key arrives — a missing key is a transient state,
-not an error. The scheme label is `aesgcm-x25519-v3`, deliberately incompatible
-with the old `aesgcm-hkdf-v2`. Code: `core/voice_crypto.py` →
+not an error. The scheme label is `aesgcm-x25519-v4` (raised from v3 in 1.13.0,
+5.10), deliberately incompatible with the old `aesgcm-hkdf-v2`. Code: `core/voice_crypto.py` →
 `derive_voice_session_key`, `ForwardSecretVoiceCipher`. Tests:
 `tests/test_voice_forward_secrecy.py`.
 
@@ -496,8 +496,9 @@ normalisation (`tests/test_crypto.py` → `Argon2idTests`).
 Argon2id's **job changed in 1.9.0**: the key it derives no longer encrypts
 messages, it is the key of the signature that proves the other side belongs to
 the room (and the voice key is derived from it, 5.1). That is why text chat's
-scheme label is now `aesgcm-x25519-v2` (raised from v1 in 1.12.0 together with
-padding, 5.7); the label `fernet-argon2id-v1` belongs to
+scheme label is now `aesgcm-x25519-v3` (raised from v1 to v2 in 1.12.0 together
+with padding, and to v3 in 1.13.0 when the password entered the pair key; 5.7,
+5.10); the label `fernet-argon2id-v1` belongs to
 1.8.0 and earlier. **That scheme's code was deleted in 1.10.1** as well
 (`RoomCipher`, `derive_room_key`, `make_cipher`): nothing had called it since
 1.9.0, it took up most of the file and left the impression that ProxyChat still
@@ -592,10 +593,10 @@ SmartScreen is a reputation system. So it is deferred (section 8, 8-B).
 Note that SmartScreen is not a security guarantee. A was a security problem
 and is closed; B is a usability problem.
 
-### 5.10 Quantum computers: "record now, decrypt later" — open
+### 5.10 Quantum computers: "record now, decrypt later" — first step closed (1.13.0)
 
-The session key comes only from the X25519 key exchange
-(`core/key_agreement.py`). The room password does not enter the key; it is
+**Until 1.13.0** the session key came only from the X25519 key exchange
+(`core/key_agreement.py`). The room password did not enter the key; it was
 used only in the HMAC that authenticates the public keys. X25519 is an
 elliptic-curve method, and a large enough, error-corrected quantum computer
 could break it with Shor's algorithm.
@@ -619,7 +620,7 @@ not adequate today.**
 
 Two steps to close it (section 8, item 10):
 
-1. Also feed the key derived from the password with Argon2id into the session
+1. **Done (1.13.0).** Also feed the key derived from the password with Argon2id into the session
    key derivation (HKDF) — the pre-shared key approach WireGuard recommends
    against quantum attackers. Someone who breaks X25519 would still need the
    password. Its limit: a weak password can still be guessed; the real fix for
@@ -628,7 +629,18 @@ Two steps to close it (section 8, item 10):
    (ML-KEM). This is the route the large messaging apps and browsers have taken.
 
 Both change the wire format; encrypted conversation with older versions stops.
-The gap was written into this document on 2026-10-24.
+The gap was written into this document on 2026-10-24; the first step was done
+the same day in 1.13.0.
+
+**Since 1.13.0:** a pre-shared key derived from the password (`pair_psk`, an
+HMAC of the master key under its own context string) enters the HKDF together
+with the X25519 secret. Someone who records traffic and later breaks X25519 now
+also has to find the password. **What remains open:** a weak or leaked password
+does not protect this, and real quantum resistance waits for step 2 (hybrid
+ML-KEM). In practice this is a little better than written above: a room with a
+strong password is now protected against a quantum adversary as well as its
+password is. Tests: `tests/test_key_agreement.py` → `KuantumTests` (including
+a known-answer test vector).
 
 ---
 
@@ -685,7 +697,7 @@ A decision record, so the same ideas are not re-litigated.
 | 8-A | ~~Reproducible builds + locked dependencies + build manifest (5.9)~~ **Done (1.12.4)** | Medium | Small — three settings, once measured |
 | 8-B | **Authenticode signing (5.9)** — deferred | Usability | Small, but a money and legal-identity job |
 | 9 | Transport-layer encryption (5.4-A) — **deferred** | Low–Medium | Large |
-| 10 | **Against quantum attackers (5.10):** first feed the password into the session key, then hybrid ML-KEM | Low today, high in the long run | Medium — wire format changes |
+| 10 | **Against quantum attackers (5.10):** ~~feed the password into the session key~~ **done (1.13.0)**; next, hybrid ML-KEM | Low today, high in the long run | Medium — wire format changes |
 
 **Why 5.4-A dropped to the bottom.** It used to be 5th and marked "high
 impact"; both were wrong. Three reasons:

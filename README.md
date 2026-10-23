@@ -8,8 +8,7 @@ anyone**, including the person running the server and a state-level adversary.
 
 ## Quick start
 
-**[Download ProxyChat 1.12.8 for Windows 10/11](../../releases/latest)** —
-the first public release. Get `ProxyChat-Setup.exe` from that page.
+**[Download ProxyChat 1.13.0 for Windows 10/11](../../releases/latest)**. Get `ProxyChat-Setup.exe` from that page.
 
 1. **Install.** The file has no Authenticode signature, so Windows SmartScreen
    warns: *More info → Run anyway*. To check the file first:
@@ -28,6 +27,17 @@ the first public release. Get `ProxyChat-Setup.exe` from that page.
 > [what it does not do](#what-proxychat-does-not-do-today) and
 > [what it is for, and what it is not](#what-it-is-for-and-what-it-is-not).
 
+> **⚠ A fake "ProxyChat.exe" is in circulation (2026-10).** A file named
+> `ProxyChat.exe` is being offered elsewhere on the internet. **It is not
+> ProxyChat; it is malware** — a remote-access trojan. I examined it without
+> running it: about 14 MB, unsigned, SHA-256
+> `6f2b3816fa61328de13496b47c787f768b6634ec7cb68a4a3c370be74e45c94e`.
+> The real files come **only** from this repository's
+> [Releases](../../releases) page, with their checksums in the signed
+> `SHA256SUMS.txt` ([VERIFYING.en.md](VERIFYING.en.md)). If you ran the fake,
+> treat that computer as compromised: disconnect it from the network, scan
+> it, and change your passwords from another device.
+
 ---
 
 ## What it is
@@ -38,7 +48,7 @@ different promises.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | For whom | Everyday use, a group of friends | Situations where encryption is the priority |
-| Status | Working. First public release 1.12.8 ([download](../../releases)); voice chat and forward secrecy (text 1.9.0, voice 1.10.0) included | No code yet; its [limits](apps/proxynull/README.en.md) and [protocol design](apps/proxynull/PROTOCOL.en.md) are written down |
+| Status | Working. Latest release 1.13.0 ([download](../../releases/latest)), first public release 1.12.8; voice chat and forward secrecy (text 1.9.0, voice 1.10.0) included | No code yet; its [limits](apps/proxynull/README.en.md) and [protocol design](apps/proxynull/PROTOCOL.en.md) are written down |
 | Goal | Be usable, protect content | Meet the T5 adversary in the threat model |
 | Platform | **Windows 10/11 (64-bit)** | Platform-neutral by design (Rust, command line) |
 
@@ -102,9 +112,11 @@ copy:
   expensive, not impossible. Someone who finds the password can impersonate the
   key exchange of a **live** session and get in between; they cannot open
   recorded traffic, which forward secrecy closes. The real fix is a PAKE.
-- **Not yet quantum-resistant.** Recorded traffic could be decrypted later by
-  a quantum computer able to break X25519, without the password. No such
-  machine exists today; the plan to close it is in
+- **Only partly quantum-resistant.** Since 1.13.0 the session key also
+  depends on the room password, so someone who records traffic today and
+  later breaks X25519 with a quantum computer still needs the password. A
+  weak password does not protect this, and full resistance (a hybrid key
+  exchange with ML-KEM) is still to come:
   [THREAT_MODEL.en.md](THREAT_MODEL.en.md) 5.10.
 - **The transport layer is unencrypted.** An active attacker cannot forge
   message content but can forge envelope packets.
@@ -130,6 +142,13 @@ reasoning written there: Authenticode signing (8-B) and transport-layer
 encryption (9).
 
 #### Recently closed
+
+**Recorded traffic against a future quantum computer** (1.13.0). The session
+key came from the X25519 exchange alone, so traffic recorded today could be
+opened later, without the password, by a quantum computer able to break
+X25519. Now a key derived from the password enters the session key too;
+text and voice are covered together. This changes the keys, so 1.13.0
+**cannot talk encrypted with 1.12.x**: everyone in a room needs to update.
 
 **The address on screen** (1.12.8). Anyone streaming their screen or recording
 a video gave away their IP address without noticing: it was on the chat

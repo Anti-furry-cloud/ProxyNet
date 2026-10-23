@@ -170,7 +170,7 @@ Ancak metin tarafında kullanılan **Fernet ses için yanlış araç**:
 - Fernet zaman damgası taşır ve yeniden oynatma korumasını çağırana bırakır.
 
 Karar: **AES-GCM, ve her gönderenin her ses oturumu için ayrı bir anahtar.**
-Yazıldı: `core/voice_crypto.py`, şema etiketi `aesgcm-hkdf-v2`. **Bu etiket artık güncel değil:** 1.10.0'dan beri ürünün ses şeması `aesgcm-x25519-v3` (9. bölüm), `aesgcm-hkdf-v2` yalnızca prototipin yolu olarak kaldı.
+Yazıldı: `core/voice_crypto.py`, şema etiketi `aesgcm-hkdf-v2`. **Bu etiket artık güncel değil:** 1.10.0'dan beri ürünün ses şeması `aesgcm-x25519-v3`, 1.13.0'dan beri `aesgcm-x25519-v4` (9. bölüm), `aesgcm-hkdf-v2` yalnızca prototipin yolu olarak kaldı.
 
 ```
 oda parolası ──Argon2id──▶ ana anahtar ──HKDF──▶ ses anahtarı
@@ -956,7 +956,8 @@ Kapanan sorular:
   ve `voice_peers` paketlerine açık anahtar alanı eklendi ve sunucu onu
   yalnızca taşıyor. Metin el sıkışması ses katılımından sonra biterse eş
   sessizce atlanıyor ve anahtar gelince katılımcı listesi yeniden işleniyor.
-  Şema etiketi `aesgcm-x25519-v3`; eski `aesgcm-hkdf-v2` ile bilerek uyumsuz.
+  Şema etiketi `aesgcm-x25519-v3` (1.13.0'da v4: ikili anahtara parola da girdi,
+  THREAT_MODEL.md 5.10); eski `aesgcm-hkdf-v2` ile bilerek uyumsuz.
 
 - ~~`sender_id` nasıl atanacak?~~ → **Host atıyor ve bir oturum içinde aynı
   kimliği iki kez vermiyor** (Faz 1b, 2026-09-24). Kimlik istemcinin

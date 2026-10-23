@@ -107,7 +107,7 @@ class DusukDereceliNoktaTests(_Istemci):
         for ad, nokta in (("sifir", bytes(32)), ("bir", b"\x01" + bytes(31))):
             with self.subTest(nokta=ad):
                 with self.assertRaises(OfferError):
-                    EphemeralKey().pair_key(nokta)
+                    EphemeralKey().pair_key(nokta, bytes(32))
 
     def test_imzasi_gecerli_kotu_teklif_istemciyi_dusurmuyor(self):
         """Parolayi bilen biri gecerli imzayla dusuk dereceli nokta yollarsa."""

@@ -163,9 +163,14 @@ class OdaTests(unittest.TestCase):
         """Dolgunun verdigi guvencenin siniri: kova gizlenmiyor, yazili olsun."""
         self.assertNotEqual(len(self.oda.encrypt("a" * 40)), len(self.oda.encrypt("a" * 120)))
 
-    def test_sema_v2(self):
-        """Dolgu pazarliga acik degil: sema adi degisti, eski istemci tanimiyor."""
-        self.assertEqual(SCHEME, "aesgcm-x25519-v2")
+    def test_sema_dolgusuz_istemciyi_tanimiyor(self):
+        """Dolgu pazarliga acik degil: dolgusuz v1'e donus yok.
+
+        Etiket 1.13.0'da v3 oldu (ikili anahtar, test_crypto.py); burada
+        onemli olan dolgunun eklendigi v2'den geri gidilmemesi.
+        """
+        self.assertNotIn(SCHEME, ("aesgcm-x25519-v1",))
+        self.assertEqual(SCHEME, "aesgcm-x25519-v3")
 
     def test_uzun_metin_gidis_donus(self):
         metin = "satir\n" * 500

@@ -16,6 +16,24 @@ pazarlık olmadığı için kimse iki tarafı eski şemaya düşürmeye zorlayam
 
 ---
 
+## 1.13.0 — ⚠ tel kırılması
+
+- **Bugün kaydedilen şifreli trafik, ileride X25519'u kırabilen bir kuantum
+  bilgisayarla parola bilinmeden açılabilirdi.** Oturum anahtarı yalnızca
+  X25519 anahtar değişiminden türüyordu; oda parolası yalnızca kimlik
+  doğrulamada kullanılıyordu. Artık paroladan türeyen bir anahtar da oturum
+  anahtarının içine giriyor: X25519'u kırmak tek başına yetmiyor, parola da
+  gerekiyor. Metin ve ses birlikte korunuyor. Sınırı: zayıf bir parola bunu
+  korumaz; gerçek kuantum dayanıklılığı için hibrit bir anahtar değişimi
+  (ML-KEM) sırada. Ayrıntı: [THREAT_MODEL.md](THREAT_MODEL.md) 5.10.
+- Bu yüzden 1.13.0, **1.12.x ile şifreli konuşamaz**: anahtarlar farklı. Aynı
+  odada eski bir sürüm varsa onun mesajları "farklı sürüm" diye görünür,
+  sesi ise hiç duyulmaz (anahtarı açılmadığı için atlanır, ayrı bir uyarı
+  yok). Odadaki herkesin güncellemesi gerekiyor.
+- Ses testleri ara sıra düşüyordu: testlerin boş port bulan yardımcısı
+  yalnızca TCP'ye bakıyordu, Windows'un kendine ayırdığı bir UDP aralığına
+  denk gelince ses soketi açılamıyordu.
+
 ## 1.12.8
 
 - **Kurulum dosyası yalnızca aynı klasörde yeniden üretilebiliyordu.** NSIS,

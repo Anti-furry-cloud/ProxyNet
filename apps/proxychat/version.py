@@ -27,4 +27,4 @@ degistirirsen onlari da degistir (testler ikisini de kontrol ediyor):
 """
 
 APP_NAME = "ProxyChat"
-APP_VERSION = "1.12.8"
+APP_VERSION = "1.13.0"

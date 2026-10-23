@@ -176,7 +176,7 @@ However, the **Fernet used on the text side is the wrong tool for audio**:
 - Fernet carries a timestamp and leaves replay protection to the caller.
 
 Decision: **AES-GCM, with a separate key for every sender in every voice
-session.** Written: `core/voice_crypto.py`, scheme label `aesgcm-hkdf-v2`. **That label is no longer current:** since 1.10.0 the product's voice scheme is `aesgcm-x25519-v3` (section 9), and `aesgcm-hkdf-v2` remains only as the prototype's path.
+session.** Written: `core/voice_crypto.py`, scheme label `aesgcm-hkdf-v2`. **That label is no longer current:** since 1.10.0 the product's voice scheme is `aesgcm-x25519-v3`, and since 1.13.0 `aesgcm-x25519-v4` (section 9), and `aesgcm-hkdf-v2` remains only as the prototype's path.
 
 ```
 room password ──Argon2id──▶ master key ──HKDF──▶ voice key
@@ -1006,7 +1006,8 @@ Closed questions:
   `voice_join` and `voice_peers` packets for this, and the server merely carries
   it. If the text handshake finishes after the voice join, the peer is skipped
   silently and the participant list is processed again once the key arrives. The
-  scheme label is `aesgcm-x25519-v3`, deliberately incompatible with the old
+  scheme label is `aesgcm-x25519-v3` (v4 since 1.13.0: the password also enters
+  the pair key, THREAT_MODEL.en.md 5.10), deliberately incompatible with the old
   `aesgcm-hkdf-v2`.
 
 - ~~How will `sender_id` be assigned?~~ → **The host assigns it and never gives

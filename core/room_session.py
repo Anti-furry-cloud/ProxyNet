@@ -100,6 +100,7 @@ from .key_agreement import (
     EphemeralKey,
     SenderKeyError,
     new_sender_key,
+    pair_psk,
     unwrap_sender_key,
     verify_offer,
     wrap_sender_key,
@@ -112,7 +113,11 @@ from .padding import pad, unpad
 #: v1 -> v2 (1.12.0): the payload now travels padded. There is no negotiation,
 #: it is a clean break; talking to a client without padding would make the
 #: padding pointless.
-SCHEME = "aesgcm-x25519-v2"
+#: v2 -> v3 (1.13.0): the pair key now also depends on the password
+#: (core/key_agreement.py, THREAT_MODEL.en.md 5.10). The wire format is the
+#: same but the keys differ, so an older client's sender key would simply not
+#: open; a new label turns that into a clear "a different version" notice.
+SCHEME = "aesgcm-x25519-v3"
 
 #: The key id at the front of a message.
 KEY_ID_BYTES = 4
@@ -173,6 +178,7 @@ class RoomSession:
         self.room = room
         self._aad = _MESSAGE_AAD + normalize_room(room).encode("utf-8")
         self._master = derive_master_key(room, password)
+        self._psk = pair_psk(self._master, room)
         self._own = ephemeral if ephemeral is not None else EphemeralKey()
         self._sender_key = sender_key if sender_key is not None else new_sender_key()
         #: Verified peers: public key -> pair key.
@@ -208,7 +214,7 @@ class RoomSession:
         packet.
         """
         verify_offer(peer_public, mac, self._master, self.room)
-        pair = self._own.pair_key(peer_public)
+        pair = self._own.pair_key(peer_public, self._psk)
         self._pairs[bytes(peer_public)] = pair
         return wrap_sender_key(pair, self._sender_key)
 

@@ -92,10 +92,12 @@ from core.voice_packet import (
 )
 
 
-#: The label of the voice encryption scheme. It is carried in the signalling
-#: packet so that two clients speaking different schemes do not produce
-#: silence for each other. The v1 version (the one without a session key) is
-#: deliberately incompatible, because it was open to nonce reuse.
+#: The label of the voice encryption scheme. It names the scheme for the code
+#: and the documents; it is **not** sent on the wire (an older note here said it
+#: was -- checked 2026-10-24, it is not). What keeps two incompatible clients
+#: apart is the key itself: a peer whose key does not open is skipped. The v1
+#: version (the one without a session key) is deliberately incompatible,
+#: because it was open to nonce reuse.
 VOICE_ENCRYPTION_SCHEME = "aesgcm-hkdf-v2"
 
 #: The forward-secret voice scheme (1.9.x). The key is derived not from the
@@ -103,7 +105,12 @@ VOICE_ENCRYPTION_SCHEME = "aesgcm-hkdf-v2"
 #: anew each session, recorded audio cannot be opened even if the password
 #: leaks later (THREAT_MODEL 5.1). Deliberately incompatible with v2: the same
 #: wire format but a different key source.
-VOICE_FORWARD_SECRET_SCHEME = "aesgcm-x25519-v3"
+#: v3 -> v4 (1.13.0): nothing in this module changed, but the sender keys it
+#: derives from now come out of a pair key that also depends on the password
+#: (core/key_agreement.py). The label moves so the record says which keys
+#: these are; in practice an older client's sender key does not open, so its
+#: audio is skipped, while its text shows as "a different version".
+VOICE_FORWARD_SECRET_SCHEME = "aesgcm-x25519-v4"
 
 #: HKDF separations. If these strings change, the keys change with them.
 _VOICE_KEY_INFO = b"proxynet-voice-v1"

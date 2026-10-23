@@ -69,6 +69,21 @@ Get-FileHash ProxyChat.exe -Algorithm SHA256
 
 ---
 
+## Bilinen sahte dosya
+
+İnternette başka yerlerde `ProxyChat.exe` adıyla bir **zararlı yazılım**
+(uzaktan erişim truva atı) sunuluyor. Yaklaşık 14 MB, imzasız; SHA-256:
+
+```
+6f2b3816fa61328de13496b47c787f768b6634ec7cb68a4a3c370be74e45c94e
+```
+
+Elindeki dosyanın özeti buysa **çalıştırma**. Çalıştırdıysan o bilgisayarı
+ele geçirilmiş say: ağdan ayır, tarat, parolalarını başka bir cihazdan
+değiştir. Gerçek dosyaların özeti yalnızca imzalı `SHA256SUMS.txt` içinde.
+
+---
+
 ## Eşleşmezse
 
 **Kurmayın.** Sırayla:
@@ -115,7 +130,7 @@ yayınlanıyor: hangi Python, hangi PyInstaller, hangi paketler ve hangi
 **Gerekenler:** Windows 10/11 (64-bit), Python 3.11 (künyedeki sürüm), NSIS
 (kurulum dosyası için; künyedeki sürüm) ve libopus.dll.
 
-**1. Kaynağı alın** — sürümün etiketinden (ör. `v1.12.8`), ya `git clone` ile
+**1. Kaynağı alın** — sürümün etiketinden (ör. `v1.13.0`), ya `git clone` ile
 ya da GitHub'dan ZIP olarak. Derleme betiği git deposu olmayan bir klasörde de
 çalışır.
 

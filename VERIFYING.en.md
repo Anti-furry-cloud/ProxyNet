@@ -69,6 +69,22 @@ Get-FileHash ProxyChat.exe -Algorithm SHA256
 
 ---
 
+## A known fake
+
+A piece of **malware** (a remote-access trojan) is being offered elsewhere on
+the internet under the name `ProxyChat.exe`. About 14 MB, unsigned; SHA-256:
+
+```
+6f2b3816fa61328de13496b47c787f768b6634ec7cb68a4a3c370be74e45c94e
+```
+
+If your file has this checksum, **do not run it**. If you did, treat that
+computer as compromised: disconnect it, scan it, change your passwords from
+another device. The real files' checksums are only in the signed
+`SHA256SUMS.txt`.
+
+---
+
 ## If it does not match
 
 **Do not install it.** In order:
@@ -117,7 +133,7 @@ build used.
 **You need:** Windows 10/11 (64-bit), Python 3.11 (the version in the record),
 NSIS (for the installer; the version in the record) and libopus.dll.
 
-**1. Get the source** — at the release tag (for example `v1.12.8`), either with
+**1. Get the source** — at the release tag (for example `v1.13.0`), either with
 `git clone` or as a ZIP from GitHub. The build script also works in a folder
 that is not a git repository.
 

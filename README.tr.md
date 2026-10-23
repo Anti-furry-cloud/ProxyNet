@@ -8,8 +8,7 @@ okunamaması**, sunucuyu işleten kişi ve devlet ölçeğinde bir rakip dahil.
 
 ## Hızlı başlangıç
 
-**[ProxyChat 1.12.8'i indir (Windows 10/11)](../../releases/latest)** — ilk
-herkese açık sürüm. O sayfadan `ProxyChat-Setup.exe` dosyasını al.
+**[ProxyChat 1.13.0'ı indir (Windows 10/11)](../../releases/latest)**. O sayfadan `ProxyChat-Setup.exe` dosyasını al.
 
 1. **Kur.** Dosyanın Authenticode imzası yok, bu yüzden Windows SmartScreen
    uyarı verir: *Ek bilgi → Yine de çalıştır*. Önce dosyayı kontrol etmek
@@ -28,6 +27,17 @@ herkese açık sürüm. O sayfadan `ProxyChat-Setup.exe` dosyasını al.
 > [ne yapmadığını](#proxychat-bugün-ne-yapmıyor) ve
 > [ne için, ne için olmadığını](#ne-için-ne-için-değil) oku.
 
+> **⚠ Sahte bir "ProxyChat.exe" dolaşıyor (2026-10).** İnternette başka
+> yerlerde `ProxyChat.exe` adlı bir dosya sunuluyor. **Bu ProxyChat değil, bir
+> zararlı yazılım** — uzaktan erişim truva atı. Çalıştırmadan inceledim:
+> yaklaşık 14 MB, imzasız, SHA-256
+> `6f2b3816fa61328de13496b47c787f768b6634ec7cb68a4a3c370be74e45c94e`.
+> Gerçek dosyalar **yalnızca** bu deponun [Releases](../../releases)
+> sayfasından gelir; özetleri imzalı `SHA256SUMS.txt` içindedir
+> ([VERIFYING.md](VERIFYING.md)). Sahte dosyayı çalıştırdıysan o bilgisayarı
+> ele geçirilmiş say: ağdan ayır, tarat, ve parolalarını başka bir cihazdan
+> değiştir.
+
 ---
 
 ## Ne olduğu
@@ -38,7 +48,7 @@ paylaşıyor ama farklı sözler veriyor.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | Kime | Günlük kullanım, arkadaş grubu | Şifrelemenin öncelik olduğu durumlar |
-| Durum | Çalışıyor. İlk herkese açık sürüm 1.12.8 ([indir](../../releases)); sesli sohbet ve ileri gizlilik (metin 1.9.0, ses 1.10.0) içinde | Henüz kod yok; [sınırları](apps/proxynull/README.md) ve [protokol tasarımı](apps/proxynull/PROTOKOL.md) yazılı |
+| Durum | Çalışıyor. Son sürüm 1.13.0 ([indir](../../releases/latest)), ilk herkese açık sürüm 1.12.8; sesli sohbet ve ileri gizlilik (metin 1.9.0, ses 1.10.0) içinde | Henüz kod yok; [sınırları](apps/proxynull/README.md) ve [protokol tasarımı](apps/proxynull/PROTOKOL.md) yazılı |
 | Hedefi | Kullanışlı olmak, içeriği korumak | Tehdit modelindeki T5 rakibini karşılamak |
 | Platform | **Windows 10/11 (64-bit)** | Baştan platform-nötr (Rust, komut satırı) |
 
@@ -98,10 +108,11 @@ Bunları saklamıyorum; saklarsam belge bir pazarlama metnine dönüşür:
   pahalı yapar, imkânsız yapmaz. Parolayı bulan biri **canlı** bir oturumun
   anahtar takasını taklit edip araya girebilir; kaydedilmiş trafiği açamaz,
   ileri gizlilik onu kapatıyor. Asıl çözüm bir PAKE.
-- **Henüz kuantuma dayanıklı değil.** Kaydedilmiş trafik, ileride X25519'u
-  kırabilen bir kuantum bilgisayarla parola bilinmeden çözülebilir. Bugün
-  böyle bir makine yok; kapatma planı [THREAT_MODEL.md](THREAT_MODEL.md) 5.10
-  içinde.
+- **Kuantuma karşı yalnızca kısmen dayanıklı.** 1.13.0'dan beri oturum
+  anahtarı oda parolasına da bağlı; trafiği bugün kaydedip ileride X25519'u
+  bir kuantum bilgisayarla kıran biri yine de parolayı bilmek zorunda. Zayıf
+  bir parola bunu korumaz, ve tam dayanıklılık (ML-KEM ile hibrit anahtar
+  değişimi) henüz yok: [THREAT_MODEL.md](THREAT_MODEL.md) 5.10.
 - **Taşıma katmanı şifresiz.** Aktif bir saldırgan mesaj içeriğini
   sahteleyemez ama zarf paketlerini sahteleyebilir.
 - **Dağıtılan dosyanın Authenticode imzası yok.** Windows SmartScreen uyarı
@@ -125,6 +136,13 @@ yapılan denemeler kötü sonuç olarak kayda geçmesin.
 taşıma katmanı şifrelemesi (9).
 
 #### Son kapananlar
+
+**Kaydedilmiş trafik ve gelecekteki kuantum bilgisayar** (1.13.0). Oturum
+anahtarı yalnızca X25519 değişiminden türüyordu; yani bugün kaydedilen trafik,
+ileride X25519'u kırabilen bir kuantum bilgisayarla parola bilinmeden
+açılabilirdi. Artık paroladan türeyen bir anahtar da oturum anahtarına
+giriyor; metin ve ses birlikte korunuyor. Anahtarlar değiştiği için 1.13.0
+**1.12.x ile şifreli konuşamaz**: odadaki herkesin güncellemesi gerekiyor.
 
 **Ekranda görünen adres** (1.12.8). Ekranını yayınlayan ya da video çeken biri
 IP adresini farkında olmadan sızdırıyordu: adres sohbet ekranındaki

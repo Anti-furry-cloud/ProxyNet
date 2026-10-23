@@ -184,7 +184,8 @@ taşıyor, anlamını bilmiyor.
 Sıra sorunu da çözüldü: metin el sıkışması ses katılımından sonra bitebiliyor.
 O durumda eş sessizce atlanıyor ve anahtar gelince katılımcı listesi yeniden
 işleniyor — eksik anahtar bir hata değil, geçici bir durum. Şema etiketi
-`aesgcm-x25519-v3`; eski `aesgcm-hkdf-v2` ile bilerek uyumsuz. Kod:
+`aesgcm-x25519-v4` (1.13.0'da v3'ten yükseldi, 5.10); eski `aesgcm-hkdf-v2`
+ile bilerek uyumsuz. Kod:
 `core/voice_crypto.py` → `derive_voice_session_key`, `ForwardSecretVoiceCipher`.
 Testler: `tests/test_voice_forward_secrecy.py`.
 
@@ -479,7 +480,8 @@ oda adı normalleştirmesini bilinen bir cevap vektörü kilitliyor
 Argon2id'nin **işi 1.9.0'da değişti**: türettiği anahtar artık mesajları
 şifrelemiyor, karşı tarafın odaya ait olduğunu doğrulayan imzanın anahtarı oluyor
 (ve ses anahtarı ondan türüyor, 5.1). Metin sohbetinin şema etiketi bu yüzden
-`aesgcm-x25519-v2` (1.12.0'da dolguyla birlikte v1'den yükseldi, 5.7);
+`aesgcm-x25519-v3` (1.12.0'da dolguyla birlikte v1'den v2'ye, 1.13.0'da
+parolanın ikili anahtara girmesiyle v3'e yükseldi; 5.7, 5.10);
 `fernet-argon2id-v1` etiketi 1.8.0 ve öncesine ait. O
 şemanın **kodu da 1.10.1'de silindi** (`RoomCipher`, `derive_room_key`,
 `make_cipher`): 1.9.0'dan beri hiçbir yerden çağrılmıyordu, dosyanın büyük
@@ -572,11 +574,11 @@ SmartScreen bir itibar sistemi. Bu yüzden ertelendi (8. bölüm, 8-B).
 Not: SmartScreen bir güvenlik garantisi değil. A bir güvenlik problemiydi ve
 kapandı; B bir kullanılabilirlik problemi.
 
-### 5.10 Kuantum bilgisayar: "şimdi kaydet, sonra çöz" — açık
+### 5.10 Kuantum bilgisayar: "şimdi kaydet, sonra çöz" — ilk adım kapandı (1.13.0)
 
-Oturum anahtarı yalnızca X25519 anahtar değişiminden türüyor
-(`core/key_agreement.py`). Oda parolası anahtarın içine girmiyor; yalnızca
-açık anahtarları doğrulayan HMAC'te kullanılıyor. X25519 bir eliptik eğri
+**1.13.0'a kadar** oturum anahtarı yalnızca X25519 anahtar değişiminden
+türüyordu (`core/key_agreement.py`). Oda parolası anahtarın içine girmiyordu;
+yalnızca açık anahtarları doğrulayan HMAC'te kullanılıyordu. X25519 bir eliptik eğri
 yöntemi ve yeterince büyük, hata düzeltmeli bir kuantum bilgisayar onu Shor
 algoritmasıyla kırabilir.
 
@@ -597,7 +599,7 @@ Pratik anlamı: bir arkadaş grubunun bugünkü konuşmaları için risk küçü
 
 Kapatmanın iki adımı (8. bölüm, 10. sıra):
 
-1. Paroladan Argon2id ile türetilen anahtarı oturum anahtarının türetimine
+1. **Yapıldı (1.13.0).** Paroladan Argon2id ile türetilen anahtarı oturum anahtarının türetimine
    (HKDF) de katmak — WireGuard'ın kuantuma karşı önerdiği ön paylaşımlı
    anahtar yöntemi. Kuantum saldırganı X25519'u kırsa bile parolayı da bilmek
    zorunda kalır. Sınırı: zayıf bir parola yine tahmin edilebilir; onun asıl
@@ -607,7 +609,16 @@ Kapatmanın iki adımı (8. bölüm, 10. sıra):
    yol bu.
 
 İkisi de tel biçimini değiştirir; eski sürümlerle şifreli konuşma kesilir.
-Açık 2026-10-24'te bu belgeye yazıldı.
+Açık 2026-10-24'te bu belgeye yazıldı; ilk adım aynı gün 1.13.0'da yapıldı.
+
+**1.13.0'dan beri:** paroladan türeyen ön paylaşımlı anahtar (`pair_psk`, ana
+anahtarın kendi bağlam dizesiyle HMAC'i) X25519 sırrıyla birlikte HKDF'ye
+giriyor. Kayıt yapıp ileride X25519'u kıran biri artık parolayı da bulmak
+zorunda. **Kalan açık:** zayıf ya da sızmış bir parola bunu korumaz, ve gerçek
+kuantum dayanıklılığı 2. adımı (hibrit ML-KEM) bekliyor. Pratik anlamı yukarıda
+yazandan biraz iyi: güçlü bir parolası olan oda, kuantum saldırganına karşı
+artık parolanın gücü kadar korunuyor. Testler: `tests/test_key_agreement.py` →
+`KuantumTests` (bilinen cevaplı test vektörü dahil).
 
 ---
 
@@ -663,7 +674,7 @@ Karar kaydı — aynı fikirlerin tekrar gündeme gelmemesi için.
 | 8-A | ~~Yeniden üretilebilir derleme + kilitli bağımlılıklar + künye (5.9)~~ **Yapıldı (1.12.4)** | Orta | Küçük — ölçüldükten sonra üç ayar |
 | 8-B | **Authenticode imzası (5.9)** — ertelendi | Kullanılabilirlik | Küçük, ama para ve tüzel kimlik işi |
 | 9 | Taşıma katmanı şifrelemesi (5.4-A) — **ertelendi** | Düşük–Orta | Büyük |
-| 10 | **Kuantuma karşı (5.10):** önce parolayı oturum anahtarına katmak, sonra hibrit ML-KEM | Bugün düşük, uzun vadede yüksek | Orta — tel biçimi değişir |
+| 10 | **Kuantuma karşı (5.10):** ~~parolayı oturum anahtarına katmak~~ **yapıldı (1.13.0)**; sırada hibrit ML-KEM | Bugün düşük, uzun vadede yüksek | Orta — tel biçimi değişir |
 
 **5.4-A neden en sona düştü.** Eskiden 5. sıradaydı ve "yüksek etki" yazıyordu;
 ikisi de yanlıştı. Üç gerekçe:
