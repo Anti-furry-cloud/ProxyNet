@@ -9,7 +9,8 @@
 > written. The file keeps its name (`VOICE_CHAT_PLAN`) so references in the
 > code do not break.
 
-> **Publication note (2026-09-16):** The source code is not open yet; the file
+> **Publication note (2026-09-16; the code has been open since 2026-10-22, see
+> the update below):** The source code is not open yet; the file
 > paths in the text (such as `core/voice_crypto.py`) are not visible and were
 > deliberately kept so that, once the code opens, every claim here can be
 > checked at its source. **This plan is not a finished design.** In particular,

@@ -20,13 +20,18 @@ biliyoruz:
 - Belleğe el konulmasına karşı koruma kısmi (Python'da anahtar güvenilir
   şekilde sıfırlanamıyor)
 - Post-compromise security yok (Double Ratchet karşılığı)
-- Dağıtılan binary imzasız
+- Kuantuma karşı yalnızca kısmen dayanıklı: hibrit anahtar değişimi (ML-KEM)
+  henüz yok, 1.13.0'daki koruma da ancak oda parolası kadar güçlü (5.10)
+- Dağıtılan binary'nin Authenticode imzası yok (özet listesi GPG ile imzalı;
+  [VERIFYING.md](VERIFYING.md))
 
 Kapanmış olanlar — bunları eksik diye bildirmeye gerek yok, ama **kapanmadığını
 gösteren bir bulgu çok değerlidir:**
 
 - **İleri gizlilik var** (metin 1.9.0, ses 1.10.0): anahtar her oturumda
-  yeniden doğuyor, parola yalnızca doğruluyor
+  yeniden doğuyor
+- **Yalnızca X25519'u kırmak kaydedilmiş trafiği açmıyor** (1.13.0): paroladan
+  türetilen bir anahtar da oturum anahtarına giriyor
 - **Şifreli odada geçmiş hiç tutulmuyor** (1.9.0)
 - **Mesaj uzunluğu dolguyla gizleniyor** (1.12.0): yük 32 bayttan başlayan
   kovalara yuvarlanıyor, kısa mesajların hepsi telde aynı boyda gidiyor

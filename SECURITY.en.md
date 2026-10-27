@@ -20,13 +20,18 @@ already know:
 - Protection against memory seizure is partial (keys cannot be zeroed
   reliably in Python)
 - No post-compromise security (the Double Ratchet equivalent)
-- The distributed binary is unsigned
+- Only partly quantum-resistant: no hybrid key exchange (ML-KEM) yet, and the
+  1.13.0 protection is only as strong as the room password (5.10)
+- The distributed binary has no Authenticode signature (the checksum list is
+  GPG-signed; [VERIFYING.en.md](VERIFYING.en.md))
 
 Gaps that have been closed — no need to report these as missing, but **a finding
 showing they are not actually closed would be very valuable:**
 
 - **Forward secrecy is in place** (text 1.9.0, voice 1.10.0): the key is born
-  again every session, the password only authenticates
+  again every session
+- **Breaking X25519 alone does not open recorded traffic** (1.13.0): a key
+  derived from the password enters the session key as well
 - **No history at all is kept in an encrypted room** (1.9.0)
 - **Message length is hidden by padding** (1.12.0): the payload is rounded up
   to buckets starting at 32 bytes, so all short messages go out at the same

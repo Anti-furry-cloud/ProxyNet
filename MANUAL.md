@@ -23,6 +23,10 @@ Sağladığı koruma:
 - ✅ **İleri gizlilik** (metin 1.9.0, ses 1.10.0): anahtar her oturumda yeniden
   doğar ve oturum kapanınca bırakılır; parola sonradan ele geçse bile
   kaydedilmiş trafik açılamaz
+- ✅ **Yalnızca X25519'u kırmak yetmiyor** (1.13.0): oturum anahtarı oda
+  parolasına da bağlı; X25519'u kırabilen gelecekteki bir kuantum bilgisayar
+  bile parola güçlüyse kaydedilmiş trafiği açamaz. Tam kuantum dayanıklılığı
+  (hibrit ML-KEM) henüz yok (THREAT_MODEL.md 5.10).
 
 Sağla**ma**dığı korumalar:
 
@@ -159,19 +163,22 @@ açılışta İngilizcedir; seçim anında uygulanır ve hatırlanır.
 
 | | |
 | --- | --- |
-| Anahtar türetme | Argon2id (RFC 9106: 3 tur, 4 şerit, 64 MiB bellek), tuz = oda adı |
-| Şifreleme | Fernet (AES-128-CBC + HMAC-SHA256) |
+| Anahtar değişimi | X25519, her oturumda yeni anahtar çifti (ileri gizlilik; metin 1.9.0, ses 1.10.0) |
+| Oda parolası | Argon2id (RFC 9106: 3 tur, 4 şerit, 64 MiB bellek), tuz = oda adı. Anahtar değişimini doğrular (HMAC) ve 1.13.0'dan beri oturum anahtarına da girer |
+| Şifreleme | AES-256-GCM, metin ve ses |
 | Kütüphane | [`cryptography`](https://cryptography.io) (pyca) 44.0 ya da üstü |
 
-**1.7.0, 1.6.x ile şifreli odalarda uyumlu değil.** Anahtar türetme PBKDF2'den
-Argon2id'ye geçtiği için aynı parola farklı anahtar verir. 1.7.0, eski sürümden
-gelen mesajı "karşı taraf farklı bir ProxyChat sürümü kullanıyor" diye
-gösterir; 1.6.x ise yeni mesajı "oda parolası farklı" diye gösterir. Herkesin
-aynı sürüme geçmesi gerekir. Parolasız odalar etkilenmez.
+**1.13.0, 1.12.x ile şifreli odalarda uyumlu değil.** Parola artık oturum
+anahtarına da girdiği için anahtarlar farklı. Eski sürümden gelen mesaj
+"farklı sürüm" diye görünür; sesi ise hiç duyulmaz. Odadaki herkesin
+güncellemesi gerekir. Parolasız odalar etkilenmez. Önceki sürümler de uyumu
+aynı şekilde bozdu; [CHANGELOG.md](CHANGELOG.md) her birini "⚠ tel kırılması"
+diye işaretliyor.
 
-Anahtar **hiçbir zaman ağa çıkmaz**; her iki taraf aynı paroladan bağımsız
-olarak türetir. Sunucu zincirinde `cryptography` import bile edilmez —
-sunucunun çözme *yeteneği* yoktur, olmaması tasarım gereğidir.
+Ne parola ne oturum anahtarları **hiçbir zaman ağa çıkmaz**: ağa yalnızca
+açık X25519 anahtarları çıkar, oturum anahtarlarını her taraf kendisi
+hesaplar. Sunucu zincirinde `cryptography` import bile edilmez — sunucunun
+çözme *yeteneği* yoktur, olmaması tasarım gereğidir.
 
 **Bilinen sınırları** yukarıdaki güvenlik beyanında ve
 [THREAT_MODEL.md](THREAT_MODEL.md) 5. bölümde yazılıdır.

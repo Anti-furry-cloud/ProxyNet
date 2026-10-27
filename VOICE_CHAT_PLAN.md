@@ -8,7 +8,8 @@
 > cümleleri, yazıldıkları günün durumunu anlatır. Dosyanın adı (`VOICE_CHAT_PLAN`)
 > koddaki göndermeler bozulmasın diye değişmedi.
 
-> **Yayın notu (2026-09-16):** Kaynak kodu henüz açık değil; metindeki dosya
+> **Yayın notu (2026-09-16; kod 2026-10-22'den beri açık, aşağıdaki
+> güncellemeye bakın):** Kaynak kodu henüz açık değil; metindeki dosya
 > yolları (`core/voice_crypto.py` gibi) şu an görünmüyor ve kod açıldığında
 > her iddianın nereden doğrulanacağını göstermek için bilerek bırakıldı.
 > **Bu plan tamamlanmış bir tasarım değil.** Özellikle 3. bölümdeki şifreleme

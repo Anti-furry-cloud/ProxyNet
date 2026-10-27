@@ -26,6 +26,11 @@ What it protects:
 - ✅ **Forward secrecy** (text 1.9.0, voice 1.10.0): the key is born again every
   session and dropped when the session ends; recorded traffic cannot be opened
   even if the password leaks later
+- ✅ **Breaking X25519 alone is not enough** (1.13.0): the session key also
+  depends on the room password, so recorded traffic stays closed even to a
+  future quantum computer that breaks X25519 — as long as the password is
+  strong. Full quantum resistance (hybrid ML-KEM) is not there yet
+  (THREAT_MODEL.en.md 5.10).
 
 What it does **not** protect:
 
@@ -167,19 +172,22 @@ remembered.
 
 | | |
 | --- | --- |
-| Key derivation | Argon2id (RFC 9106: 3 passes, 4 lanes, 64 MiB memory), salt = room name |
-| Cipher | Fernet (AES-128-CBC + HMAC-SHA256) |
+| Key exchange | X25519, a fresh key pair every session (forward secrecy; text 1.9.0, voice 1.10.0) |
+| Room password | Argon2id (RFC 9106: 3 passes, 4 lanes, 64 MiB memory), salt = room name. Authenticates the key exchange (HMAC) and, since 1.13.0, also enters the session key |
+| Cipher | AES-256-GCM, text and voice |
 | Library | [`cryptography`](https://cryptography.io) (pyca) 44.0 or later |
 
-**1.7.0 is not compatible with 1.6.x in encrypted rooms.** Key derivation moved
-from PBKDF2 to Argon2id, so the same password yields a different key. 1.7.0
-shows a message from the older version as "the other side uses a different
-ProxyChat version"; 1.6.x shows a new message as "different room password".
-Everyone needs to move to the same version. Passwordless rooms are not affected.
+**1.13.0 is not compatible with 1.12.x in encrypted rooms.** The password now
+also enters the session key, so the keys differ. A message from an older
+version shows as "a different version"; its voice is simply not heard.
+Everyone in the room needs to update. Passwordless rooms are not affected.
+Earlier versions broke compatibility the same way; [CHANGELOG.en.md](CHANGELOG.en.md)
+marks each one with "⚠ wire break".
 
-The key **never travels over the network**; both sides derive it independently
-from the same password. The server chain does not even import `cryptography` —
-the server has no *ability* to decrypt, and that is by design.
+Neither the password nor the session keys **ever travel over the network**:
+only public X25519 keys do, and each side computes the session keys itself.
+The server chain does not even import `cryptography` — the server has no
+*ability* to decrypt, and that is by design.
 
 **Known limitations** are listed in the security statement above and in section
 5 of [THREAT_MODEL.en.md](THREAT_MODEL.en.md).

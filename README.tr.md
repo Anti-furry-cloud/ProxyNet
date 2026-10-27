@@ -48,7 +48,7 @@ paylaşıyor ama farklı sözler veriyor.
 | | **ProxyChat** | **ProxyNull** |
 | --- | --- | --- |
 | Kime | Günlük kullanım, arkadaş grubu | Şifrelemenin öncelik olduğu durumlar |
-| Durum | Çalışıyor. Son sürüm 1.13.0 ([indir](../../releases/latest)), ilk herkese açık sürüm 1.12.8; sesli sohbet ve ileri gizlilik (metin 1.9.0, ses 1.10.0) içinde | Henüz kod yok; [sınırları](apps/proxynull/README.md) ve [protokol tasarımı](apps/proxynull/PROTOKOL.md) yazılı |
+| Durum | Çalışıyor. Son sürüm 1.13.0 ([indir](../../releases/latest)), ilk herkese açık sürüm 1.12.8; sesli sohbet ve ileri gizlilik (metin 1.9.0, ses 1.10.0) içinde | ProxyNull'ın henüz kodu yok; [sınırları](apps/proxynull/README.md) ve [protokol tasarımı](apps/proxynull/PROTOKOL.md) yazılı |
 | Hedefi | Kullanışlı olmak, içeriği korumak | Tehdit modelindeki T5 rakibini karşılamak |
 | Platform | **Windows 10/11 (64-bit)** | Baştan platform-nötr (Rust, komut satırı) |
 
