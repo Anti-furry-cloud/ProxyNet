@@ -129,8 +129,9 @@ room hears you.
   sent instead. Stopping the stream would tell the network who speaks when.
 - Audio travels over UDP on the **same port number** as TCP, so the firewall
   asks once.
-- If the Opus library (`libopus.dll`) sits next to the program, Opus is used;
-  otherwise µ-law. Both sides must use the same codec: the first person to
+- The voice codec is Opus. Its library (`libopus.dll`) has been inside the
+  program since 1.12.2; if it cannot be found (for example when running from
+  source), µ-law is used. Both sides must use the same codec: the first person to
   join voice sets the room's codec.
 
 ### How to share the password
@@ -203,10 +204,13 @@ In the left panel of the connection screen:
   when it is turned off. Message content, usernames and IP addresses are
   **never** written to the log.
 - **Keep room history** — *off by default* (since 1.7.0), effective in Host
-  mode only. When on, the server keeps the latest messages of each room in
-  memory and sends them in encrypted form to **everyone** who joins the room,
-  even without the room password; a weak password can be attacked offline. When
-  off, the server keeps no messages in memory. The program itself keeps the
+  mode only, and it only matters in rooms **without a password**. When on, the
+  server keeps the latest messages of passwordless rooms in memory and sends
+  them to whoever joins. **In an encrypted room the server keeps no messages at
+  all** (since 1.9.0): the key dies with the session, so nobody joining later
+  could open an old message, and keeping it would hand someone who does not
+  know the password material for an offline attack. When off, the server keeps
+  no messages in any room. The program itself keeps the
   messages you saw in this session, at most 200 per room, in memory so they come
   back when you return to a room; they are not written to disk and are dropped
   when you disconnect. Messages sent while you are not in a room do not reach

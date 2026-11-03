@@ -88,15 +88,14 @@ geçtiği karar kapısı ve geliştirme günlüğü
 
 ## 5. Görsel kimlik
 
-Arayüzün renk paleti şu an **birebir Discord'un koyu teması** (`#313338`,
+Arayüzün renk paleti **birebir Discord'un koyu teması** (`#313338`,
 `#2b2d31`, `#f2f3f5`, `#ed4245`) ve yerleşim de aynı: solda kanallar, ortada
 mesajlar, sağda kullanıcılar.
 
-Arkadaş grubu içinde sorun değil. Ancak uygulama halka açık dağıtılacaksa
-paletin kendine ait hale getirilmesi gerekir — marka benzerliği gereksiz bir
-risk ve "Discord kopyası" izlenimi asıl anlatmak istediğimiz şeyi gölgeliyor.
-
-Öncelik düşük, ama unutulmaması için buraya yazıldı.
+**Karar (2026-11-03): palet değişmeyecek.** Daha önce burada "halka açık
+dağıtımdan önce değiştirilmeli" yazıyordu; o düşünceden vazgeçildi.
+ProxyChat'in Discord'la hiçbir bağlantısı yok. Farkı görünüşte değil,
+yukarıdaki dört maddede.
 
 ---
 

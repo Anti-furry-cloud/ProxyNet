@@ -91,16 +91,14 @@ design, the decision gate it passed and its development log are in
 
 ## 5. Visual identity
 
-The interface palette is currently **exactly Discord's dark theme** (`#313338`,
+The interface palette is **exactly Discord's dark theme** (`#313338`,
 `#2b2d31`, `#f2f3f5`, `#ed4245`) and the layout is the same too: channels on
 the left, messages in the middle, users on the right.
 
-Within a group of friends this is not a problem. But if the application is
-distributed publicly the palette needs to become its own — brand similarity is
-an unnecessary risk, and the impression of being a "Discord clone" overshadows
-what we actually want to say.
-
-Low priority, but written here so it is not forgotten.
+**Decision (2026-11-03): the palette stays.** This section used to say it
+should change before public distribution; that idea was dropped. ProxyChat
+has no connection to Discord. The difference is not in how it looks but in
+the four points above.
 
 ---
 

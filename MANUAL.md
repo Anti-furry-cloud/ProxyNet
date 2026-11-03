@@ -122,7 +122,8 @@ Sağ kenardaki "Sesli sohbet" bölümünden katılınır. Aynı odadakiler duyar
   Akışın kesilmesi kimin ne zaman konuştuğunu ağa söylerdi.
 - Ses, TCP ile **aynı port numarasından** ama UDP olarak gider. Güvenlik
   duvarı izni bir kez istenir.
-- Opus kütüphanesi (`libopus.dll`) programın yanındaysa Opus, değilse µ-law
+- Ses kodeği Opus. Kütüphanesi (`libopus.dll`) 1.12.2'den beri programın
+  içinde geliyor; bulunamazsa (örneğin kaynaktan çalıştırırken) µ-law
   kullanılır. İki tarafın kodeği aynı olmak zorunda: odanın kodeğini sese
   ilk katılan belirler.
 
@@ -193,10 +194,12 @@ Bağlantı ekranının sol panelinde:
   yalnızca sorun araştırırken açın. Kapatıldığında var olan kayıtlar da silinir.
   Loglara mesaj içeriği, kullanıcı adı ve IP **yazılmaz**.
 - **Oda geçmişini tut** — *varsayılan kapalı* (1.7.0'dan beri), yalnızca Host
-  modunda etkili. Açıksa sunucu oda başına son mesajları bellekte tutar ve odaya
-  giren **herkese**, oda parolasını bilmese bile, şifreli hâlde gönderir; zayıf
-  bir parola çevrimdışı denenebilir. Kapalıyken sunucu hiçbir mesajı bellekte
-  tutmaz. Programın kendisi, başka odaya geçip döndüğünde gösterebilmek için
+  modunda etkili ve yalnızca **parolasız** odalarda işe yarar. Açıksa sunucu
+  parolasız odaların son mesajlarını bellekte tutar ve odaya girene gönderir.
+  **Şifreli odada sunucu hiçbir mesajı tutmaz** (1.9.0'dan beri): anahtar
+  oturumla birlikte öldüğü için eski bir mesajı sonradan gelen kimse açamaz,
+  saklamak ise parolayı bilmeyen birine çevrimdışı deneme malzemesi verirdi.
+  Kapalıyken sunucu hiçbir odada mesaj tutmaz. Programın kendisi, başka odaya geçip döndüğünde gösterebilmek için
   bu oturumda gördüğün mesajları oda başına en fazla 200 tane bellekte tutar;
   diske yazılmaz, bağlantı kesilince silinir. Sen odada değilken yazılanlar
   sana ulaşmaz.
