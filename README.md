@@ -136,10 +136,11 @@ product itself writes the record file, and today only the voice prototype
 writes one. The rule was written that way so that "does this work?" attempts
 do not go on record as bad results.
 
-The two items left in the list in section 8 of
-[THREAT_MODEL.en.md](THREAT_MODEL.en.md) are **deferred on purpose**, with the
-reasoning written there: Authenticode signing (8-B) and transport-layer
-encryption (9).
+Three items are left in the list in section 8 of
+[THREAT_MODEL.en.md](THREAT_MODEL.en.md). Next is **hybrid ML-KEM** (10), the
+second step against quantum computers. The other two are **deferred on
+purpose**, with the reasoning written there: Authenticode signing (8-B) and
+transport-layer encryption (9).
 
 #### Recently closed
 

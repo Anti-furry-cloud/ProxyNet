@@ -106,4 +106,4 @@ yukarıdaki dört maddede.
 | ProxyChat'i Discord özellik listesine göre büyütmek | **Reddedildi** | Özellik yarışı kaybedilir; değer dört farkta |
 | Kolaylık özellikleri (yeniden bağlanma, bildirim, ayar) | **Kabul edildi** | S1'den geçti, dört sebeple çelişmiyor |
 | Kalıcı geçmiş için VPS | **Reddedildi** | `THREAT_MODEL.md` ilke 2 |
-| Renk paletini değiştirmek | **Ertelendi** | Halka açık dağıtımdan önce ele alınacak |
+| Renk paletini değiştirmek | **Reddedildi (2026-11-03)** | Palet olduğu gibi kalıyor (5. bölüm) |

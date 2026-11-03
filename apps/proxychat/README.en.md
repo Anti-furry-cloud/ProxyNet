@@ -109,7 +109,7 @@ the four points above.
 | Growing ProxyChat against Discord's feature list | **Rejected** | The feature race is unwinnable; the value lies in the four differences |
 | Convenience features (reconnect, notification, settings) | **Accepted** | Passed Q1, does not conflict with the four reasons |
 | A VPS for persistent history | **Rejected** | `THREAT_MODEL.md` principle 2 |
-| Changing the colour palette | **Deferred** | To be addressed before public distribution |
+| Changing the colour palette | **Rejected (2026-11-03)** | The palette stays as it is (section 5) |
 
 ---
 

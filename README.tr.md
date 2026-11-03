@@ -131,7 +131,8 @@ kendi kayıt dosyasını yazmaya başlamasından sonra sayılıyor, o dosyayı �
 yalnızca ses prototipi yazıyor. Kural böyle yazıldı ki "çalışıyor mu" diye
 yapılan denemeler kötü sonuç olarak kayda geçmesin.
 
-[THREAT_MODEL.md](THREAT_MODEL.md) 8. bölümdeki listede kalan iki madde
+[THREAT_MODEL.md](THREAT_MODEL.md) 8. bölümdeki listede üç madde kaldı.
+Sıradaki **hibrit ML-KEM** (10): kuantuma karşı ikinci adım. Diğer ikisi
 **bilerek ertelendi**, gerekçeleri orada yazılı: Authenticode imzası (8-B) ve
 taşıma katmanı şifrelemesi (9).
 
